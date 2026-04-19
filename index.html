@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project ATL — Antipolo TODA Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500&display=swap" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --yellow: #F5C842;
+      --navy: #0B1929;
+      --navy-mid: #132338;
+      --navy-light: #1E3450;
+      --slate: #8FA3B8;
+      --white: #F0F4F8;
+      --confirmed: #F5C842;
+      --draft: #4A6FA5;
+      --panel-w: 340px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP BAR ── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 52px;
+      background: var(--navy);
+      border-bottom: 1px solid var(--navy-light);
+      flex-shrink: 0;
+      z-index: 1000;
+      position: relative;
+    }
+
+    #topbar .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    #topbar .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.01em;
+      color: var(--yellow);
+    }
+
+    #topbar .logo span {
+      color: var(--white);
+    }
+
+    #topbar .tagline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--slate);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    #topbar .version-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--navy);
+      background: var(--yellow);
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+
+    /* ── MAIN AREA ── */
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── MAP ── */
+    #map {
+      flex: 1;
+      z-index: 1;
+    }
+
+    /* ── SIDEBAR PANEL ── */
+    #panel {
+      width: var(--panel-w);
+      background: var(--navy-mid);
+      border-left: 1px solid var(--navy-light);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(var(--panel-w));
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 900;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    #panel.open {
+      transform: translateX(0);
+    }
+
+    #panel-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--slate);
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      z-index: 10;
+      transition: color 0.15s;
+    }
+    #panel-close:hover { color: var(--white); }
+
+    #panel-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--navy-light);
+      position: relative;
+    }
+
+    #panel-status {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    #panel-status.confirmed { color: var(--yellow); }
+    #panel-status.draft { color: var(--draft); }
+
+    #panel-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      line-height: 1.2;
+      color: var(--white);
+      padding-right: 24px;
+    }
+
+    #panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    #panel-body::-webkit-scrollbar { width: 4px; }
+    #panel-body::-webkit-scrollbar-track { background: transparent; }
+    #panel-body::-webkit-scrollbar-thumb { background: var(--navy-light); border-radius: 2px; }
+
+    .detail-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .detail-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--slate);
+    }
+
+    .detail-value {
+      font-size: 0.85rem;
+      color: var(--white);
+      line-height: 1.4;
+    }
+
+    .detail-value.unknown {
+      color: var(--slate);
+      font-style: italic;
+    }
+
+    .color-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+      flex-shrink: 0;
+    }
+
+    /* ── LEGEND / STATS BAR ── */
+    #statsbar {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(11,25,41,0.85);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--navy-light);
+      padding: 5px 10px;
+      border-radius: 3px;
+      color: var(--slate);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── HINT ── */
+    #hint {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      z-index: 500;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--slate);
+      background: rgba(11,25,41,0.8);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--navy-light);
+      padding: 5px 10px;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    /* ── LEAFLET OVERRIDES ── */
+    .leaflet-container { background: #0d1f33; }
+
+    .leaflet-tile-pane { filter: brightness(0.65) saturate(0.5); }
+
+    .toda-pin-confirmed,
+    .toda-pin-draft {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .toda-pin-confirmed {
+      background: var(--yellow);
+      box-shadow: 0 0 0 3px rgba(245,200,66,0.2);
+    }
+
+    .toda-pin-draft {
+      background: var(--draft);
+      box-shadow: 0 0 0 3px rgba(74,111,165,0.2);
+    }
+
+    .leaflet-marker-icon:hover .toda-pin-confirmed,
+    .leaflet-marker-icon:hover .toda-pin-draft {
+      transform: scale(1.3);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: var(--navy-mid);
+      color: var(--white);
+      border: 1px solid var(--navy-light);
+      border-radius: 4px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+    }
+
+    .leaflet-popup-tip { background: var(--navy-mid); }
+    .leaflet-popup-close-button { color: var(--slate) !important; }
+
+    /* Animate panel */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #panel.open #panel-header,
+    #panel.open .detail-row {
+      animation: fadeUp 0.2s ease both;
+    }
+    #panel.open .detail-row:nth-child(2) { animation-delay: 0.04s; }
+    #panel.open .detail-row:nth-child(3) { animation-delay: 0.08s; }
+    #panel.open .detail-row:nth-child(4) { animation-delay: 0.12s; }
+    #panel.open .detail-row:nth-child(5) { animation-delay: 0.16s; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="brand">
+      <div class="logo">Project <span>ATL</span></div>
+      <div class="tagline">Antipolo City TODA Map</div>
+    </div>
+    <div class="version-badge">Version 1.0</div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="map"></div>
+
+    <!-- DETAIL PANEL -->
+    <div id="panel">
+      <div id="panel-header">
+        <button id="panel-close" aria-label="Close">✕</button>
+        <div id="panel-status" class="confirmed">● Confirmed Terminal</div>
+        <div id="panel-name">TODA Name</div>
+      </div>
+      <div id="panel-body">
+        <div class="detail-row">
+          <div class="detail-label">Terminal Name</div>
+          <div class="detail-value" id="d-terminal">—</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Nearby Landmarks</div>
+          <div class="detail-value" id="d-landmarks">—</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Colors</div>
+          <div class="detail-value" id="d-colors">—</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Last Checked</div>
+          <div class="detail-value" id="d-checked">—</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Status</div>
+          <div class="detail-value" id="d-folder">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div id="statsbar">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#F5C842"></div>
+        Confirmed Terminal
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#4A6FA5"></div>
+        Draft / Unverified
+      </div>
+    </div>
+
+    <div id="hint">Click a pin to view details</div>
+  </div>
+
+<script>
+// ── TODA DATA (from Project ATL KML, April 2026) ──
+const TODAS = [
+  {"name":"7 APFMCTODA","lat":14.5805848,"lng":121.174715,"terminal":"?????","landmarks":"Maylor's 2 Plaza, Claveria Bldg.","colors":"Green and black","lastChecked":"March 17, 2026","folder":"CONFIRMED TERMINALS"},
+  {"name":"17 GEMCASHTODA","lat":14.5841524,"lng":121.1739836,"terminal":"???????","landmarks":"Juan Sumulong Elementary School","colors":"White and black","lastChecked":"March 19, 2026","folder":"CONFIRMED TERMINALS"},
+  {"name":"27 P-NFLMPBWTODA","lat":14.571451,"lng":121.1786872,"terminal":"Nayon","landmarks":"Nayong Silangan","colors":"Orange and blue","lastChecked":"[check strava details]","folder":"CONFIRMED TERMINALS"},
+  {"name":"29 PACSTTODA","lat":14.5794327,"lng":121.1787015,"terminal":"Tubigan","landmarks":"O!Save Tubigan","colors":"White and orange","lastChecked":"March 17, 2026","folder":"CONFIRMED TERMINALS"},
+  {"name":"38 SUG-SAFTTODA","lat":14.5408328,"lng":121.1917183,"terminal":"Sunflower Upper Gumamela - Silihan Antipolo Federal Tibagan","landmarks":"Dali Mahabang Parang","colors":"Vermilion and yellow","lastChecked":"March 22, 2026","folder":"CONFIRMED TERMINALS"},
+  {"name":"97 MARCOPTODA","lat":14.5820475,"lng":121.1709584,"terminal":"Marrero-Acop","landmarks":"Marrero-Acop Clinic and Hospital","colors":"Dark blue and white","lastChecked":"March 17, 2026","folder":"CONFIRMED TERMINALS"},
+  {"name":"UM-ADOTA","lat":14.5749963,"lng":121.1824937,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"PPMTODA","lat":14.6256426,"lng":121.1386561,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"MCMSLATODA","lat":14.5882785,"lng":121.1728689,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"ASHTODA","lat":14.5843055,"lng":121.1747161,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"3 AHSLJTODA","lat":14.5849616,"lng":121.1919711,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"8 AMTODA","lat":14.585043,"lng":121.177192,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"9 ASTDA","lat":14.5881885,"lng":121.1754818,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"10 ASACTODA","lat":14.5813912,"lng":121.1693335,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"11 AYATDOA","lat":14.5829958,"lng":121.1760855,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"12 ASHTODA","lat":14.5839462,"lng":121.1758491,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"18 SHOPWISE-LJSCTODA","lat":14.5808082,"lng":121.1753184,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"20 MLQELCPTODA","lat":14.5840319,"lng":121.1758276,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"21 EPRKLTODA","lat":14.5838944,"lng":121.175845,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"23 MVMAWTODA","lat":14.5669276,"lng":121.1883521,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"27 P-NFLMPBWTODA (alt)","lat":14.5779717,"lng":121.1702773,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"35 UM-ADOTA","lat":14.5849783,"lng":121.1769699,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"36 PATATODA","lat":14.571979,"lng":121.2024955,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"38 SUG-SAFTTODA (alt)","lat":14.5943824,"lng":121.1729407,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"39 SHIMACTODA","lat":14.5838236,"lng":121.1757948,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"41 ROBINSONS HOMES TODA","lat":14.5774078,"lng":121.1888379,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"42 SSLTODA","lat":14.5853935,"lng":121.1762174,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"45 SLRPMATODA","lat":14.5825795,"lng":121.1762063,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"46 TAKTODA","lat":14.5839943,"lng":121.175845,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"60 KAMAGONG","lat":14.617789,"lng":121.1696981,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"61 BANATODA","lat":14.627441,"lng":121.16569,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"64 SHAVICTODA","lat":14.5874757,"lng":121.171568,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"86 SPSIMABTODA","lat":14.5411688,"lng":121.192736,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"91 GLAPTODA","lat":14.5803123,"lng":121.174013,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"94 1CIRQTODA","lat":14.5769226,"lng":121.1711414,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"101 SUPER PALENGKE TODA","lat":14.5849933,"lng":121.1776025,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"110 STA. ELENA TODA","lat":14.5779518,"lng":121.1934196,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
+  {"name":"TCC TODA","lat":14.5247879,"lng":121.2357928,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"Teresa - Terminals"},
+  {"name":"MAPANGTODA","lat":14.5479132,"lng":121.1901312,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"Angono - Terminals"}
+];
+
+// ── MAP INIT ──
+const map = L.map('map', {
+  center: [14.587, 121.176],
+  zoom: 13,
+  zoomControl: false
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors | Data: Project ATL / PTRB Antipolo',
+  maxZoom: 19
+}).addTo(map);
+
+L.control.zoom({ position: 'topright' }).addTo(map);
+
+// ── PANEL ──
+const panel = document.getElementById('panel');
+const panelClose = document.getElementById('panel-close');
+const panelStatus = document.getElementById('panel-status');
+const panelName = document.getElementById('panel-name');
+
+function openPanel(toda) {
+  panelName.textContent = toda.name;
+
+  const isConfirmed = toda.folder === 'CONFIRMED TERMINALS';
+  panelStatus.textContent = isConfirmed ? '● Confirmed Terminal' : '● Draft / Unverified';
+  panelStatus.className = isConfirmed ? 'confirmed' : 'draft';
+
+  const set = (id, val, fallback = '—') => {
+    const el = document.getElementById(id);
+    const isEmpty = !val || val === '' || val === '?????' || val === '???????' || val === '[check strava details]';
+    el.textContent = isEmpty ? fallback : val;
+    el.className = 'detail-value' + (isEmpty ? ' unknown' : '');
+  };
+
+  set('d-terminal', toda.terminal, 'Unknown');
+  set('d-landmarks', toda.landmarks, 'Not recorded');
+  set('d-colors', toda.colors, 'Not recorded');
+  set('d-checked', toda.lastChecked, 'Not checked yet');
+
+  const folderLabels = {
+    'CONFIRMED TERMINALS': 'Confirmed Terminal',
+    'draft terminals - antipolo city': 'Draft — Antipolo City',
+    'Teresa - Terminals': 'Draft — Teresa',
+    'Angono - Terminals': 'Draft — Angono'
+  };
+  document.getElementById('d-folder').textContent = folderLabels[toda.folder] || toda.folder;
+  document.getElementById('d-folder').className = 'detail-value';
+
+  panel.classList.add('open');
+}
+
+panelClose.addEventListener('click', () => panel.classList.remove('open'));
+map.on('click', () => panel.classList.remove('open'));
+
+// ── PINS ──
+function makeIcon(confirmed) {
+  const cls = confirmed ? 'toda-pin-confirmed' : 'toda-pin-draft';
+  const size = confirmed ? 14 : 10;
+  return L.divIcon({
+    html: `<div class="${cls}" style="width:${size}px;height:${size}px;"></div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
+    popupAnchor: [0, -size/2 - 4]
+  });
+}
+
+TODAS.forEach(toda => {
+  const confirmed = toda.folder === 'CONFIRMED TERMINALS';
+  const marker = L.marker([toda.lat, toda.lng], {
+    icon: makeIcon(confirmed)
+  }).addTo(map);
+
+  marker.on('click', (e) => {
+    L.DomEvent.stopPropagation(e);
+    openPanel(toda);
+  });
+
+  marker.bindTooltip(toda.name, {
+    permanent: false,
+    direction: 'top',
+    className: '',
+    offset: [0, -8]
+  });
+});
+</script>
+</body>
+</html>
