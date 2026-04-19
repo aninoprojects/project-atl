@@ -8,515 +8,1201 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500&display=swap" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     :root {
       --yellow: #F5C842;
       --navy: #0B1929;
-      --navy-mid: #132338;
-      --navy-light: #1E3450;
-      --slate: #8FA3B8;
-      --white: #F0F4F8;
+      --navy-mid: #0f2035;
+      --navy-light: #1a3350;
+      --slate: #6B8BAD;
+      --white: #E8EEF4;
       --confirmed: #F5C842;
-      --draft: #4A6FA5;
+      --draft: #3A6EA5;
+      --robinsons: #CC2200;
       --panel-w: 340px;
+      --radius: 6px;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--navy);
       color: var(--white);
-      height: 100vh;
-      width: 100vw;
+      height: 100vh; width: 100vw;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
     }
 
-    /* ── TOP BAR ── */
+    /* ── TOPBAR ── */
     #topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 18px; height: 50px;
       background: var(--navy);
       border-bottom: 1px solid var(--navy-light);
-      flex-shrink: 0;
-      z-index: 1000;
-      position: relative;
+      flex-shrink: 0; z-index: 1000; position: relative;
     }
-
-    #topbar .brand {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
+    .brand { display: flex; align-items: baseline; gap: 10px; }
+    .logo {
+      font-family: 'Syne', sans-serif; font-weight: 800;
+      font-size: 1.2rem; letter-spacing: -0.01em; color: var(--yellow);
     }
-
-    #topbar .logo {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 1.25rem;
-      letter-spacing: -0.01em;
-      color: var(--yellow);
+    .logo span { color: var(--white); }
+    .tagline {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+      color: var(--slate); letter-spacing: 0.06em; text-transform: uppercase;
     }
-
-    #topbar .logo span {
-      color: var(--white);
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .version-badge {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--navy); background: var(--yellow);
+      padding: 3px 7px; border-radius: 2px;
     }
-
-    #topbar .tagline {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--slate);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+    #btn-admin {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: var(--navy-light); border: 1px solid var(--navy-light);
+      color: var(--slate); padding: 5px 11px; border-radius: var(--radius);
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
     }
+    #btn-admin:hover { border-color: var(--slate); color: var(--white); }
+    #btn-admin.logged-in { color: var(--yellow); border-color: rgba(245,200,66,0.3); }
+    #btn-admin .lock-icon { font-size: 0.75rem; }
 
-    #topbar .version-badge {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.6rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--navy);
-      background: var(--yellow);
-      padding: 3px 8px;
-      border-radius: 2px;
-    }
+    /* ── MAIN ── */
+    #main { display: flex; flex: 1; overflow: hidden; position: relative; }
+    #map { flex: 1; z-index: 1; }
 
-    /* ── MAIN AREA ── */
-    #main {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* ── MAP ── */
-    #map {
-      flex: 1;
-      z-index: 1;
-    }
-
-    /* ── SIDEBAR PANEL ── */
+    /* ── PANEL ── */
     #panel {
       width: var(--panel-w);
       background: var(--navy-mid);
       border-left: 1px solid var(--navy-light);
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       transform: translateX(var(--panel-w));
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 900;
-      overflow: hidden;
-      flex-shrink: 0;
+      z-index: 900; overflow: hidden; flex-shrink: 0;
     }
+    #panel.open { transform: translateX(0); }
 
-    #panel.open {
-      transform: translateX(0);
+    /* Logo / color placeholder */
+    #panel-logo {
+      height: 100px; width: 100%; flex-shrink: 0;
+      position: relative; overflow: hidden;
+      background: var(--navy-light);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #panel-logo-img {
+      width: 100%; height: 100%; object-fit: contain;
+      display: none;
+    }
+    #panel-logo-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-color-bar {
+      height: 100%; flex: 1;
+      opacity: 0.6;
+    }
+    #panel-logo-text {
+      position: absolute;
+      font-family: 'Syne', sans-serif; font-weight: 800;
+      font-size: 1.1rem; letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.9);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
 
     #panel-close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: none;
-      border: none;
-      color: var(--slate);
-      font-size: 1.2rem;
-      cursor: pointer;
-      line-height: 1;
-      padding: 4px;
-      z-index: 10;
-      transition: color 0.15s;
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(0,0,0,0.3); border: none;
+      color: var(--white); font-size: 0.8rem;
+      cursor: pointer; padding: 4px 7px; border-radius: 3px;
+      z-index: 10; transition: background 0.15s;
     }
-    #panel-close:hover { color: var(--white); }
+    #panel-close:hover { background: rgba(0,0,0,0.5); }
 
     #panel-header {
-      padding: 20px 20px 16px;
+      padding: 14px 18px 12px;
       border-bottom: 1px solid var(--navy-light);
-      position: relative;
     }
-
+    .panel-number-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .panel-number {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+      font-weight: 600; color: var(--navy); background: var(--yellow);
+      padding: 2px 6px; border-radius: 2px; letter-spacing: 0.04em;
+    }
     #panel-status {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.6rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
     }
-
     #panel-status.confirmed { color: var(--yellow); }
     #panel-status.draft { color: var(--draft); }
-
+    .robinsons-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--robinsons); color: white;
+      font-weight: 700; font-size: 0.55rem; letter-spacing: -0.02em;
+      flex-shrink: 0; margin-left: 2px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
     #panel-name {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 1.1rem;
-      line-height: 1.2;
-      color: var(--white);
-      padding-right: 24px;
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 1.05rem; line-height: 1.2; color: var(--white);
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    #panel-fullname {
+      font-size: 0.72rem; color: var(--slate); margin-top: 2px; line-height: 1.35;
     }
 
     #panel-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      flex: 1; overflow-y: auto; padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 12px;
     }
-
-    #panel-body::-webkit-scrollbar { width: 4px; }
-    #panel-body::-webkit-scrollbar-track { background: transparent; }
+    #panel-body::-webkit-scrollbar { width: 3px; }
     #panel-body::-webkit-scrollbar-thumb { background: var(--navy-light); border-radius: 2px; }
 
-    .detail-row {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
+    .detail-row { display: flex; flex-direction: column; gap: 3px; }
     .detail-label {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.58rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--slate);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate);
+    }
+    .detail-value { font-size: 0.82rem; color: var(--white); line-height: 1.4; }
+    .detail-value.empty { color: var(--slate); font-style: italic; }
+
+    /* Color swatches */
+    .color-swatches { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .color-swatch {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.78rem; color: var(--white);
+    }
+    .swatch-dot {
+      width: 11px; height: 11px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;
     }
 
-    .detail-value {
-      font-size: 0.85rem;
-      color: var(--white);
-      line-height: 1.4;
+    /* Group info */
+    .group-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: rgba(245,200,66,0.1); border: 1px solid rgba(245,200,66,0.25);
+      color: var(--yellow); padding: 3px 8px; border-radius: 3px;
     }
 
-    .detail-value.unknown {
-      color: var(--slate);
-      font-style: italic;
+    /* ── PICKING HINT BANNER ── */
+    #picking-hint {
+      display: none; position: absolute;
+      top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 2000; background: var(--yellow); color: var(--navy);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem;
+      font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 8px 18px; border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      align-items: center; gap: 10px;
+    }
+    #picking-hint button {
+      background: rgba(0,0,0,0.15); border: none; color: var(--navy);
+      font-size: 0.7rem; cursor: pointer; padding: 2px 6px; border-radius: 2px;
+      font-family: 'IBM Plex Mono', monospace; font-weight: 600;
     }
 
-    .color-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-    }
-
-    .color-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.2);
-      flex-shrink: 0;
-    }
-
-    /* ── LEGEND / STATS BAR ── */
+    /* ── LEGEND ── */
     #statsbar {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      z-index: 500;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      position: absolute; bottom: 16px; left: 16px;
+      z-index: 500; display: flex; flex-direction: column; gap: 5px;
       pointer-events: none;
     }
-
     .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.62rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      background: rgba(11,25,41,0.85);
-      backdrop-filter: blur(6px);
-      border: 1px solid var(--navy-light);
-      padding: 5px 10px;
-      border-radius: 3px;
-      color: var(--slate);
+      display: flex; align-items: center; gap: 7px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: rgba(11,25,41,0.88); backdrop-filter: blur(6px);
+      border: 1px solid var(--navy-light); padding: 5px 10px;
+      border-radius: 3px; color: var(--slate);
+    }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── MODALS ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      z-index: 5000; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--navy-mid); border: 1px solid var(--navy-light);
+      border-radius: 10px; width: 100%; max-width: 400px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      position: relative;
+      animation: modalIn 0.2s ease both;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; color: var(--slate);
+      font-size: 1rem; cursor: pointer; padding: 4px;
+    }
+    .modal-close:hover { color: var(--white); }
+    .modal-title {
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 1rem; margin-bottom: 4px; color: var(--white);
+    }
+    .modal-sub {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+      color: var(--slate); letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 20px;
     }
 
-    .legend-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
+    /* Form inputs */
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .form-group label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate);
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      background: var(--navy); border: 1px solid var(--navy-light);
+      color: var(--white); padding: 8px 10px; border-radius: 5px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+      transition: border-color 0.15s; outline: none;
+      width: 100%;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { border-color: var(--yellow); }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .form-group select option { background: var(--navy); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
+
+    .btn-primary {
+      width: 100%; padding: 10px; border: none; border-radius: 5px;
+      background: var(--yellow); color: var(--navy);
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+      cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 8px 12px; border: 1px solid var(--navy-light);
+      border-radius: 5px; background: none; color: var(--slate);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-secondary:hover { border-color: var(--slate); color: var(--white); }
+
+    .btn-pin {
+      padding: 8px 10px; border: 1px dashed var(--yellow);
+      border-radius: 5px; background: rgba(245,200,66,0.05); color: var(--yellow);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+      width: 100%; margin-top: 4px;
+    }
+    .btn-pin:hover { background: rgba(245,200,66,0.1); }
+
+    .form-error {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+      color: #e57373; margin-top: 8px; display: none;
     }
 
-    /* ── HINT ── */
-    #hint {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      z-index: 500;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.58rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--slate);
-      background: rgba(11,25,41,0.8);
-      backdrop-filter: blur(6px);
-      border: 1px solid var(--navy-light);
-      padding: 5px 10px;
-      border-radius: 3px;
+    /* Admin panel (logged in) */
+    #modal-admin .modal-box { max-width: 340px; }
+    .admin-menu { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .admin-menu-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border: 1px solid var(--navy-light);
+      border-radius: 6px; background: none; color: var(--white);
+      cursor: pointer; transition: all 0.15s; text-align: left;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .admin-menu-btn:hover { border-color: var(--yellow); background: rgba(245,200,66,0.05); }
+    .admin-menu-btn .menu-icon { font-size: 1.1rem; }
+    .admin-menu-btn .menu-label { font-size: 0.82rem; font-weight: 500; }
+    .admin-menu-btn .menu-desc { font-size: 0.68rem; color: var(--slate); margin-top: 1px; }
+
+    .admin-logout {
+      margin-top: 16px; width: 100%; padding: 8px;
+      border: 1px solid rgba(231,76,60,0.3); border-radius: 5px;
+      background: none; color: rgba(231,76,60,0.7);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .admin-logout:hover { color: #e74c3c; border-color: #e74c3c; }
+
+    /* Add TODA modal - scrollable */
+    #modal-add .modal-box { max-width: 480px; max-height: 90vh; overflow-y: auto; }
+    #modal-add .modal-box::-webkit-scrollbar { width: 4px; }
+    #modal-add .modal-box::-webkit-scrollbar-thumb { background: var(--navy-light); border-radius: 2px; }
+
+    /* Color inputs */
+    .color-inputs { display: flex; flex-direction: column; gap: 6px; }
+    .color-input-row { display: flex; gap: 8px; align-items: center; }
+    .color-input-row input[type="color"] {
+      width: 36px; height: 36px; padding: 2px; cursor: pointer;
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .color-input-row input[type="text"] { flex: 1; }
+    .btn-add-color {
+      background: none; border: 1px dashed var(--navy-light); color: var(--slate);
+      border-radius: 4px; padding: 5px 10px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+      cursor: pointer; transition: all 0.15s; margin-top: 2px;
+    }
+    .btn-add-color:hover { border-color: var(--slate); color: var(--white); }
+    .btn-remove-color {
+      background: none; border: none; color: var(--slate);
+      cursor: pointer; font-size: 0.8rem; padding: 4px; flex-shrink: 0;
+    }
+    .btn-remove-color:hover { color: #e74c3c; }
+
+    /* Section divider in form */
+    .form-divider {
+      border: none; border-top: 1px solid var(--navy-light);
+      margin: 8px 0 16px;
+    }
+    .form-section-label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--yellow); margin-bottom: 10px; margin-top: 4px;
+    }
+
+    /* Success toast */
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #2d7d46; color: white;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 10px 20px; border-radius: 5px;
+      z-index: 9999; opacity: 0; transition: opacity 0.3s;
       pointer-events: none;
     }
+    #toast.show { opacity: 1; }
 
-    /* ── LEAFLET OVERRIDES ── */
-    .leaflet-container { background: #0d1f33; }
-
-    .leaflet-tile-pane { filter: brightness(0.65) saturate(0.5); }
-
-    .toda-pin-confirmed,
-    .toda-pin-draft {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.3);
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
+    /* Map styles */
+    .leaflet-container { background: #070f18; }
+    .toda-pin {
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; cursor: pointer;
+      transition: transform 0.15s;
     }
-
-    .toda-pin-confirmed {
+    .toda-pin:hover { transform: scale(1.35); }
+    .toda-pin.confirmed {
       background: var(--yellow);
-      box-shadow: 0 0 0 3px rgba(245,200,66,0.2);
+      box-shadow: 0 0 0 3px rgba(245,200,66,0.15), 0 2px 6px rgba(0,0,0,0.4);
+      border: 2px solid rgba(255,255,255,0.2);
     }
-
-    .toda-pin-draft {
+    .toda-pin.draft {
       background: var(--draft);
-      box-shadow: 0 0 0 3px rgba(74,111,165,0.2);
+      box-shadow: 0 0 0 3px rgba(58,110,165,0.15), 0 2px 6px rgba(0,0,0,0.4);
+      border: 2px solid rgba(255,255,255,0.15);
     }
-
-    .leaflet-marker-icon:hover .toda-pin-confirmed,
-    .leaflet-marker-icon:hover .toda-pin-draft {
-      transform: scale(1.3);
-    }
-
-    .leaflet-popup-content-wrapper {
-      background: var(--navy-mid);
-      color: var(--white);
-      border: 1px solid var(--navy-light);
-      border-radius: 4px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    .toda-pin .r-badge {
+      position: absolute; top: -4px; right: -4px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--robinsons); color: white;
+      font-size: 0.4rem; font-weight: 700; display: flex;
+      align-items: center; justify-content: center;
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.72rem;
     }
 
-    .leaflet-popup-tip { background: var(--navy-mid); }
-    .leaflet-popup-close-button { color: var(--slate) !important; }
+    .leaflet-tooltip {
+      background: var(--navy) !important; border: 1px solid var(--navy-light) !important;
+      color: var(--white) !important; font-family: 'IBM Plex Mono', monospace !important;
+      font-size: 0.62rem !important; border-radius: 3px !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    }
+    .leaflet-tooltip::before { border-top-color: var(--navy-light) !important; }
+    .leaflet-control-zoom a {
+      background: var(--navy-mid) !important;
+      border-color: var(--navy-light) !important;
+      color: var(--slate) !important;
+    }
+    .leaflet-control-zoom a:hover { color: var(--white) !important; }
+    .leaflet-control-attribution {
+      background: rgba(11,25,41,0.7) !important;
+      color: var(--slate) !important; font-size: 0.5rem !important;
+    }
+    .leaflet-control-attribution a { color: var(--slate) !important; }
 
-    /* Animate panel */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
-    #panel.open #panel-header,
-    #panel.open .detail-row {
-      animation: fadeUp 0.2s ease both;
-    }
-    #panel.open .detail-row:nth-child(2) { animation-delay: 0.04s; }
+    #panel.open .detail-row { animation: fadeUp 0.2s ease both; }
+    #panel.open .detail-row:nth-child(1) { animation-delay: 0.02s; }
+    #panel.open .detail-row:nth-child(2) { animation-delay: 0.05s; }
     #panel.open .detail-row:nth-child(3) { animation-delay: 0.08s; }
-    #panel.open .detail-row:nth-child(4) { animation-delay: 0.12s; }
-    #panel.open .detail-row:nth-child(5) { animation-delay: 0.16s; }
+    #panel.open .detail-row:nth-child(4) { animation-delay: 0.11s; }
+    #panel.open .detail-row:nth-child(5) { animation-delay: 0.14s; }
   </style>
 </head>
 <body>
 
-  <!-- TOP BAR -->
-  <div id="topbar">
-    <div class="brand">
-      <div class="logo">Project <span>ATL</span></div>
-      <div class="tagline">Antipolo City TODA Map</div>
+<!-- ── TOPBAR ── -->
+<div id="topbar">
+  <div class="brand">
+    <div class="logo">Project <span>ATL</span></div>
+    <div class="tagline">Antipolo City TODA Map</div>
+  </div>
+  <div class="topbar-right">
+    <div class="version-badge">Version 1.1</div>
+    <button id="btn-admin">
+      <span class="lock-icon">🔒</span>
+      <span id="btn-admin-label">Admin</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <div id="map"></div>
+
+  <!-- ── DETAIL PANEL ── -->
+  <div id="panel">
+    <div id="panel-logo">
+      <img id="panel-logo-img" src="" alt="TODA logo" />
+      <div id="panel-logo-placeholder"></div>
+      <div id="panel-logo-text"></div>
+      <button id="panel-close">✕</button>
     </div>
-    <div class="version-badge">Version 1.0</div>
+    <div id="panel-header">
+      <div class="panel-number-row">
+        <span id="panel-number" class="panel-number" style="display:none"></span>
+        <span id="panel-status" class="confirmed">● Confirmed</span>
+      </div>
+      <div id="panel-name">—</div>
+      <div id="panel-fullname"></div>
+    </div>
+    <div id="panel-body">
+      <div class="detail-row">
+        <div class="detail-label">Terminal Name</div>
+        <div class="detail-value" id="d-terminal">—</div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Nearby Landmarks</div>
+        <div class="detail-value" id="d-landmarks">—</div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Colors</div>
+        <div id="d-colors" class="color-swatches"></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Last Confirmed As Of</div>
+        <div class="detail-value" id="d-checked">—</div>
+      </div>
+      <div class="detail-row" id="d-group-row" style="display:none">
+        <div class="detail-label">Terminal Group</div>
+        <div id="d-group"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- MAIN -->
-  <div id="main">
-    <div id="map"></div>
-
-    <!-- DETAIL PANEL -->
-    <div id="panel">
-      <div id="panel-header">
-        <button id="panel-close" aria-label="Close">✕</button>
-        <div id="panel-status" class="confirmed">● Confirmed Terminal</div>
-        <div id="panel-name">TODA Name</div>
-      </div>
-      <div id="panel-body">
-        <div class="detail-row">
-          <div class="detail-label">Terminal Name</div>
-          <div class="detail-value" id="d-terminal">—</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Nearby Landmarks</div>
-          <div class="detail-value" id="d-landmarks">—</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Colors</div>
-          <div class="detail-value" id="d-colors">—</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Last Checked</div>
-          <div class="detail-value" id="d-checked">—</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Status</div>
-          <div class="detail-value" id="d-folder">—</div>
-        </div>
-      </div>
+  <!-- ── LEGEND ── -->
+  <div id="statsbar">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--yellow)"></div>
+      Confirmed Terminal
     </div>
-
-    <!-- LEGEND -->
-    <div id="statsbar">
-      <div class="legend-item">
-        <div class="legend-dot" style="background:#F5C842"></div>
-        Confirmed Terminal
-      </div>
-      <div class="legend-item">
-        <div class="legend-dot" style="background:#4A6FA5"></div>
-        Draft / Unverified
-      </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--draft)"></div>
+      Draft / Unverified
     </div>
-
-    <div id="hint">Click a pin to view details</div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--robinsons)"></div>
+      Robinsons Contract
+    </div>
   </div>
+
+  <!-- ── PICK PIN BANNER ── -->
+  <div id="picking-hint">
+    <span>📍 Click on the map to place the terminal pin</span>
+    <button onclick="cancelPickPin()">Cancel</button>
+  </div>
+</div>
+
+<!-- ── LOGIN MODAL ── -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-login')">✕</button>
+    <div class="modal-title">Admin Login</div>
+    <div class="modal-sub">Project ATL · Restricted Access</div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@projectatl.com" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••••" autocomplete="off" />
+    </div>
+    <div class="form-error" id="login-error">Invalid credentials.</div>
+    <button class="btn-primary" id="btn-login-submit">Sign In</button>
+  </div>
+</div>
+
+<!-- ── ADMIN PANEL MODAL ── -->
+<div class="modal-overlay" id="modal-admin">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-admin')">✕</button>
+    <div class="modal-title">Admin Panel</div>
+    <div class="modal-sub" id="admin-email-display">Project ATL</div>
+    <div class="admin-menu">
+      <button class="admin-menu-btn" onclick="openAddToda()">
+        <span class="menu-icon">📌</span>
+        <div>
+          <div class="menu-label">Register TODA Terminal</div>
+          <div class="menu-desc">Add a new cooperative and pin it to the map</div>
+        </div>
+      </button>
+    </div>
+    <button class="admin-logout" onclick="adminLogout()">Sign Out</button>
+  </div>
+</div>
+
+<!-- ── ADD TODA MODAL ── -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
+    <div class="modal-title">Register TODA Terminal</div>
+    <div class="modal-sub">New entry · Antipolo City</div>
+
+    <div class="form-section-label">Identity</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Number (#)</label>
+        <input type="number" id="f-number" placeholder="e.g. 42" />
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="confirmed">Confirmed</option>
+          <option value="draft" selected>Draft</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>TODA Abbreviation *</label>
+      <input type="text" id="f-name" placeholder="e.g. APFMCTODA" required />
+    </div>
+    <div class="form-group">
+      <label>Full Cooperative Name</label>
+      <input type="text" id="f-fullname" placeholder="e.g. Antipolo Public Freight..." />
+    </div>
+
+    <hr class="form-divider" />
+    <div class="form-section-label">Location</div>
+    <div class="form-group">
+      <label>Terminal Name</label>
+      <input type="text" id="f-terminal" placeholder="e.g. Tubigan Terminal" />
+    </div>
+    <div class="form-group">
+      <label>Nearby Landmarks</label>
+      <input type="text" id="f-landmarks" placeholder="e.g. O!Save Tubigan, SM Antipolo" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Latitude *</label>
+        <input type="number" id="f-lat" step="0.0000001" placeholder="14.5805..." required />
+      </div>
+      <div class="form-group">
+        <label>Longitude *</label>
+        <input type="number" id="f-lng" step="0.0000001" placeholder="121.174..." required />
+      </div>
+    </div>
+    <button class="btn-pin" id="btn-pick-pin">📍 Drop Pin on Map</button>
+
+    <hr class="form-divider" />
+    <div class="form-section-label">Appearance</div>
+    <div class="form-group">
+      <label>Logo / Image URL</label>
+      <input type="url" id="f-logo" placeholder="https://..." />
+    </div>
+    <div class="form-group">
+      <label>Colors</label>
+      <div class="color-inputs" id="color-inputs">
+        <div class="color-input-row">
+          <input type="color" value="#F5C842" />
+          <input type="text" placeholder="Color name (e.g. Yellow)" />
+          <button class="btn-remove-color" onclick="removeColorRow(this)">✕</button>
+        </div>
+      </div>
+      <button class="btn-add-color" onclick="addColorRow()">+ Add Color</button>
+    </div>
+
+    <hr class="form-divider" />
+    <div class="form-section-label">Details</div>
+    <div class="form-group">
+      <label>Last Confirmed As Of</label>
+      <input type="text" id="f-checked" placeholder="e.g. April 19, 2026" />
+    </div>
+    <div class="form-group" style="flex-direction:row;align-items:center;gap:10px;">
+      <input type="checkbox" id="f-robinsons" style="width:auto;accent-color:var(--robinsons);" />
+      <label style="text-transform:none;font-size:0.78rem;color:var(--white);cursor:pointer;" for="f-robinsons">
+        Robinsons Official Contract Terminal
+      </label>
+    </div>
+
+    <div class="form-error" id="add-error"></div>
+    <button class="btn-primary" id="btn-add-submit">Register Terminal</button>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast">Terminal registered successfully</div>
 
 <script>
-// ── TODA DATA (from Project ATL KML, April 2026) ──
-const TODAS = [
-  {"name":"7 APFMCTODA","lat":14.5805848,"lng":121.174715,"terminal":"?????","landmarks":"Maylor's 2 Plaza, Claveria Bldg.","colors":"Green and black","lastChecked":"March 17, 2026","folder":"CONFIRMED TERMINALS"},
-  {"name":"17 GEMCASHTODA","lat":14.5841524,"lng":121.1739836,"terminal":"???????","landmarks":"Juan Sumulong Elementary School","colors":"White and black","lastChecked":"March 19, 2026","folder":"CONFIRMED TERMINALS"},
-  {"name":"27 P-NFLMPBWTODA","lat":14.571451,"lng":121.1786872,"terminal":"Nayon","landmarks":"Nayong Silangan","colors":"Orange and blue","lastChecked":"[check strava details]","folder":"CONFIRMED TERMINALS"},
-  {"name":"29 PACSTTODA","lat":14.5794327,"lng":121.1787015,"terminal":"Tubigan","landmarks":"O!Save Tubigan","colors":"White and orange","lastChecked":"March 17, 2026","folder":"CONFIRMED TERMINALS"},
-  {"name":"38 SUG-SAFTTODA","lat":14.5408328,"lng":121.1917183,"terminal":"Sunflower Upper Gumamela - Silihan Antipolo Federal Tibagan","landmarks":"Dali Mahabang Parang","colors":"Vermilion and yellow","lastChecked":"March 22, 2026","folder":"CONFIRMED TERMINALS"},
-  {"name":"97 MARCOPTODA","lat":14.5820475,"lng":121.1709584,"terminal":"Marrero-Acop","landmarks":"Marrero-Acop Clinic and Hospital","colors":"Dark blue and white","lastChecked":"March 17, 2026","folder":"CONFIRMED TERMINALS"},
-  {"name":"UM-ADOTA","lat":14.5749963,"lng":121.1824937,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"PPMTODA","lat":14.6256426,"lng":121.1386561,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"MCMSLATODA","lat":14.5882785,"lng":121.1728689,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"ASHTODA","lat":14.5843055,"lng":121.1747161,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"3 AHSLJTODA","lat":14.5849616,"lng":121.1919711,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"8 AMTODA","lat":14.585043,"lng":121.177192,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"9 ASTDA","lat":14.5881885,"lng":121.1754818,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"10 ASACTODA","lat":14.5813912,"lng":121.1693335,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"11 AYATDOA","lat":14.5829958,"lng":121.1760855,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"12 ASHTODA","lat":14.5839462,"lng":121.1758491,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"18 SHOPWISE-LJSCTODA","lat":14.5808082,"lng":121.1753184,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"20 MLQELCPTODA","lat":14.5840319,"lng":121.1758276,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"21 EPRKLTODA","lat":14.5838944,"lng":121.175845,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"23 MVMAWTODA","lat":14.5669276,"lng":121.1883521,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"27 P-NFLMPBWTODA (alt)","lat":14.5779717,"lng":121.1702773,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"35 UM-ADOTA","lat":14.5849783,"lng":121.1769699,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"36 PATATODA","lat":14.571979,"lng":121.2024955,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"38 SUG-SAFTTODA (alt)","lat":14.5943824,"lng":121.1729407,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"39 SHIMACTODA","lat":14.5838236,"lng":121.1757948,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"41 ROBINSONS HOMES TODA","lat":14.5774078,"lng":121.1888379,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"42 SSLTODA","lat":14.5853935,"lng":121.1762174,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"45 SLRPMATODA","lat":14.5825795,"lng":121.1762063,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"46 TAKTODA","lat":14.5839943,"lng":121.175845,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"60 KAMAGONG","lat":14.617789,"lng":121.1696981,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"61 BANATODA","lat":14.627441,"lng":121.16569,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"64 SHAVICTODA","lat":14.5874757,"lng":121.171568,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"86 SPSIMABTODA","lat":14.5411688,"lng":121.192736,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"91 GLAPTODA","lat":14.5803123,"lng":121.174013,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"94 1CIRQTODA","lat":14.5769226,"lng":121.1711414,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"101 SUPER PALENGKE TODA","lat":14.5849933,"lng":121.1776025,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"110 STA. ELENA TODA","lat":14.5779518,"lng":121.1934196,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"draft terminals - antipolo city"},
-  {"name":"TCC TODA","lat":14.5247879,"lng":121.2357928,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"Teresa - Terminals"},
-  {"name":"MAPANGTODA","lat":14.5479132,"lng":121.1901312,"terminal":"","landmarks":"","colors":"","lastChecked":"","folder":"Angono - Terminals"}
+// ══════════════════════════════════════════════════════════════
+// ── SUPABASE CONFIG ──
+// Replace these with your actual Supabase project values.
+// Get them from: supabase.com → your project → Settings → API
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://gmejqjfathciopglshqd.supabase.co';   // e.g. https://xxxx.supabase.co
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZWpxamZhdGhjaW9wZ2xzaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTgxMDIsImV4cCI6MjA5MjEzNDEwMn0.ci90256_zc4ZQ6vvXRcGne37B8MA-yag3bzSC_TaFzA';
+
+let supabase = null;
+try {
+  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  }
+} catch(e) { console.warn('Supabase not configured:', e); }
+
+// ══════════════════════════════════════════════════════════════
+// ── COLOR NAME → HEX MAP ──
+// ══════════════════════════════════════════════════════════════
+const COLOR_HEX = {
+  'green':'#43A047','black':'#222222','white':'#EEEEEE','orange':'#E65100',
+  'blue':'#1E88E5','dark blue':'#0D47A1','navy':'#0D1B2A','red':'#E53935',
+  'yellow':'#FDD835','vermilion':'#D84315','gray':'#757575','grey':'#757575',
+  'brown':'#6D4C41','maroon':'#880E4F','purple':'#7B1FA2','pink':'#E91E63',
+  'teal':'#00897B','cream':'#F5F0E0','silver':'#B0BEC5','gold':'#FFC107',
+  'beige':'#D7CCC8','light blue':'#42A5F5','dark green':'#2E7D32',
+  'violet':'#6A1B9A','cyan':'#00BCD4','lime':'#C6D51F','sky blue':'#29B6F6',
+  'magenta':'#D81B60','olive':'#827717','peach':'#FFAB91','rose':'#E91E63',
+};
+
+function parseColors(text) {
+  if (!text || text === '?????' || text === '???????') return [];
+  return text.split(/\s+and\s+|\s*,\s*/i).map(c => {
+    const key = c.trim().toLowerCase();
+    return { label: c.trim(), hex: COLOR_HEX[key] || '#888888' };
+  }).filter(c => c.label);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── TERMINAL GROUPS ──
+// ══════════════════════════════════════════════════════════════
+const GROUPS = {
+  'imall-area': {
+    name: 'iMall / Victory Mall Terminal Cluster',
+    center: [14.5875, 121.1716],
+    radiusMeters: 220,
+    color: '#F5C842',
+    members: ['SHAVICTODA', 'ASHTODA', 'TAKTODA', 'MLQELCPTODA', 'GLAPTODA']
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+// ── STATIC TODA DATA (Antipolo City only) ──
+// Numbers separated from names. Source: KML + spreadsheet v3.1
+// ══════════════════════════════════════════════════════════════
+const STATIC_TODAS = [
+  // ── CONFIRMED TERMINALS ──
+  {n:7,  name:'APFMCTODA',   full:'',                                         lat:14.5805848, lng:121.174715,  terminal:null,                     landmarks:"Maylor's 2 Plaza, Claveria Bldg.", colors:'Green and black',        checked:'March 17, 2026', status:'confirmed', robinsons:false},
+  {n:17, name:'GEMCASHTODA', full:'',                                          lat:14.5841524, lng:121.1739836, terminal:null,                     landmarks:'Juan Sumulong Elementary School',  colors:'White and black',         checked:'March 19, 2026', status:'confirmed', robinsons:false},
+  {n:27, name:'P-NFLMPBWTODA',full:'',                                         lat:14.571451,  lng:121.1786872, terminal:'Nayon',                  landmarks:'Nayong Silangan',                  colors:'Orange and blue',         checked:null,             status:'confirmed', robinsons:false},
+  {n:29, name:'PACSTTODA',   full:'',                                          lat:14.5794327, lng:121.1787015, terminal:'Tubigan',                landmarks:'O!Save Tubigan',                   colors:'White and orange',        checked:'March 17, 2026', status:'confirmed', robinsons:false},
+  {n:38, name:'SUG-SAFTTODA',full:'Sunflower Upper Gumamela - Silihan Antipolo Federal Tibagan', lat:14.5408328, lng:121.1917183, terminal:'SUG-SAFTTODA Terminal', landmarks:'Dali Mahabang Parang', colors:'Vermilion and yellow', checked:'March 22, 2026', status:'confirmed', robinsons:false},
+  {n:97, name:'MARCOPTODA',  full:'Marrero-Acop',                             lat:14.5820475, lng:121.1709584, terminal:'Marrero-Acop',            landmarks:'Marrero-Acop Clinic and Hospital', colors:'Dark blue and white',     checked:'March 17, 2026', status:'confirmed', robinsons:false},
+
+  // ── DRAFT TERMINALS ──
+  {n:null,name:'UM-ADOTA',   full:'',     lat:14.5749963, lng:121.1824937, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:null,name:'PPMTODA',    full:'Peñafrancia Palmera Masinag', lat:14.6256426, lng:121.1386561, terminal:'PPMTODA Terminal', landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:null,name:'MCMSLATODA', full:'',     lat:14.5882785, lng:121.1728689, terminal:null, landmarks:null, colors:'Red bajaj', checked:null, status:'draft', robinsons:false},
+  {n:3,  name:'AHSLJTODA',  full:'Antipolo Hinapao San Lorenzo Joyous', lat:14.5849616, lng:121.1919711, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:8,  name:'AMTODA',     full:'Antipolo Market', lat:14.585043, lng:121.177192, terminal:'AMTODA TERMINAL', landmarks:'Antipolo Market Area', colors:null, checked:null, status:'draft', robinsons:false},
+  {n:9,  name:'ASTDA',      full:'',     lat:14.5881885, lng:121.1754818, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:10, name:'ASACTODA',   full:'',     lat:14.5813912, lng:121.1693335, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:11, name:'AYATDOA',    full:'Antipolo Yupangco Angono', lat:14.5829958, lng:121.1760855, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:12, name:'ASHTODA',    full:'Antipolo Sumulong Highway', lat:14.5839462, lng:121.1758491, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:18, name:'LJSCTODA',   full:'(Shopwise)',   lat:14.5808082, lng:121.1753184, terminal:null, landmarks:'Shopwise Antipolo', colors:null, checked:null, status:'draft', robinsons:false},
+  {n:20, name:'MLQELCPTODA',full:'M.L. Quezon Extension-Lico Circle Park', lat:14.5840319, lng:121.1758276, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:21, name:'EPRKLTODA',  full:'Eastview Pines City Royale Knights Columbus Loreland', lat:14.5838944, lng:121.175845, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:23, name:'MVMAWTODA',  full:'Mia Vita Maia Alta Woodrow', lat:14.5669276, lng:121.1883521, terminal:'MV MAWTODA terminal', landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:35, name:'UM-ADOTA',   full:'',     lat:14.5849783, lng:121.1769699, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:36, name:'PATATODA',   full:'',     lat:14.571979,  lng:121.2024955, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:39, name:'SHIMACTODA', full:'',     lat:14.5838236, lng:121.1757948, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:41, name:'ROBINSONS HOMES TODA', full:'Robinson Homes',lat:14.5774078, lng:121.1888379, terminal:'RSSATODA Office & Coop', landmarks:'Robinsons Homes San Jose', colors:null, checked:null, status:'draft', robinsons:true},
+  {n:42, name:'SSLTODA',    full:'San Isidro San Luis', lat:14.5853935, lng:121.1762174, terminal:null, landmarks:'P. Burgos, Lumang Palengke', colors:null, checked:null, status:'draft', robinsons:false},
+  {n:45, name:'SLRPMATODA', full:'Sitio San Lorenzo Ruiz Pamana Milleluce Ahon', lat:14.5825795, lng:121.1762063, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:46, name:'TAKTODA',    full:'',     lat:14.5839943, lng:121.175845,  terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:60, name:'KAMAGONG',   full:'',     lat:14.617789,  lng:121.1696981, terminal:null, landmarks:'Cogeo Gate 2', colors:'Green bajaj', checked:null, status:'draft', robinsons:false},
+  {n:61, name:'BANATODA',   full:'Bagong Nayon', lat:14.627441, lng:121.16569, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:64, name:'SHAVICTODA', full:'Sumulong Highway Antipolo Victory Mall iMall Cogeo', lat:14.5874757, lng:121.171568, terminal:null, landmarks:'Victory Mall, iMall Antipolo', colors:null, checked:null, status:'draft', robinsons:false},
+  {n:86, name:'SPSIMABTODA',full:'Sitio Pinagpala Sitio Mata Angono Binangonan', lat:14.5411688, lng:121.192736, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:91, name:'GLAPTODA',   full:'General Luna Antipolo Poblacion', lat:14.5803123, lng:121.174013, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
+  {n:94, name:'1CIRQTODA',  full:'',     lat:14.5769226, lng:121.1711414, terminal:null, landmarks:'(no terminal)', colors:null, checked:null, status:'draft', robinsons:false},
+  {n:101,name:'SUPER PALENGKE TODA', full:'', lat:14.5849933, lng:121.1776025, terminal:null, landmarks:'Super Palengke Antipolo', colors:null, checked:null, status:'draft', robinsons:false},
+  {n:110,name:'STA. ELENA TODA', full:'Sta. Elena Village', lat:14.5779518, lng:121.1934196, terminal:null, landmarks:'Sta. Elena Village', colors:null, checked:null, status:'draft', robinsons:false},
 ];
 
-// ── MAP INIT ──
+// ══════════════════════════════════════════════════════════════
+// ── MAP INIT (CartoDB Dark Matter — no API key needed) ──
+// ══════════════════════════════════════════════════════════════
 const map = L.map('map', {
-  center: [14.587, 121.176],
+  center: [14.587, 121.178],
   zoom: 13,
   zoomControl: false
 });
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors | Data: Project ATL / PTRB Antipolo',
-  maxZoom: 19
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a> | Data: Project ATL / PTRB Antipolo',
+  subdomains: 'abcd',
+  maxZoom: 20
 }).addTo(map);
 
 L.control.zoom({ position: 'topright' }).addTo(map);
 
+// ── DRAW GROUP CIRCLES ──
+Object.values(GROUPS).forEach(g => {
+  L.circle(g.center, {
+    radius: g.radiusMeters,
+    color: g.color,
+    fillColor: g.color,
+    fillOpacity: 0.06,
+    weight: 1.5,
+    dashArray: '5 5',
+    opacity: 0.5
+  }).addTo(map).bindTooltip(g.name, {
+    permanent: false, direction: 'top',
+    className: ''
+  });
+});
+
+// ── MARKER TRACKING ──
+const allMarkers = {};
+
+function getGroupId(toda) {
+  const nameUpper = toda.name.toUpperCase();
+  for (const [gid, g] of Object.entries(GROUPS)) {
+    if (g.members.some(m => nameUpper.includes(m.toUpperCase()))) return gid;
+  }
+  return null;
+}
+
+function makeIcon(toda) {
+  const confirmed = toda.status === 'confirmed';
+  const cls = confirmed ? 'confirmed' : 'draft';
+  const sz = confirmed ? 14 : 10;
+  const rbBadge = toda.robinsons
+    ? `<div class="r-badge" style="position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:#CC2200;color:white;font-size:0.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;">R</div>`
+    : '';
+  return L.divIcon({
+    html: `<div class="toda-pin ${cls}" style="width:${sz}px;height:${sz}px;position:relative;">${rbBadge}</div>`,
+    className: '',
+    iconSize: [sz + (toda.robinsons ? 6 : 0), sz + (toda.robinsons ? 6 : 0)],
+    iconAnchor: [(sz)/2, (sz)/2]
+  });
+}
+
+function addTodaToMap(toda) {
+  const groupId = toda.groupId || getGroupId(toda);
+  const marker = L.marker([toda.lat, toda.lng], { icon: makeIcon(toda) }).addTo(map);
+  const label = toda.n ? `#${toda.n} ${toda.name}` : toda.name;
+  marker.bindTooltip(label, { permanent: false, direction: 'top', offset: [0, -8] });
+  marker.on('click', e => {
+    L.DomEvent.stopPropagation(e);
+    openPanel({ ...toda, groupId });
+  });
+  const key = `${toda.lat}-${toda.lng}-${toda.name}`;
+  allMarkers[key] = marker;
+}
+
+// ── RENDER STATIC ──
+STATIC_TODAS.forEach(addTodaToMap);
+
+// ── LOAD FROM SUPABASE ──
+async function loadSupabaseTodas() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase.from('todas_admin').select('*');
+    if (error) throw error;
+    data.forEach(row => {
+      const toda = {
+        n: row.number,
+        name: row.name,
+        full: row.full_name || '',
+        lat: row.lat,
+        lng: row.lng,
+        terminal: row.terminal_name,
+        landmarks: row.landmarks,
+        colors: Array.isArray(row.colors)
+          ? row.colors.map(c => (typeof c === 'object' ? `${c.label}` : c)).join(' and ')
+          : '',
+        colorsRaw: row.colors,
+        checked: row.last_checked,
+        status: row.status || 'draft',
+        robinsons: row.has_robinsons || false,
+        logoUrl: row.logo_url || null,
+        source: 'supabase'
+      };
+      addTodaToMap(toda);
+    });
+  } catch(e) { console.warn('Could not load Supabase data:', e); }
+}
+loadSupabaseTodas();
+
+// ══════════════════════════════════════════════════════════════
 // ── PANEL ──
+// ══════════════════════════════════════════════════════════════
 const panel = document.getElementById('panel');
-const panelClose = document.getElementById('panel-close');
-const panelStatus = document.getElementById('panel-status');
-const panelName = document.getElementById('panel-name');
 
 function openPanel(toda) {
-  panelName.textContent = toda.name;
+  // Number badge
+  const numEl = document.getElementById('panel-number');
+  if (toda.n) { numEl.textContent = `#${toda.n}`; numEl.style.display = ''; }
+  else numEl.style.display = 'none';
 
-  const isConfirmed = toda.folder === 'CONFIRMED TERMINALS';
-  panelStatus.textContent = isConfirmed ? '● Confirmed Terminal' : '● Draft / Unverified';
-  panelStatus.className = isConfirmed ? 'confirmed' : 'draft';
+  // Status
+  const statusEl = document.getElementById('panel-status');
+  statusEl.textContent = toda.status === 'confirmed' ? '● Confirmed' : '● Draft';
+  statusEl.className = toda.status === 'confirmed' ? 'confirmed' : 'draft';
 
-  const set = (id, val, fallback = '—') => {
+  // Name + Robinsons badge
+  const nameEl = document.getElementById('panel-name');
+  nameEl.innerHTML = '';
+  nameEl.appendChild(document.createTextNode(toda.name));
+  if (toda.robinsons) {
+    const badge = document.createElement('span');
+    badge.className = 'robinsons-badge';
+    badge.textContent = 'R';
+    badge.title = 'Robinsons Official Contract Terminal';
+    nameEl.appendChild(badge);
+  }
+
+  // Full name
+  document.getElementById('panel-fullname').textContent = toda.full || '';
+
+  // Logo / color placeholder
+  const logoImg = document.getElementById('panel-logo-img');
+  const logoPlaceholder = document.getElementById('panel-logo-placeholder');
+  const logoText = document.getElementById('panel-logo-text');
+
+  const parsedColors = parseColors(toda.colors);
+
+  if (toda.logoUrl) {
+    logoImg.src = toda.logoUrl;
+    logoImg.style.display = 'block';
+    logoPlaceholder.style.display = 'none';
+  } else {
+    logoImg.style.display = 'none';
+    logoPlaceholder.style.display = 'flex';
+    logoPlaceholder.innerHTML = '';
+    if (parsedColors.length > 0) {
+      parsedColors.forEach(c => {
+        const bar = document.createElement('div');
+        bar.className = 'logo-color-bar';
+        bar.style.background = c.hex;
+        logoPlaceholder.appendChild(bar);
+      });
+    } else {
+      logoPlaceholder.style.background = 'var(--navy-light)';
+    }
+  }
+  logoText.textContent = toda.name;
+
+  // Details
+  const setVal = (id, val, fallback = 'Not recorded') => {
     const el = document.getElementById(id);
-    const isEmpty = !val || val === '' || val === '?????' || val === '???????' || val === '[check strava details]';
-    el.textContent = isEmpty ? fallback : val;
-    el.className = 'detail-value' + (isEmpty ? ' unknown' : '');
+    if (!val || val === '?????' || val === '???????') {
+      el.textContent = fallback; el.className = 'detail-value empty';
+    } else {
+      el.textContent = val; el.className = 'detail-value';
+    }
   };
 
-  set('d-terminal', toda.terminal, 'Unknown');
-  set('d-landmarks', toda.landmarks, 'Not recorded');
-  set('d-colors', toda.colors, 'Not recorded');
-  set('d-checked', toda.lastChecked, 'Not checked yet');
+  setVal('d-terminal', toda.terminal, 'Unknown');
+  setVal('d-landmarks', toda.landmarks, 'Not recorded');
 
-  const folderLabels = {
-    'CONFIRMED TERMINALS': 'Confirmed Terminal',
-    'draft terminals - antipolo city': 'Draft — Antipolo City',
-    'Teresa - Terminals': 'Draft — Teresa',
-    'Angono - Terminals': 'Draft — Angono'
-  };
-  document.getElementById('d-folder').textContent = folderLabels[toda.folder] || toda.folder;
-  document.getElementById('d-folder').className = 'detail-value';
+  // Colors as swatches
+  const colorsEl = document.getElementById('d-colors');
+  colorsEl.innerHTML = '';
+  if (parsedColors.length > 0) {
+    parsedColors.forEach(c => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch';
+      sw.innerHTML = `<div class="swatch-dot" style="background:${c.hex}"></div><span>${c.label}</span>`;
+      colorsEl.appendChild(sw);
+    });
+  } else {
+    colorsEl.innerHTML = '<span class="detail-value empty">Not recorded</span>';
+  }
+
+  setVal('d-checked', toda.checked, 'Not checked yet');
+
+  // Group
+  const groupRow = document.getElementById('d-group-row');
+  const groupEl = document.getElementById('d-group');
+  if (toda.groupId && GROUPS[toda.groupId]) {
+    groupRow.style.display = '';
+    groupEl.innerHTML = `<div class="group-tag">⬡ ${GROUPS[toda.groupId].name}</div>`;
+  } else {
+    groupRow.style.display = 'none';
+  }
 
   panel.classList.add('open');
 }
 
-panelClose.addEventListener('click', () => panel.classList.remove('open'));
-map.on('click', () => panel.classList.remove('open'));
+document.getElementById('panel-close').addEventListener('click', () => panel.classList.remove('open'));
+map.on('click', () => { if (!pickingPin) panel.classList.remove('open'); });
 
-// ── PINS ──
-function makeIcon(confirmed) {
-  const cls = confirmed ? 'toda-pin-confirmed' : 'toda-pin-draft';
-  const size = confirmed ? 14 : 10;
-  return L.divIcon({
-    html: `<div class="${cls}" style="width:${size}px;height:${size}px;"></div>`,
-    className: '',
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2 - 4]
-  });
+// ══════════════════════════════════════════════════════════════
+// ── ADMIN AUTH ──
+// ══════════════════════════════════════════════════════════════
+let adminSession = null;
+
+document.getElementById('btn-admin').addEventListener('click', () => {
+  if (adminSession) openModal('modal-admin');
+  else openModal('modal-login');
+});
+
+document.getElementById('btn-login-submit').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('btn-login-submit');
+
+  errEl.style.display = 'none';
+
+  if (!supabase) {
+    errEl.textContent = 'Supabase not configured. Add your project URL and anon key to the code.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = 'Signing in...'; btn.disabled = true;
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    adminSession = data.session;
+    closeModal('modal-login');
+    document.getElementById('login-password').value = '';
+    document.getElementById('btn-admin').classList.add('logged-in');
+    document.getElementById('btn-admin-label').textContent = 'Admin ✓';
+    document.getElementById('admin-email-display').textContent = email;
+    openModal('modal-admin');
+  } catch(e) {
+    errEl.textContent = 'Invalid credentials.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.textContent = 'Sign In'; btn.disabled = false;
+  }
+});
+
+async function adminLogout() {
+  if (supabase) await supabase.auth.signOut();
+  adminSession = null;
+  closeModal('modal-admin');
+  document.getElementById('btn-admin').classList.remove('logged-in');
+  document.getElementById('btn-admin-label').textContent = 'Admin';
 }
 
-TODAS.forEach(toda => {
-  const confirmed = toda.folder === 'CONFIRMED TERMINALS';
-  const marker = L.marker([toda.lat, toda.lng], {
-    icon: makeIcon(confirmed)
+// ══════════════════════════════════════════════════════════════
+// ── ADD TODA FORM ──
+// ══════════════════════════════════════════════════════════════
+function openAddToda() {
+  closeModal('modal-admin');
+  openModal('modal-add');
+}
+
+// Color rows
+function addColorRow() {
+  const container = document.getElementById('color-inputs');
+  const row = document.createElement('div');
+  row.className = 'color-input-row';
+  row.innerHTML = `
+    <input type="color" value="#888888" />
+    <input type="text" placeholder="Color name (e.g. Blue)" />
+    <button class="btn-remove-color" onclick="removeColorRow(this)">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function removeColorRow(btn) {
+  const container = document.getElementById('color-inputs');
+  if (container.children.length > 1) btn.parentElement.remove();
+}
+
+// Drop pin
+let pickingPin = false;
+let tempMarker = null;
+
+document.getElementById('btn-pick-pin').addEventListener('click', () => {
+  pickingPin = true;
+  closeModal('modal-add');
+  const hint = document.getElementById('picking-hint');
+  hint.style.display = 'flex';
+  map.getContainer().style.cursor = 'crosshair';
+});
+
+function cancelPickPin() {
+  pickingPin = false;
+  document.getElementById('picking-hint').style.display = 'none';
+  map.getContainer().style.cursor = '';
+  openModal('modal-add');
+}
+
+map.on('click', e => {
+  if (!pickingPin) return;
+  pickingPin = false;
+  const { lat, lng } = e.latlng;
+  document.getElementById('f-lat').value = lat.toFixed(7);
+  document.getElementById('f-lng').value = lng.toFixed(7);
+  if (tempMarker) map.removeLayer(tempMarker);
+  tempMarker = L.marker([lat, lng], {
+    icon: L.divIcon({
+      html: '<div style="width:12px;height:12px;border-radius:50%;background:#F5C842;border:2px solid white;box-shadow:0 0 0 3px rgba(245,200,66,0.3);"></div>',
+      className: '', iconSize: [12,12], iconAnchor: [6,6]
+    })
   }).addTo(map);
+  document.getElementById('picking-hint').style.display = 'none';
+  map.getContainer().style.cursor = '';
+  openModal('modal-add');
+});
 
-  marker.on('click', (e) => {
-    L.DomEvent.stopPropagation(e);
-    openPanel(toda);
+// Submit new TODA
+document.getElementById('btn-add-submit').addEventListener('click', async () => {
+  const name = document.getElementById('f-name').value.trim();
+  const lat = parseFloat(document.getElementById('f-lat').value);
+  const lng = parseFloat(document.getElementById('f-lng').value);
+  const errEl = document.getElementById('add-error');
+  const btn = document.getElementById('btn-add-submit');
+
+  errEl.style.display = 'none';
+
+  if (!name || isNaN(lat) || isNaN(lng)) {
+    errEl.textContent = 'TODA abbreviation, latitude, and longitude are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Collect colors
+  const colorRows = document.querySelectorAll('#color-inputs .color-input-row');
+  const colors = Array.from(colorRows).map(row => {
+    const hex = row.querySelector('input[type="color"]').value;
+    const label = row.querySelector('input[type="text"]').value.trim();
+    return { hex, label: label || hex };
+  }).filter(c => c.label);
+
+  const payload = {
+    number: parseInt(document.getElementById('f-number').value) || null,
+    name,
+    full_name: document.getElementById('f-fullname').value.trim() || null,
+    lat, lng,
+    terminal_name: document.getElementById('f-terminal').value.trim() || null,
+    landmarks: document.getElementById('f-landmarks').value.trim() || null,
+    colors,
+    last_checked: document.getElementById('f-checked').value.trim() || null,
+    status: document.getElementById('f-status').value,
+    has_robinsons: document.getElementById('f-robinsons').checked,
+    logo_url: document.getElementById('f-logo').value.trim() || null,
+    city: 'Antipolo City'
+  };
+
+  if (!supabase) {
+    errEl.textContent = 'Supabase not configured yet. Set up your project first.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = 'Registering...'; btn.disabled = true;
+
+  try {
+    const { error } = await supabase.from('todas_admin').insert([payload]);
+    if (error) throw error;
+
+    // Add pin immediately
+    addTodaToMap({
+      n: payload.number,
+      name: payload.name,
+      full: payload.full_name || '',
+      lat: payload.lat,
+      lng: payload.lng,
+      terminal: payload.terminal_name,
+      landmarks: payload.landmarks,
+      colors: colors.map(c => c.label).join(' and '),
+      checked: payload.last_checked,
+      status: payload.status,
+      robinsons: payload.has_robinsons,
+      logoUrl: payload.logo_url
+    });
+
+    // Remove temp marker
+    if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+
+    closeModal('modal-add');
+    showToast(`${name} registered successfully`);
+    resetAddForm();
+  } catch(e) {
+    errEl.textContent = `Error: ${e.message}`;
+    errEl.style.display = 'block';
+  } finally {
+    btn.textContent = 'Register Terminal'; btn.disabled = false;
+  }
+});
+
+function resetAddForm() {
+  ['f-number','f-name','f-fullname','f-lat','f-lng','f-terminal',
+   'f-landmarks','f-logo','f-checked'].forEach(id => {
+    document.getElementById(id).value = '';
   });
+  document.getElementById('f-status').value = 'draft';
+  document.getElementById('f-robinsons').checked = false;
+  document.getElementById('color-inputs').innerHTML = `
+    <div class="color-input-row">
+      <input type="color" value="#F5C842" />
+      <input type="text" placeholder="Color name (e.g. Yellow)" />
+      <button class="btn-remove-color" onclick="removeColorRow(this)">✕</button>
+    </div>`;
+}
 
-  marker.bindTooltip(toda.name, {
-    permanent: false,
-    direction: 'top',
-    className: '',
-    offset: [0, -8]
+// ══════════════════════════════════════════════════════════════
+// ── MODAL HELPERS ──
+// ══════════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
   });
 });
+
+// Login on Enter
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-login-submit').click();
+});
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
 </script>
 </body>
 </html>
