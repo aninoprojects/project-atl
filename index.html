@@ -22,6 +22,7 @@
       --robinsons: #CC2200;
       --panel-w: 340px;
       --radius: 6px;
+      --topbar-h: 50px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -36,7 +37,7 @@
     /* ── TOPBAR ── */
     #topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 18px; height: 50px;
+      padding: 0 18px; height: var(--topbar-h);
       background: var(--navy);
       border-bottom: 1px solid var(--navy-light);
       flex-shrink: 0; z-index: 1000; position: relative;
@@ -69,21 +70,100 @@
     #btn-admin.logged-in { color: var(--yellow); border-color: rgba(245,200,66,0.3); }
     #btn-admin .lock-icon { font-size: 0.75rem; }
 
-    /* ── MAIN ── */
-    #main { display: flex; flex: 1; overflow: hidden; position: relative; }
-    #map { flex: 1; z-index: 1; }
+    /* ── MAIN AREA ── */
+    #main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
 
-    /* ── PANEL ── */
+    /* MAP fills the entire main area always */
+    #map {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Dark tile overlay */
+    .leaflet-tile-pane {
+      filter: invert(100%) hue-rotate(180deg) brightness(90%) contrast(85%) saturate(0.75);
+    }
+    .leaflet-container { background: #161616; }
+
+    /* ── PANEL — absolute overlay on the right ── */
     #panel {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
       width: var(--panel-w);
       background: var(--navy-mid);
       border-left: 1px solid var(--navy-light);
       display: flex; flex-direction: column;
-      transform: translateX(var(--panel-w));
+      transform: translateX(100%);
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 900; overflow: hidden; flex-shrink: 0;
+      z-index: 900; overflow: hidden;
     }
     #panel.open { transform: translateX(0); }
+
+    /* ── PANEL EMPTY STATE ── */
+    #panel-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 10px;
+    }
+    #panel-empty.hidden { display: none; }
+    .empty-icon {
+      font-size: 2rem;
+      opacity: 0.3;
+      margin-bottom: 4px;
+    }
+    .empty-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--slate);
+      text-align: center;
+    }
+    .empty-sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--navy-light);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ── LEGEND IN PANEL ── */
+    #panel-legend {
+      padding: 14px 18px;
+      border-top: 1px solid var(--navy-light);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .legend-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--navy-light);
+      margin-bottom: 2px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--slate);
+    }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── TODA DETAIL CONTENT (hidden when empty) ── */
+    #panel-detail { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    #panel-detail.hidden { display: none; }
 
     /* Logo / color placeholder */
     #panel-logo {
@@ -111,7 +191,6 @@
       color: rgba(255,255,255,0.9);
       text-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
-
     #panel-close {
       position: absolute; top: 8px; right: 8px;
       background: rgba(0,0,0,0.3); border: none;
@@ -169,7 +248,6 @@
     .detail-value { font-size: 0.82rem; color: var(--white); line-height: 1.4; }
     .detail-value.empty { color: var(--slate); font-style: italic; }
 
-    /* Color swatches */
     .color-swatches { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .color-swatch {
       display: flex; align-items: center; gap: 5px;
@@ -180,7 +258,6 @@
       border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;
     }
 
-    /* Group info */
     .group-tag {
       display: inline-flex; align-items: center; gap: 5px;
       font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
@@ -189,7 +266,7 @@
       color: var(--yellow); padding: 3px 8px; border-radius: 3px;
     }
 
-    /* ── PICKING HINT BANNER ── */
+    /* ── PICKING HINT ── */
     #picking-hint {
       display: none; position: absolute;
       top: 12px; left: 50%; transform: translateX(-50%);
@@ -206,40 +283,45 @@
       font-family: 'IBM Plex Mono', monospace; font-weight: 600;
     }
 
-    /* ── LEGEND ── */
-    #statsbar {
-      position: absolute; bottom: 16px; left: 16px;
-      z-index: 500; display: flex; flex-direction: column; gap: 5px;
-      pointer-events: none;
+    /* ── PANEL TOGGLE BUTTON (visible when panel is closed) ── */
+    #btn-open-panel {
+      position: absolute;
+      top: 12px; right: 12px;
+      z-index: 800;
+      background: rgba(11,25,41,0.88);
+      border: 1px solid var(--navy-light);
+      color: var(--slate);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 6px 10px; border-radius: var(--radius);
+      cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; gap: 6px;
     }
-    .legend-item {
-      display: flex; align-items: center; gap: 7px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
-      letter-spacing: 0.06em; text-transform: uppercase;
-      background: rgba(11,25,41,0.88); backdrop-filter: blur(6px);
-      border: 1px solid var(--navy-light); padding: 5px 10px;
-      border-radius: 3px; color: var(--slate);
-    }
-    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    #btn-open-panel:hover { border-color: var(--slate); color: var(--white); }
+    #btn-open-panel.panel-is-open { display: none; }
 
     /* ── MODALS ── */
     .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-      z-index: 5000; align-items: center; justify-content: center;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+      z-index: 5000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
     }
-    .modal-overlay.open { display: flex; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
     .modal-box {
       background: var(--navy-mid); border: 1px solid var(--navy-light);
       border-radius: 10px; width: 100%; max-width: 400px;
       padding: 28px 28px 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
       position: relative;
-      animation: modalIn 0.2s ease both;
+      transform: scale(0.96) translateY(8px);
+      transition: transform 0.2s;
     }
-    @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.96) translateY(8px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+    .modal-overlay.open .modal-box {
+      transform: scale(1) translateY(0);
     }
     .modal-close {
       position: absolute; top: 14px; right: 16px;
@@ -279,7 +361,6 @@
     .form-group select option { background: var(--navy); }
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
 
     .btn-primary {
       width: 100%; padding: 10px; border: none; border-radius: 5px;
@@ -314,7 +395,7 @@
       color: #e57373; margin-top: 8px; display: none;
     }
 
-    /* Admin panel (logged in) */
+    /* Admin panel */
     #modal-admin .modal-box { max-width: 340px; }
     .admin-menu { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
     .admin-menu-btn {
@@ -322,7 +403,7 @@
       padding: 12px 14px; border: 1px solid var(--navy-light);
       border-radius: 6px; background: none; color: var(--white);
       cursor: pointer; transition: all 0.15s; text-align: left;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'DM Sans', sans-serif; width: 100%;
     }
     .admin-menu-btn:hover { border-color: var(--yellow); background: rgba(245,200,66,0.05); }
     .admin-menu-btn .menu-icon { font-size: 1.1rem; }
@@ -344,7 +425,6 @@
     #modal-add .modal-box::-webkit-scrollbar { width: 4px; }
     #modal-add .modal-box::-webkit-scrollbar-thumb { background: var(--navy-light); border-radius: 2px; }
 
-    /* Color inputs */
     .color-inputs { display: flex; flex-direction: column; gap: 6px; }
     .color-input-row { display: flex; gap: 8px; align-items: center; }
     .color-input-row input[type="color"] {
@@ -365,7 +445,6 @@
     }
     .btn-remove-color:hover { color: #e74c3c; }
 
-    /* Section divider in form */
     .form-divider {
       border: none; border-top: 1px solid var(--navy-light);
       margin: 8px 0 16px;
@@ -376,7 +455,7 @@
       color: var(--yellow); margin-bottom: 10px; margin-top: 4px;
     }
 
-    /* Success toast */
+    /* Toast */
     #toast {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
       background: #2d7d46; color: white;
@@ -388,8 +467,7 @@
     }
     #toast.show { opacity: 1; }
 
-    /* Map styles */
-    .leaflet-container { background: #070f18; }
+    /* Map pin styles */
     .toda-pin {
       display: flex; align-items: center; justify-content: center;
       border-radius: 50%; cursor: pointer;
@@ -438,12 +516,12 @@
       from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    #panel.open .detail-row { animation: fadeUp 0.2s ease both; }
-    #panel.open .detail-row:nth-child(1) { animation-delay: 0.02s; }
-    #panel.open .detail-row:nth-child(2) { animation-delay: 0.05s; }
-    #panel.open .detail-row:nth-child(3) { animation-delay: 0.08s; }
-    #panel.open .detail-row:nth-child(4) { animation-delay: 0.11s; }
-    #panel.open .detail-row:nth-child(5) { animation-delay: 0.14s; }
+    #panel-detail .detail-row { animation: fadeUp 0.2s ease both; }
+    #panel-detail .detail-row:nth-child(1) { animation-delay: 0.02s; }
+    #panel-detail .detail-row:nth-child(2) { animation-delay: 0.05s; }
+    #panel-detail .detail-row:nth-child(3) { animation-delay: 0.08s; }
+    #panel-detail .detail-row:nth-child(4) { animation-delay: 0.11s; }
+    #panel-detail .detail-row:nth-child(5) { animation-delay: 0.14s; }
   </style>
 </head>
 <body>
@@ -455,85 +533,104 @@
     <div class="tagline">Antipolo City TODA Map</div>
   </div>
   <div class="topbar-right">
-    <div class="version-badge">Version 1.1</div>
-    <button id="btn-admin">
+    <div class="version-badge">Version 1.1.1</div>
+    <button id="btn-admin" type="button">
       <span class="lock-icon">🔒</span>
       <span id="btn-admin-label">Admin</span>
     </button>
   </div>
 </div>
 
-<!-- ── MAIN ── -->
+<!-- ── MAIN AREA ── -->
 <div id="main">
+
+  <!-- MAP -->
   <div id="map"></div>
 
-  <!-- ── DETAIL PANEL ── -->
-  <div id="panel">
-    <div id="panel-logo">
-      <img id="panel-logo-img" src="" alt="TODA logo" />
-      <div id="panel-logo-placeholder"></div>
-      <div id="panel-logo-text"></div>
-      <button id="panel-close">✕</button>
-    </div>
-    <div id="panel-header">
-      <div class="panel-number-row">
-        <span id="panel-number" class="panel-number" style="display:none"></span>
-        <span id="panel-status" class="confirmed">● Confirmed</span>
-      </div>
-      <div id="panel-name">—</div>
-      <div id="panel-fullname"></div>
-    </div>
-    <div id="panel-body">
-      <div class="detail-row">
-        <div class="detail-label">Terminal Name</div>
-        <div class="detail-value" id="d-terminal">—</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Nearby Landmarks</div>
-        <div class="detail-value" id="d-landmarks">—</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Colors</div>
-        <div id="d-colors" class="color-swatches"></div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Last Confirmed As Of</div>
-        <div class="detail-value" id="d-checked">—</div>
-      </div>
-      <div class="detail-row" id="d-group-row" style="display:none">
-        <div class="detail-label">Terminal Group</div>
-        <div id="d-group"></div>
-      </div>
-    </div>
-  </div>
+  <!-- PANEL OPEN BUTTON (shown when panel is closed, for UX) -->
+  <button id="btn-open-panel" type="button">☰ Panel</button>
 
-  <!-- ── LEGEND ── -->
-  <div id="statsbar">
-    <div class="legend-item">
-      <div class="legend-dot" style="background:var(--yellow)"></div>
-      Confirmed Terminal
+  <!-- ── DETAIL PANEL (absolute right overlay) ── -->
+  <div id="panel">
+
+    <!-- Empty state (default) -->
+    <div id="panel-empty">
+      <div class="empty-icon">📍</div>
+      <div class="empty-title">Click a pin to see details</div>
+      <div class="empty-sub">Select any terminal on the map<br>to view TODA information</div>
     </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background:var(--draft)"></div>
-      Draft / Unverified
+
+    <!-- Legend at the bottom of empty state -->
+    <div id="panel-legend">
+      <div class="legend-label">Map Legend</div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--yellow)"></div>
+        Confirmed Terminal
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--draft)"></div>
+        Draft / Unverified
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--robinsons)"></div>
+        Robinsons Contract
+      </div>
     </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background:var(--robinsons)"></div>
-      Robinsons Contract
+
+    <!-- TODA detail content (hidden by default) -->
+    <div id="panel-detail" class="hidden">
+      <div id="panel-logo">
+        <img id="panel-logo-img" src="" alt="TODA logo" />
+        <div id="panel-logo-placeholder"></div>
+        <div id="panel-logo-text"></div>
+        <button id="panel-close" type="button">✕</button>
+      </div>
+      <div id="panel-header">
+        <div class="panel-number-row">
+          <span id="panel-number" class="panel-number" style="display:none"></span>
+          <span id="panel-status" class="confirmed">● Confirmed</span>
+        </div>
+        <div id="panel-name">—</div>
+        <div id="panel-fullname"></div>
+      </div>
+      <div id="panel-body">
+        <div class="detail-row">
+          <div class="detail-label">Terminal Name</div>
+          <div class="detail-value" id="d-terminal">—</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Nearby Landmarks</div>
+          <div class="detail-value" id="d-landmarks">—</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Colors</div>
+          <div id="d-colors" class="color-swatches"></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Last Confirmed As Of</div>
+          <div class="detail-value" id="d-checked">—</div>
+        </div>
+        <div class="detail-row" id="d-group-row" style="display:none">
+          <div class="detail-label">Terminal Group</div>
+          <div id="d-group"></div>
+        </div>
+      </div>
     </div>
+
   </div>
 
   <!-- ── PICK PIN BANNER ── -->
   <div id="picking-hint">
     <span>📍 Click on the map to place the terminal pin</span>
-    <button onclick="cancelPickPin()">Cancel</button>
+    <button type="button" onclick="cancelPickPin()">Cancel</button>
   </div>
+
 </div>
 
 <!-- ── LOGIN MODAL ── -->
 <div class="modal-overlay" id="modal-login">
   <div class="modal-box">
-    <button class="modal-close" onclick="closeModal('modal-login')">✕</button>
+    <button class="modal-close" type="button" onclick="closeModal('modal-login')">✕</button>
     <div class="modal-title">Admin Login</div>
     <div class="modal-sub">Project ATL · Restricted Access</div>
     <div class="form-group">
@@ -545,18 +642,18 @@
       <input type="password" id="login-password" placeholder="••••••••••" autocomplete="off" />
     </div>
     <div class="form-error" id="login-error">Invalid credentials.</div>
-    <button class="btn-primary" id="btn-login-submit">Sign In</button>
+    <button class="btn-primary" type="button" id="btn-login-submit">Sign In</button>
   </div>
 </div>
 
 <!-- ── ADMIN PANEL MODAL ── -->
 <div class="modal-overlay" id="modal-admin">
   <div class="modal-box">
-    <button class="modal-close" onclick="closeModal('modal-admin')">✕</button>
+    <button class="modal-close" type="button" onclick="closeModal('modal-admin')">✕</button>
     <div class="modal-title">Admin Panel</div>
     <div class="modal-sub" id="admin-email-display">Project ATL</div>
     <div class="admin-menu">
-      <button class="admin-menu-btn" onclick="openAddToda()">
+      <button class="admin-menu-btn" type="button" onclick="openAddToda()">
         <span class="menu-icon">📌</span>
         <div>
           <div class="menu-label">Register TODA Terminal</div>
@@ -564,14 +661,14 @@
         </div>
       </button>
     </div>
-    <button class="admin-logout" onclick="adminLogout()">Sign Out</button>
+    <button class="admin-logout" type="button" onclick="adminLogout()">Sign Out</button>
   </div>
 </div>
 
 <!-- ── ADD TODA MODAL ── -->
 <div class="modal-overlay" id="modal-add">
   <div class="modal-box">
-    <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
+    <button class="modal-close" type="button" onclick="closeModal('modal-add')">✕</button>
     <div class="modal-title">Register TODA Terminal</div>
     <div class="modal-sub">New entry · Antipolo City</div>
 
@@ -591,7 +688,7 @@
     </div>
     <div class="form-group">
       <label>TODA Abbreviation *</label>
-      <input type="text" id="f-name" placeholder="e.g. APFMCTODA" required />
+      <input type="text" id="f-name" placeholder="e.g. APFMCTODA" />
     </div>
     <div class="form-group">
       <label>Full Cooperative Name</label>
@@ -611,14 +708,14 @@
     <div class="form-row">
       <div class="form-group">
         <label>Latitude *</label>
-        <input type="number" id="f-lat" step="0.0000001" placeholder="14.5805..." required />
+        <input type="number" id="f-lat" step="0.0000001" placeholder="14.5805..." />
       </div>
       <div class="form-group">
         <label>Longitude *</label>
-        <input type="number" id="f-lng" step="0.0000001" placeholder="121.174..." required />
+        <input type="number" id="f-lng" step="0.0000001" placeholder="121.174..." />
       </div>
     </div>
-    <button class="btn-pin" id="btn-pick-pin">📍 Drop Pin on Map</button>
+    <button class="btn-pin" type="button" id="btn-pick-pin">📍 Drop Pin on Map</button>
 
     <hr class="form-divider" />
     <div class="form-section-label">Appearance</div>
@@ -632,10 +729,10 @@
         <div class="color-input-row">
           <input type="color" value="#F5C842" />
           <input type="text" placeholder="Color name (e.g. Yellow)" />
-          <button class="btn-remove-color" onclick="removeColorRow(this)">✕</button>
+          <button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>
         </div>
       </div>
-      <button class="btn-add-color" onclick="addColorRow()">+ Add Color</button>
+      <button class="btn-add-color" type="button" onclick="addColorRow()">+ Add Color</button>
     </div>
 
     <hr class="form-divider" />
@@ -652,7 +749,7 @@
     </div>
 
     <div class="form-error" id="add-error"></div>
-    <button class="btn-primary" id="btn-add-submit">Register Terminal</button>
+    <button class="btn-primary" type="button" id="btn-add-submit">Register Terminal</button>
   </div>
 </div>
 
@@ -662,21 +759,19 @@
 <script>
 // ══════════════════════════════════════════════════════════════
 // ── SUPABASE CONFIG ──
-// Replace these with your actual Supabase project values.
-// Get them from: supabase.com → your project → Settings → API
 // ══════════════════════════════════════════════════════════════
-const SUPABASE_URL  = 'https://gmejqjfathciopglshqd.supabase.co';   // e.g. https://xxxx.supabase.co
+const SUPABASE_URL  = 'https://gmejqjfathciopglshqd.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZWpxamZhdGhjaW9wZ2xzaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTgxMDIsImV4cCI6MjA5MjEzNDEwMn0.ci90256_zc4ZQ6vvXRcGne37B8MA-yag3bzSC_TaFzA';
 
 let supabase = null;
 try {
-  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+  if (window.supabase && window.supabase.createClient) {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   }
-} catch(e) { console.warn('Supabase not configured:', e); }
+} catch(e) { console.warn('Supabase init failed:', e); }
 
 // ══════════════════════════════════════════════════════════════
-// ── COLOR NAME → HEX MAP ──
+// ── COLOR MAP ──
 // ══════════════════════════════════════════════════════════════
 const COLOR_HEX = {
   'green':'#43A047','black':'#222222','white':'#EEEEEE','orange':'#E65100',
@@ -711,19 +806,18 @@ const GROUPS = {
 };
 
 // ══════════════════════════════════════════════════════════════
-// ── STATIC TODA DATA (Antipolo City only) ──
-// Numbers separated from names. Source: KML + spreadsheet v3.1
+// ── STATIC TODA DATA ──
 // ══════════════════════════════════════════════════════════════
 const STATIC_TODAS = [
-  // ── CONFIRMED TERMINALS ──
+  // CONFIRMED
   {n:7,  name:'APFMCTODA',   full:'',                                         lat:14.5805848, lng:121.174715,  terminal:null,                     landmarks:"Maylor's 2 Plaza, Claveria Bldg.", colors:'Green and black',        checked:'March 17, 2026', status:'confirmed', robinsons:false},
   {n:17, name:'GEMCASHTODA', full:'',                                          lat:14.5841524, lng:121.1739836, terminal:null,                     landmarks:'Juan Sumulong Elementary School',  colors:'White and black',         checked:'March 19, 2026', status:'confirmed', robinsons:false},
   {n:27, name:'P-NFLMPBWTODA',full:'',                                         lat:14.571451,  lng:121.1786872, terminal:'Nayon',                  landmarks:'Nayong Silangan',                  colors:'Orange and blue',         checked:null,             status:'confirmed', robinsons:false},
   {n:29, name:'PACSTTODA',   full:'',                                          lat:14.5794327, lng:121.1787015, terminal:'Tubigan',                landmarks:'O!Save Tubigan',                   colors:'White and orange',        checked:'March 17, 2026', status:'confirmed', robinsons:false},
   {n:38, name:'SUG-SAFTTODA',full:'Sunflower Upper Gumamela - Silihan Antipolo Federal Tibagan', lat:14.5408328, lng:121.1917183, terminal:'SUG-SAFTTODA Terminal', landmarks:'Dali Mahabang Parang', colors:'Vermilion and yellow', checked:'March 22, 2026', status:'confirmed', robinsons:false},
-  {n:97, name:'MARCOPTODA',  full:'Marrero-Acop',                             lat:14.5820475, lng:121.1709584, terminal:'Marrero-Acop',            landmarks:'Marrero-Acop Clinic and Hospital', colors:'Dark blue and white',     checked:'March 17, 2026', status:'confirmed', robinsons:false},
+  {n:97, name:'MARCOPTODA',  full:'Marrero-Acop',                              lat:14.5820475, lng:121.1709584, terminal:'Marrero-Acop',            landmarks:'Marrero-Acop Clinic and Hospital', colors:'Dark blue and white',     checked:'March 17, 2026', status:'confirmed', robinsons:false},
 
-  // ── DRAFT TERMINALS ──
+  // DRAFT
   {n:null,name:'UM-ADOTA',   full:'',     lat:14.5749963, lng:121.1824937, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
   {n:null,name:'PPMTODA',    full:'Peñafrancia Palmera Masinag', lat:14.6256426, lng:121.1386561, terminal:'PPMTODA Terminal', landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
   {n:null,name:'MCMSLATODA', full:'',     lat:14.5882785, lng:121.1728689, terminal:null, landmarks:null, colors:'Red bajaj', checked:null, status:'draft', robinsons:false},
@@ -740,7 +834,7 @@ const STATIC_TODAS = [
   {n:35, name:'UM-ADOTA',   full:'',     lat:14.5849783, lng:121.1769699, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
   {n:36, name:'PATATODA',   full:'',     lat:14.571979,  lng:121.2024955, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
   {n:39, name:'SHIMACTODA', full:'',     lat:14.5838236, lng:121.1757948, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
-  {n:41, name:'ROBINSONS HOMES TODA', full:'Robinson Homes',lat:14.5774078, lng:121.1888379, terminal:'RSSATODA Office & Coop', landmarks:'Robinsons Homes San Jose', colors:null, checked:null, status:'draft', robinsons:true},
+  {n:41, name:'ROBINSONS HOMES TODA', full:'Robinson Homes', lat:14.5774078, lng:121.1888379, terminal:'RSSATODA Office & Coop', landmarks:'Robinsons Homes San Jose', colors:null, checked:null, status:'draft', robinsons:true},
   {n:42, name:'SSLTODA',    full:'San Isidro San Luis', lat:14.5853935, lng:121.1762174, terminal:null, landmarks:'P. Burgos, Lumang Palengke', colors:null, checked:null, status:'draft', robinsons:false},
   {n:45, name:'SLRPMATODA', full:'Sitio San Lorenzo Ruiz Pamana Milleluce Ahon', lat:14.5825795, lng:121.1762063, terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
   {n:46, name:'TAKTODA',    full:'',     lat:14.5839943, lng:121.175845,  terminal:null, landmarks:null, colors:null, checked:null, status:'draft', robinsons:false},
@@ -755,7 +849,7 @@ const STATIC_TODAS = [
 ];
 
 // ══════════════════════════════════════════════════════════════
-// ── MAP INIT (CartoDB Dark Matter — no API key needed) ──
+// ── MAP INIT (OSM with dark CSS filter — most reliable) ──
 // ══════════════════════════════════════════════════════════════
 const map = L.map('map', {
   center: [14.587, 121.178],
@@ -763,13 +857,15 @@ const map = L.map('map', {
   zoomControl: false
 });
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a> | Data: Project ATL / PTRB Antipolo',
-  subdomains: 'abcd',
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Data: Project ATL / PTRB Antipolo',
   maxZoom: 20
 }).addTo(map);
 
 L.control.zoom({ position: 'topright' }).addTo(map);
+
+// Force correct size after layout settles
+setTimeout(() => map.invalidateSize(), 100);
 
 // ── DRAW GROUP CIRCLES ──
 Object.values(GROUPS).forEach(g => {
@@ -781,10 +877,7 @@ Object.values(GROUPS).forEach(g => {
     weight: 1.5,
     dashArray: '5 5',
     opacity: 0.5
-  }).addTo(map).bindTooltip(g.name, {
-    permanent: false, direction: 'top',
-    className: ''
-  });
+  }).addTo(map).bindTooltip(g.name, { permanent: false, direction: 'top' });
 });
 
 // ── MARKER TRACKING ──
@@ -809,7 +902,7 @@ function makeIcon(toda) {
     html: `<div class="toda-pin ${cls}" style="width:${sz}px;height:${sz}px;position:relative;">${rbBadge}</div>`,
     className: '',
     iconSize: [sz + (toda.robinsons ? 6 : 0), sz + (toda.robinsons ? 6 : 0)],
-    iconAnchor: [(sz)/2, (sz)/2]
+    iconAnchor: [sz / 2, sz / 2]
   });
 }
 
@@ -826,7 +919,6 @@ function addTodaToMap(toda) {
   allMarkers[key] = marker;
 }
 
-// ── RENDER STATIC ──
 STATIC_TODAS.forEach(addTodaToMap);
 
 // ── LOAD FROM SUPABASE ──
@@ -845,7 +937,7 @@ async function loadSupabaseTodas() {
         terminal: row.terminal_name,
         landmarks: row.landmarks,
         colors: Array.isArray(row.colors)
-          ? row.colors.map(c => (typeof c === 'object' ? `${c.label}` : c)).join(' and ')
+          ? row.colors.map(c => (typeof c === 'object' ? c.label : c)).join(' and ')
           : '',
         colorsRaw: row.colors,
         checked: row.last_checked,
@@ -864,6 +956,22 @@ loadSupabaseTodas();
 // ── PANEL ──
 // ══════════════════════════════════════════════════════════════
 const panel = document.getElementById('panel');
+const panelEmpty = document.getElementById('panel-empty');
+const panelLegend = document.getElementById('panel-legend');
+const panelDetail = document.getElementById('panel-detail');
+const btnOpenPanel = document.getElementById('btn-open-panel');
+
+function showPanelEmpty() {
+  panelEmpty.classList.remove('hidden');
+  panelLegend.style.display = '';
+  panelDetail.classList.add('hidden');
+}
+
+function showPanelDetail() {
+  panelEmpty.classList.add('hidden');
+  panelLegend.style.display = 'none';
+  panelDetail.classList.remove('hidden');
+}
 
 function openPanel(toda) {
   // Number badge
@@ -888,14 +996,12 @@ function openPanel(toda) {
     nameEl.appendChild(badge);
   }
 
-  // Full name
   document.getElementById('panel-fullname').textContent = toda.full || '';
 
   // Logo / color placeholder
   const logoImg = document.getElementById('panel-logo-img');
   const logoPlaceholder = document.getElementById('panel-logo-placeholder');
   const logoText = document.getElementById('panel-logo-text');
-
   const parsedColors = parseColors(toda.colors);
 
   if (toda.logoUrl) {
@@ -919,7 +1025,6 @@ function openPanel(toda) {
   }
   logoText.textContent = toda.name;
 
-  // Details
   const setVal = (id, val, fallback = 'Not recorded') => {
     const el = document.getElementById(id);
     if (!val || val === '?????' || val === '???????') {
@@ -932,7 +1037,6 @@ function openPanel(toda) {
   setVal('d-terminal', toda.terminal, 'Unknown');
   setVal('d-landmarks', toda.landmarks, 'Not recorded');
 
-  // Colors as swatches
   const colorsEl = document.getElementById('d-colors');
   colorsEl.innerHTML = '';
   if (parsedColors.length > 0) {
@@ -948,7 +1052,6 @@ function openPanel(toda) {
 
   setVal('d-checked', toda.checked, 'Not checked yet');
 
-  // Group
   const groupRow = document.getElementById('d-group-row');
   const groupEl = document.getElementById('d-group');
   if (toda.groupId && GROUPS[toda.groupId]) {
@@ -958,23 +1061,44 @@ function openPanel(toda) {
     groupRow.style.display = 'none';
   }
 
+  showPanelDetail();
   panel.classList.add('open');
+  btnOpenPanel.classList.add('panel-is-open');
+  setTimeout(() => map.invalidateSize(), 310);
 }
 
-document.getElementById('panel-close').addEventListener('click', () => panel.classList.remove('open'));
-map.on('click', () => { if (!pickingPin) panel.classList.remove('open'); });
+function closePanel() {
+  panel.classList.remove('open');
+  btnOpenPanel.classList.remove('panel-is-open');
+  showPanelEmpty();
+  setTimeout(() => map.invalidateSize(), 310);
+}
+
+// Panel open button (always-visible toggle)
+btnOpenPanel.addEventListener('click', () => {
+  panel.classList.add('open');
+  btnOpenPanel.classList.add('panel-is-open');
+  showPanelEmpty();
+  setTimeout(() => map.invalidateSize(), 310);
+});
+
+document.getElementById('panel-close').addEventListener('click', closePanel);
+map.on('click', () => { if (!pickingPin) closePanel(); });
 
 // ══════════════════════════════════════════════════════════════
 // ── ADMIN AUTH ──
 // ══════════════════════════════════════════════════════════════
 let adminSession = null;
 
-document.getElementById('btn-admin').addEventListener('click', () => {
-  if (adminSession) openModal('modal-admin');
-  else openModal('modal-login');
+document.getElementById('btn-admin').addEventListener('click', function() {
+  if (adminSession) {
+    openModal('modal-admin');
+  } else {
+    openModal('modal-login');
+  }
 });
 
-document.getElementById('btn-login-submit').addEventListener('click', async () => {
+document.getElementById('btn-login-submit').addEventListener('click', async function() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
@@ -983,7 +1107,7 @@ document.getElementById('btn-login-submit').addEventListener('click', async () =
   errEl.style.display = 'none';
 
   if (!supabase) {
-    errEl.textContent = 'Supabase not configured. Add your project URL and anon key to the code.';
+    errEl.textContent = 'Supabase not configured.';
     errEl.style.display = 'block';
     return;
   }
@@ -1023,7 +1147,6 @@ function openAddToda() {
   openModal('modal-add');
 }
 
-// Color rows
 function addColorRow() {
   const container = document.getElementById('color-inputs');
   const row = document.createElement('div');
@@ -1031,7 +1154,7 @@ function addColorRow() {
   row.innerHTML = `
     <input type="color" value="#888888" />
     <input type="text" placeholder="Color name (e.g. Blue)" />
-    <button class="btn-remove-color" onclick="removeColorRow(this)">✕</button>
+    <button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>
   `;
   container.appendChild(row);
 }
@@ -1078,7 +1201,6 @@ map.on('click', e => {
   openModal('modal-add');
 });
 
-// Submit new TODA
 document.getElementById('btn-add-submit').addEventListener('click', async () => {
   const name = document.getElementById('f-name').value.trim();
   const lat = parseFloat(document.getElementById('f-lat').value);
@@ -1094,7 +1216,6 @@ document.getElementById('btn-add-submit').addEventListener('click', async () => 
     return;
   }
 
-  // Collect colors
   const colorRows = document.querySelectorAll('#color-inputs .color-input-row');
   const colors = Array.from(colorRows).map(row => {
     const hex = row.querySelector('input[type="color"]').value;
@@ -1118,7 +1239,7 @@ document.getElementById('btn-add-submit').addEventListener('click', async () => 
   };
 
   if (!supabase) {
-    errEl.textContent = 'Supabase not configured yet. Set up your project first.';
+    errEl.textContent = 'Supabase not configured yet.';
     errEl.style.display = 'block';
     return;
   }
@@ -1129,7 +1250,6 @@ document.getElementById('btn-add-submit').addEventListener('click', async () => 
     const { error } = await supabase.from('todas_admin').insert([payload]);
     if (error) throw error;
 
-    // Add pin immediately
     addTodaToMap({
       n: payload.number,
       name: payload.name,
@@ -1145,9 +1265,7 @@ document.getElementById('btn-add-submit').addEventListener('click', async () => 
       logoUrl: payload.logo_url
     });
 
-    // Remove temp marker
     if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-
     closeModal('modal-add');
     showToast(`${name} registered successfully`);
     resetAddForm();
@@ -1170,7 +1288,7 @@ function resetAddForm() {
     <div class="color-input-row">
       <input type="color" value="#F5C842" />
       <input type="text" placeholder="Color name (e.g. Yellow)" />
-      <button class="btn-remove-color" onclick="removeColorRow(this)">✕</button>
+      <button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>
     </div>`;
 }
 
@@ -1178,25 +1296,24 @@ function resetAddForm() {
 // ── MODAL HELPERS ──
 // ══════════════════════════════════════════════════════════════
 function openModal(id) {
-  document.getElementById(id).classList.add('open');
+  const el = document.getElementById(id);
+  if (el) el.classList.add('open');
 }
 function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
 }
 
-// Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
   });
 });
 
-// Login on Enter
 document.getElementById('login-password').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('btn-login-submit').click();
 });
 
-// ── TOAST ──
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
