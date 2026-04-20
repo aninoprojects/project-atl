@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>About — Project ATL</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230e2a45'/%3E%3Ctext y='24' x='3' font-size='22'%3E🛺%3C/text%3E%3C/svg%3E"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500&display=swap"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root{
+      --accent:#2196F3;--accent-d:#1565C0;--accent-l:#64B5F6;
+      --bg:#0e1f33;--bg-mid:#132840;--bg-light:#1a3554;--border:#1e3f63;
+      --text:#ddeeff;--muted:#6b90b5;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+    /* TOPBAR */
+    #topbar{position:sticky;top:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--bg);border-bottom:1px solid var(--border);z-index:100;}
+    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent-l);text-decoration:none;}
+    .logo span{color:var(--text);}
+    .back-btn{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;background:var(--bg-light);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;text-decoration:none;transition:all 0.15s;}
+    .back-btn:hover{border-color:var(--muted);color:var(--text);}
+
+    /* BETA BANNER */
+    .beta-banner{background:rgba(33,150,243,0.08);border-bottom:1px solid rgba(33,150,243,0.2);padding:10px 24px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-l);}
+
+    /* LAYOUT */
+    .container{max-width:760px;margin:0 auto;padding:40px 24px 80px;}
+
+    /* TABS */
+    .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:36px;overflow-x:auto;}
+    .tab{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:10px 16px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;}
+    .tab.active{color:var(--accent-l);border-bottom-color:var(--accent);}
+    .tab:hover{color:var(--text);}
+    .tab-panel{display:none;}
+    .tab-panel.active{display:block;}
+
+    /* PROSE */
+    .prose{font-size:0.88rem;line-height:1.8;color:var(--text);}
+    .prose p{margin-bottom:14px;}
+    .prose h2{font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--text);margin:32px 0 12px;}
+    .prose h3{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:var(--accent-l);margin:24px 0 8px;}
+    .prose ul{padding-left:20px;margin-bottom:14px;}
+    .prose li{margin-bottom:5px;}
+    .prose a{color:var(--accent-l);}
+    .prose strong{color:var(--text);}
+
+    /* EDITABLE CONTENT */
+    .content-display{white-space:pre-wrap;}
+    .btn-edit{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.07em;text-transform:uppercase;background:rgba(33,150,243,0.08);border:1px solid rgba(33,150,243,0.3);color:var(--accent-l);padding:5px 12px;border-radius:4px;cursor:pointer;margin-bottom:16px;transition:all 0.15s;display:none;}
+    body.admin-mode .btn-edit{display:inline-flex;align-items:center;gap:5px;}
+    .btn-edit:hover{background:rgba(33,150,243,0.15);}
+    .content-editor{width:100%;min-height:280px;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--text);padding:12px;font-family:'DM Sans',sans-serif;font-size:0.88rem;line-height:1.8;resize:vertical;outline:none;display:none;margin-bottom:10px;}
+    .btn-save{display:none;width:100%;padding:10px;border:none;border-radius:5px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;margin-top:4px;}
+    .btn-save:hover{opacity:0.88;}
+
+    /* CHANGELOG */
+    .changelog{display:flex;flex-direction:column;gap:0;}
+    .cl-entry{border-left:2px solid var(--border);padding:0 0 28px 18px;position:relative;}
+    .cl-entry::before{content:'';position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--bg-mid);}
+    .cl-ver{font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;display:inline;}
+    .cl-date{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--muted);margin-left:8px;}
+    .cl-tags{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 10px;}
+    .tag{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;}
+    .tag-fix{background:rgba(76,175,80,0.15);color:#81c784;}
+    .tag-change{background:rgba(255,193,7,0.15);color:#ffd54f;}
+    .cl-ul{font-size:0.82rem;color:var(--muted);padding-left:16px;line-height:1.75;}
+    .cl-ul li{margin-bottom:3px;}
+
+    /* CONTRIBUTE SECTION */
+    .contribute-cta{background:rgba(33,150,243,0.06);border:1px solid rgba(33,150,243,0.2);border-radius:8px;padding:20px;margin-top:16px;}
+    .btn-cta{display:inline-block;padding:10px 20px;border:none;border-radius:5px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;text-decoration:none;margin-top:12px;transition:opacity 0.15s;}
+    .btn-cta:hover{opacity:0.88;}
+
+    /* TOAST */
+    #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent-d);color:white;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.06em;text-transform:uppercase;padding:10px 20px;border-radius:5px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+    #toast.show{opacity:1;}
+    #toast.success{background:#2e7d32;}
+    #toast.error{background:#b71c1c;}
+
+    /* Login bar for admin */
+    #admin-bar{display:flex;align-items:center;gap:10px;padding:8px 24px;background:rgba(33,150,243,0.06);border-bottom:1px solid rgba(33,150,243,0.15);font-size:0.78rem;}
+    #admin-bar input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:4px;font-size:0.78rem;outline:none;width:160px;}
+    #admin-bar input:focus{border-color:var(--accent);}
+    .admin-bar-btn{background:var(--accent);border:none;color:white;padding:5px 12px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;}
+    #admin-bar-status{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--muted);}
+    #admin-bar-status.ok{color:#81c784;}
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <a href="/index.html" class="logo">Project <span>ATL</span></a>
+  <a href="/index.html" class="back-btn">← Back to Map</a>
+</div>
+
+<div class="beta-banner">
+  🛺 Project ATL is currently in Beta — data may be incomplete. <a href="/index.html" style="color:inherit;text-decoration:underline;">Back to map</a>
+</div>
+
+<!-- Admin login bar for editing content -->
+<div id="admin-bar">
+  <span id="admin-bar-status">Admin login to edit content:</span>
+  <input type="email" id="ab-email" placeholder="Email" autocomplete="off"/>
+  <input type="password" id="ab-pw" placeholder="Password" autocomplete="off"/>
+  <button class="admin-bar-btn" onclick="adminLogin()">Sign In</button>
+  <button class="admin-bar-btn" id="ab-logout" style="display:none;background:#b71c1c;" onclick="adminLogout()">Sign Out</button>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('about')">About</button>
+    <button class="tab" onclick="switchTab('changelog')">Changelog</button>
+    <button class="tab" onclick="switchTab('contribute')">Contribute</button>
+    <button class="tab" onclick="switchTab('privacy_policy')">Privacy Policy</button>
+    <button class="tab" onclick="switchTab('terms')">Terms of Service</button>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="tab-panel active" id="panel-about">
+    <button class="btn-edit" onclick="toggleEdit('about')">✏ Edit</button>
+    <div class="prose content-display" id="display-about">Loading…</div>
+    <textarea class="content-editor" id="editor-about"></textarea>
+    <button class="btn-save" id="save-about" onclick="saveContent('about')">Save Changes</button>
+
+    <div class="prose" style="margin-top:32px;">
+      <h2>Author</h2>
+      <p>aninointhenight — hobbyist transit mapper based in Antipolo City. Approaches tricycle mapping the way railfans approach train lines: with genuine curiosity, not just utility.</p>
+      <h2>Goals</h2>
+      <p>Document and map all 124 TODAs (Tricycle Operators and Drivers Associations) in Antipolo City. Long-term vision: build a commuter app starting from Metro Manila.</p>
+      <h2>Data Sources</h2>
+      <ul>
+        <li>Antipolo City PTRB (Public Transport Regulatory Board) — primary official source</li>
+        <li>2024–2025 Antipolo City Facts &amp; Figures</li>
+        <li>OpenStreetMap, Google Maps, Wikimapia</li>
+        <li>Facebook community pages, Reddit r/Antipolo, YouTube</li>
+        <li>Direct field observation (Strava, street view, personal visits)</li>
+      </ul>
+      <h2>Credits</h2>
+      <ul>
+        <li>PTRB Antipolo — official TODA registry (March 2025)</li>
+        <li>CartoDB Positron — map tile layer</li>
+        <li>Leaflet.js — open-source mapping library</li>
+        <li>Leaflet.draw — polygon drawing plugin</li>
+        <li>Supabase — backend database &amp; authentication</li>
+        <li>Google Fonts — Syne, IBM Plex Mono, DM Sans</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CHANGELOG -->
+  <div class="tab-panel" id="panel-changelog">
+    <div class="prose" style="margin-bottom:24px;">
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--accent-l);letter-spacing:0.06em;text-transform:uppercase;">⚠ This project is still in Beta. Features and data are actively being developed.</p>
+    </div>
+    <div class="changelog">
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 2.0</span><span class="cl-date">April 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-change">Change</span><span class="tag tag-fix">Fix</span></div>
+        <ul class="cl-ul">
+          <li>All terminal data moved from code to Supabase (no more hardcoded pins)</li>
+          <li>Affiliations system — replaces Robinsons checkbox; supports multiple affiliations per terminal with auto-dedup and color coding</li>
+          <li>Dynamic edit form — fields change based on status (Confirmed / Draft / Kolorum)</li>
+          <li>Local Areas feature — admin can draw named polygons on map, link to terminals, toggle visibility in sidebar</li>
+          <li>/about page is now standalone and fullscreen</li>
+          <li>Fixed site_content and contributions table errors (Supabase RLS policies corrected)</li>
+          <li>Contribute button added to topbar</li>
+          <li>Changelog style updated — beta symbol (β) used, no redundant labels</li>
+          <li>Admin panel enlarged</li>
+          <li>Contributions now correctly post to Supabase and trigger admin notification</li>
+          <li>Map position remembered across sessions (localStorage)</li>
+          <li>Selected pin now shows white ring indicator</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 1.3</span><span class="cl-date">April 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-change">Change</span></div>
+        <ul class="cl-ul">
+          <li>Favicon (trike icon in browser tab)</li>
+          <li>Fixed panel/zoom button overlap</li>
+          <li>Switched to CartoDB Positron map (zoom limits 11–18)</li>
+          <li>Kolorum / Informal terminal type (red pin)</li>
+          <li>Confirmed pins → light blue, draft → gold</li>
+          <li>Contributor feature with rate limiting and admin notification dot</li>
+          <li>Privacy consent banner for new visitors</li>
+          <li>Admin-editable site content (privacy, terms, about)</li>
+          <li>Version badge moved next to title; About button added to topbar</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 1.2</span><span class="cl-date">April 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-fix">Fix</span></div>
+        <ul class="cl-ul">
+          <li>Notes field in terminal details</li>
+          <li>Distance from user location</li>
+          <li>Admin edit and delete of terminals</li>
+          <li>Panel toggle button (☰ Panel)</li>
+          <li>Supabase integration live</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 1.1</span><span class="cl-date">April 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-change">Change</span></div>
+        <ul class="cl-ul">
+          <li>Admin login panel (Supabase auth)</li>
+          <li>Drop-pin feature for coordinate input</li>
+          <li>Color swatches in sidebar</li>
+          <li>Robinsons Malls badge</li>
+          <li>iMall cluster group circle</li>
+          <li>Non-Antipolo pins removed</li>
+          <li>TODA numbers separated from names</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 1.0</span><span class="cl-date">April 2026</span></div>
+        <div class="cl-tags"></div>
+        <ul class="cl-ul">
+          <li>Initial public release</li>
+          <li>39 pins from KML data</li>
+          <li>Confirmed vs. draft terminal distinction</li>
+          <li>Click-to-open detail sidebar</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONTRIBUTE -->
+  <div class="tab-panel" id="panel-contribute">
+    <div class="prose">
+      <h2>How to Contribute</h2>
+      <p>Project ATL welcomes community contributions. If you know of a TODA terminal not yet on the map, or have updated information about an existing one, you can submit it for admin review.</p>
+
+      <h3>Steps</h3>
+      <ul>
+        <li>Go back to the map and click <strong>"✎ Contribute"</strong> in the top bar</li>
+        <li>Fill in the details you know — partial information is fine</li>
+        <li>Drop a pin on the map for the terminal location</li>
+        <li>Submit — the admin will review it before it goes live</li>
+      </ul>
+
+      <h3>Guidelines</h3>
+      <ul>
+        <li>Only submit terminals in Antipolo City for now</li>
+        <li><strong>Do not submit personal information</strong> — no home addresses, phone numbers, or passwords</li>
+        <li>One submission per minute (rate limited)</li>
+        <li>Be as accurate as possible — wrong pins cause confusion for other users</li>
+        <li>If you're unsure about a detail, leave it blank</li>
+      </ul>
+    </div>
+    <div class="contribute-cta">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;">Ready to help?</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-top:6px;">Every terminal you add helps Antipolo commuters find their ride.</div>
+      <a href="/index.html" class="btn-cta">Go to Map → Contribute</a>
+    </div>
+  </div>
+
+  <!-- PRIVACY POLICY -->
+  <div class="tab-panel" id="panel-privacy_policy">
+    <button class="btn-edit" onclick="toggleEdit('privacy_policy')">✏ Edit</button>
+    <div class="prose content-display" id="display-privacy_policy">Loading…</div>
+    <textarea class="content-editor" id="editor-privacy_policy"></textarea>
+    <button class="btn-save" id="save-privacy_policy" onclick="saveContent('privacy_policy')">Save Changes</button>
+  </div>
+
+  <!-- TERMS -->
+  <div class="tab-panel" id="panel-terms">
+    <button class="btn-edit" onclick="toggleEdit('terms')">✏ Edit</button>
+    <div class="prose content-display" id="display-terms">Loading…</div>
+    <textarea class="content-editor" id="editor-terms"></textarea>
+    <button class="btn-save" id="save-terms" onclick="saveContent('terms')">Save Changes</button>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+
+var SB_URL='https://gmejqjfathciopglshqd.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZWpxamZhdGhjaW9wZ2xzaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTgxMDIsImV4cCI6MjA5MjEzNDEwMn0.ci90256_zc4ZQ6vvXRcGne37B8MA-yag3bzSC_TaFzA';
+var sb=null;
+try{var _S=window.supabase||window.Supabase;if(_S&&_S.createClient)sb=_S.createClient(SB_URL,SB_KEY);}catch(e){}
+
+var adminSession=null;
+var siteContent={};
+
+function toast(m,type){var t=document.getElementById('toast');t.textContent=m;t.className='show'+(type?' '+type:'');setTimeout(function(){t.className='';},3000);}
+
+// TABS
+window.switchTab=function(name){
+  document.querySelectorAll('.tab').forEach(function(t,i){
+    var tabs=['about','changelog','contribute','privacy_policy','terms'];
+    t.classList.toggle('active',tabs[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p){
+    p.classList.toggle('active',p.id==='panel-'+name);
+  });
+};
+
+// Handle hash from consent banner links
+if(window.location.hash){
+  var h=window.location.hash.replace('#','');
+  if(['about','changelog','contribute','privacy_policy','terms'].includes(h)){
+    switchTab(h);
+  }
+}
+
+// LOAD CONTENT
+async function loadContent(){
+  if(!sb)return;
+  try{
+    var r=await sb.from('site_content').select('*');
+    if(r.error){console.error('site_content error:',r.error);return;}
+    r.data.forEach(function(row){
+      siteContent[row.key]=row.value;
+      var el=document.getElementById('display-'+row.key);
+      if(el)el.textContent=row.value;
+      var ed=document.getElementById('editor-'+row.key);
+      if(ed)ed.value=row.value;
+    });
+  }catch(e){console.error(e);}
+}
+loadContent();
+
+// EDIT TOGGLE
+window.toggleEdit=function(key){
+  var disp=document.getElementById('display-'+key);
+  var ed=document.getElementById('editor-'+key);
+  var saveBtn=document.getElementById('save-'+key);
+  var isEditing=ed.style.display==='block';
+  if(isEditing){ed.style.display='none';disp.style.display='';saveBtn.style.display='none';}
+  else{ed.value=siteContent[key]||'';ed.style.display='block';disp.style.display='none';saveBtn.style.display='block';}
+};
+
+window.saveContent=async function(key){
+  if(!sb||!adminSession){toast('Not logged in as admin','error');return;}
+  var val=document.getElementById('editor-'+key).value.trim();
+  var btn=document.getElementById('save-'+key);
+  btn.textContent='Saving…';btn.disabled=true;
+  try{
+    var r=await sb.from('site_content').upsert({key:key,value:val,updated_at:new Date().toISOString()});
+    if(r.error)throw r.error;
+    siteContent[key]=val;
+    document.getElementById('display-'+key).textContent=val;
+    document.getElementById('editor-'+key).style.display='none';
+    document.getElementById('display-'+key).style.display='';
+    btn.style.display='none';
+    toast('Saved','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+  finally{btn.textContent='Save Changes';btn.disabled=false;}
+};
+
+// ADMIN LOGIN
+window.adminLogin=async function(){
+  if(!sb)return;
+  var em=document.getElementById('ab-email').value.trim(),pw=document.getElementById('ab-pw').value;
+  try{
+    var r=await sb.auth.signInWithPassword({email:em,password:pw});
+    if(r.error)throw r.error;
+    adminSession=r.data.session;
+    document.body.classList.add('admin-mode');
+    document.getElementById('admin-bar-status').textContent='Signed in as '+em;
+    document.getElementById('admin-bar-status').classList.add('ok');
+    document.getElementById('ab-email').style.display='none';
+    document.getElementById('ab-pw').style.display='none';
+    document.querySelector('.admin-bar-btn').style.display='none';
+    document.getElementById('ab-logout').style.display='inline-block';
+    toast('Admin mode active','success');
+  }catch(e){toast('Login failed: '+e.message,'error');}
+};
+window.adminLogout=async function(){
+  if(sb)await sb.auth.signOut();
+  adminSession=null;
+  document.body.classList.remove('admin-mode');
+  document.getElementById('admin-bar-status').textContent='Admin login to edit content:';
+  document.getElementById('admin-bar-status').classList.remove('ok');
+  document.getElementById('ab-email').style.display='';
+  document.getElementById('ab-pw').style.display='';
+  document.querySelector('.admin-bar-btn').style.display='';
+  document.getElementById('ab-logout').style.display='none';
+};
+document.getElementById('ab-pw').addEventListener('keydown',function(e){if(e.key==='Enter')adminLogin();});
+
+})();
+</script>
+</body>
+</html>
