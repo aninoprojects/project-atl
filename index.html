@@ -90,21 +90,28 @@
     .logo span{color:var(--text);}
     .version-badge{font-family:'IBM Plex Mono',monospace;font-size:0.55rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--bg);background:var(--accent);padding:2px 6px;border-radius:2px;line-height:1.6;}
     .topbar-right{display:flex;align-items:center;gap:8px;}
-    .topbar-btn{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.07em;text-transform:uppercase;background:var(--bg-light);border:1px solid var(--border);color:var(--muted);padding:5px 11px;border-radius:var(--radius);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:6px;position:relative;}
+    .topbar-btn{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.07em;text-transform:uppercase;background:rgba(30,42,64,0.8);border:1px solid rgba(56,100,160,0.35);color:#94a3b8;padding:5px 11px;border-radius:var(--radius);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:6px;position:relative;text-decoration:none;}
     .topbar-btn:hover{border-color:var(--muted);color:var(--text);}
     #btn-admin.logged-in{color:var(--accent-l);border-color:rgba(100,181,246,0.35);}
     .notif-dot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:#e53935;border:2px solid var(--bg);display:none;animation:pulse 1.5s infinite;}
     @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
 
     /* ── MAP ── */
-    #map{position:fixed;top:var(--topbar-h);left:0;right:0;bottom:0;z-index:1;}
+    #map{position:fixed;top:var(--topbar-h);left:0;right:calc(var(--panel-w) + 24px);bottom:0;z-index:1;transition:right 0.3s ease;}
 
-    /* ── PANEL ── */
-    #panel{position:fixed;top:var(--topbar-h);right:0;bottom:0;width:var(--panel-w);background:var(--bg-mid);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);z-index:900;overflow:hidden;}
-    #panel.open{transform:translateX(0);}
-    #btn-open-panel{position:fixed;top:calc(var(--topbar-h) + 8px);right:8px;z-index:800;background:var(--bg-mid);border:1px solid var(--border);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;padding:6px 10px;border-radius:var(--radius);cursor:pointer;transition:all 0.15s;}
-    #btn-open-panel:hover{border-color:var(--muted);color:var(--text);}
-    #btn-open-panel.hidden{display:none;}
+    /* ── PANEL — floating island ── */
+    #panel{
+      position:fixed;top:calc(var(--topbar-h) + 12px);right:12px;
+      bottom:12px;width:var(--panel-w);
+      background:rgba(15,23,42,0.92);
+      backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border:1px solid rgba(56,100,160,0.35);
+      border-radius:16px;
+      display:flex;flex-direction:column;
+      box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.04);
+      z-index:900;overflow:hidden;
+    }
+    #btn-open-panel{display:none;}
 
     /* Panel empty */
     #panel-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:10px;}
@@ -212,7 +219,16 @@
     .btn-remove-color:hover{color:#e74c3c;}
 
     /* Admin modal */
-    #modal-admin .modal-box{max-width:480px;}
+    #modal-admin .modal-box{max-width:500px;}
+    #modal-add .modal-box{max-width:560px;max-height:90vh;overflow-y:auto;}
+    #modal-add .modal-box::-webkit-scrollbar{width:4px;}
+    #modal-add .modal-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+    .affil-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:white;font-weight:600;}
+    .affil-tag button{background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:0.75rem;padding:0 0 0 2px;}
+    .affil-tag button:hover{color:white;}
+    .affil-sug-item{padding:8px 12px;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px;}
+    .affil-sug-item:hover{background:var(--bg-light);}
+    .affil-sug-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
     .admin-menu{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
     .admin-menu-btn{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text);cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;width:100%;transition:all 0.15s;}
     .admin-menu-btn:hover{border-color:var(--accent-l);background:rgba(33,150,243,0.05);}
@@ -304,11 +320,11 @@
     .toda-pin.selected{transform:scale(1.55)!important;box-shadow:0 0 0 4px rgba(255,255,255,0.6),0 0 0 7px rgba(255,255,255,0.15),0 4px 14px rgba(0,0,0,0.4)!important;}
 
     /* Leaflet overrides */
-    .leaflet-tooltip{background:var(--bg)!important;border:1px solid var(--border)!important;color:var(--text)!important;font-family:'IBM Plex Mono',monospace!important;font-size:0.62rem!important;border-radius:3px!important;box-shadow:0 2px 8px rgba(0,0,0,0.4)!important;}
+    .leaflet-tooltip{background:#0f172a!important;border:1px solid rgba(56,100,160,0.5)!important;color:#e2e8f0!important;font-family:'IBM Plex Mono',monospace!important;font-size:0.62rem!important;border-radius:3px!important;box-shadow:0 2px 8px rgba(0,0,0,0.4)!important;}
     .leaflet-tooltip::before{border-top-color:var(--border)!important;}
-    .leaflet-control-zoom a{background:var(--bg-mid)!important;border-color:var(--border)!important;color:var(--muted)!important;}
+    .leaflet-control-zoom a{background:rgba(15,23,42,0.9)!important;border-color:rgba(56,100,160,0.4)!important;color:#94a3b8!important;}
     .leaflet-control-zoom a:hover{color:var(--text)!important;}
-    .leaflet-control-attribution{background:rgba(14,31,51,0.75)!important;color:var(--muted)!important;font-size:0.5rem!important;}
+    .leaflet-control-attribution{background:rgba(10,15,26,0.8)!important;color:#475569!important;font-size:0.5rem!important;}
     .leaflet-control-attribution a{color:var(--muted)!important;}
 
     .affil-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.04em;color:white;font-weight:600;}
@@ -342,7 +358,7 @@
 <div id="topbar">
   <div class="brand">
     <div class="logo">Project <span>ATL</span></div>
-    <div class="version-badge">β 2.0</div>
+    <div class="version-badge">β 2.0.1</div>
   </div>
   <div class="topbar-right">
     <a href="/about.html" class="topbar-btn" style="text-decoration:none;">About</a>
@@ -370,7 +386,6 @@
     <div class="legend-item"><div class="legend-dot" style="background:var(--confirmed)"></div>Confirmed Terminal</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--draft)"></div>Draft / Unverified</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--kolorum)"></div>Kolorum / Informal</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--robinsons)"></div>Robinsons Affiliated</div>
   </div>
   <div id="panel-detail" class="hidden">
     <div id="panel-logo">
@@ -386,8 +401,8 @@
       </div>
       <div id="panel-name">—</div>
       <div id="panel-fullname"></div>
-      <div id="panel-rob-logo">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Robinsons_Malls_logo.svg/320px-Robinsons_Malls_logo.svg.png" alt="Robinsons Malls" />
+      <div id="panel-rob-logo" style="display:none;margin-top:8px;">
+        <span style="display:inline-flex;align-items:center;gap:5px;background:#CC2200;color:white;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:4px;">⬡ Robinsons Affiliated</span>
       </div>
     </div>
     <div id="panel-body">
@@ -409,7 +424,6 @@
   </div>
 </div>
 
-<button id="btn-open-panel" type="button">☰ Panel</button>
 <div id="picking-hint">
   <span>📍 Click the map to place the terminal pin</span>
   <button type="button" onclick="cancelPickPin()">Cancel</button>
@@ -485,7 +499,7 @@
       <div class="form-group"><label>Longitude *</label><input type="number" id="f-lng" step="0.0000001" placeholder="121.174..."/></div>
     </div>
     <button class="btn-pin" type="button" id="btn-pick-pin">📍 Drop Pin on Map</button>
-    <hr class="form-divider"/>
+    <div id="f-color-section"><hr class="form-divider"/>
     <div class="form-section-label">Appearance</div>
     <div class="form-group"><label>Logo / Image URL</label><input type="url" id="f-logo" placeholder="https://..."/></div>
     <div class="form-group">
@@ -498,14 +512,21 @@
         </div>
       </div>
       <button class="btn-add-color" type="button" onclick="addColorRow()">+ Add Color</button>
-    </div>
+    </div></div>
     <hr class="form-divider"/>
     <div class="form-section-label">Details</div>
-    <div class="form-group"><label>Last Confirmed As Of</label><input type="text" id="f-checked" placeholder="e.g. April 19, 2026"/></div>
+    <div class="form-group" id="f-checked-grp"><label>Last Confirmed As Of <span style="color:var(--accent-l);">*</span></label><input type="text" id="f-checked" placeholder="e.g. April 19, 2026"/></div>
     <div class="form-group"><label>Notes</label><textarea id="f-notes" placeholder="e.g. Operates 3AM–11PM, bajaj-type..."></textarea></div>
-    <div class="form-group" style="flex-direction:row;align-items:center;gap:10px;">
-      <input type="checkbox" id="f-robinsons" style="width:auto;accent-color:var(--robinsons);"/>
-      <label style="text-transform:none;font-size:0.78rem;color:var(--text);cursor:pointer;" for="f-robinsons">Robinsons Malls Affiliated Terminal</label>
+    <hr class="form-divider"/>
+    <div class="form-section-label">Affiliations</div>
+    <div class="form-group">
+      <label>Affiliations <span style="font-weight:400;text-transform:none;">(type or pick; press Enter to add)</span></label>
+      <div id="affil-input-outer" style="position:relative;">
+        <div id="affil-input-wrap" style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;min-height:40px;cursor:text;align-items:center;" onclick="document.getElementById('affil-text').focus()">
+          <input id="affil-text" class="affil-text-input" placeholder="e.g. Robinsons, SM..." autocomplete="off" style="border:none;background:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.82rem;min-width:100px;flex:1;"/>
+        </div>
+        <div id="affil-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-mid);border:1px solid var(--border);border-radius:5px;z-index:200;max-height:140px;overflow-y:auto;"></div>
+      </div>
     </div>
     <div class="form-error" id="add-error"></div>
     <button class="btn-primary" type="button" id="btn-add-submit">Register Terminal</button>
@@ -612,6 +633,20 @@
       <div class="about-prose">
         <p style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--accent-l);text-transform:uppercase;margin-bottom:20px;">⚠ Project ATL is still in Beta — features and data are actively being developed.</p>
         <div class="changelog-entry">
+          <div><span class="changelog-version">β 2.0.1</span><span class="changelog-date">April 2026</span></div>
+          <div class="changelog-tags"><span class="tag tag-fix">Fix</span></div>
+          <ul class="changelog-ul">
+            <li>Dark mode enabled — map and UI fully dark themed</li>
+            <li>Panel now a floating island (rounded, glassmorphism)</li>
+            <li>Admin session persists across refresh and page navigation</li>
+            <li>All terminal data removed from code — Supabase only</li>
+            <li>Affiliations system replaces Robinsons checkbox</li>
+            <li>Smart form — fields adapt per status (Confirmed/Draft/Kolorum)</li>
+            <li>Robinsons logo workaround — text badge instead of broken image</li>
+            <li>Removed Robinsons from legend</li>
+          </ul>
+        </div>
+        <div class="changelog-entry">
           <div><span class="changelog-version">β 2.0</span><span class="changelog-date">April 2026</span></div>
           <div class="changelog-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-change">Change</span></div>
           <ul class="changelog-ul">
@@ -648,7 +683,7 @@
             <li>Admin login panel (Supabase auth)</li>
             <li>Drop-pin feature for coordinate input</li>
             <li>Color swatches in sidebar</li>
-            <li>Robinsons Malls badge</li>
+            <li>Robinsons badge</li>
             <li>iMall cluster group circle</li>
             <li>Non-Antipolo pins removed</li>
             <li>TODA numbers separated from names</li>
@@ -661,7 +696,7 @@
             <li>Admin login panel (Supabase auth)</li>
             <li>Drop-pin feature for coordinate input</li>
             <li>Color swatches in sidebar</li>
-            <li>Robinsons Malls badge</li>
+            <li>Robinsons badge</li>
             <li>Non-Antipolo pins removed</li>
             <li>TODA numbers separated from names</li>
           </ul>
@@ -747,7 +782,7 @@
 (function(){'use strict';
 
 // ═══════════════════════════════════════════════════════════════
-// SUPABASE
+// SUPABASE — with persistent session
 // ═══════════════════════════════════════════════════════════════
 var sb=null;
 try{
@@ -755,9 +790,27 @@ try{
   if(_s&&_s.createClient)
     sb=_s.createClient(
       'https://gmejqjfathciopglshqd.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZWpxamZhdGhjaW9wZ2xzaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTgxMDIsImV4cCI6MjA5MjEzNDEwMn0.ci90256_zc4ZQ6vvXRcGne37B8MA-yag3bzSC_TaFzA'
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZWpxamZhdGhjaW9wZ2xzaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTgxMDIsImV4cCI6MjA5MjEzNDEwMn0.ci90256_zc4ZQ6vvXRcGne37B8MA-yag3bzSC_TaFzA',
+      {auth:{persistSession:true,storageKey:'atl_admin_session',storage:window.localStorage}}
     );
 }catch(e){console.warn('SB:',e);}
+
+// Restore admin session on page load
+var adminSession=null;
+(async function restoreSession(){
+  if(!sb)return;
+  try{
+    var r=await sb.auth.getSession();
+    if(r.data&&r.data.session){
+      adminSession=r.data.session;
+      document.getElementById('btn-admin').classList.add('logged-in');
+      document.getElementById('btn-admin-label').textContent='Admin ✓';
+      document.getElementById('admin-email-display').textContent=r.data.session.user.email;
+      document.body.classList.add('admin-mode');
+      checkPendingContributions();
+    }
+  }catch(e){}
+})();
 
 // ═══════════════════════════════════════════════════════════════
 // MODALS
@@ -866,45 +919,8 @@ function normColors(c){
   return[];
 }
 
-// ═══════════════════════════════════════════════════════════════
-// STATIC DATA
-// ═══════════════════════════════════════════════════════════════
-var TODAS=[
-  {n:7,  name:'APFMCTODA',    full:'',lat:14.5805848,lng:121.174715,  terminal:null,               landmarks:"Maylor's 2 Plaza, Claveria Bldg.",colors:'Green and black',   checked:'March 17, 2026',status:'confirmed',robinsons:false,notes:null},
-  {n:17, name:'GEMCASHTODA',  full:'',lat:14.5841524,lng:121.1739836, terminal:null,               landmarks:'Juan Sumulong Elementary School', colors:'White and black',    checked:'March 19, 2026',status:'confirmed',robinsons:false,notes:null},
-  {n:27, name:'P-NFLMPBWTODA',full:'',lat:14.571451, lng:121.1786872, terminal:'Nayon',            landmarks:'Nayong Silangan',                 colors:'Orange and blue',   checked:null,            status:'confirmed',robinsons:false,notes:null},
-  {n:29, name:'PACSTTODA',    full:'',lat:14.5794327,lng:121.1787015, terminal:'Tubigan',           landmarks:'O!Save Tubigan',                  colors:'White and orange',  checked:'March 17, 2026',status:'confirmed',robinsons:false,notes:null},
-  {n:38, name:'SUG-SAFTTODA', full:'Sunflower Upper Gumamela - Silihan Antipolo Federal Tibagan',lat:14.5408328,lng:121.1917183,terminal:'SUG-SAFTTODA Terminal',landmarks:'Dali Mahabang Parang',colors:'Vermilion and yellow',checked:'March 22, 2026',status:'confirmed',robinsons:false,notes:'Operates 3AM – 11PM'},
-  {n:97, name:'MARCOPTODA',   full:'Marrero-Acop',lat:14.5820475,lng:121.1709584,terminal:'Marrero-Acop',landmarks:'Marrero-Acop Clinic and Hospital',colors:'Dark blue and white',checked:'March 17, 2026',status:'confirmed',robinsons:false,notes:null},
-  {n:null,name:'UM-ADOTA',    full:'',lat:14.5749963,lng:121.1824937,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:null,name:'PPMTODA',     full:'Peñafrancia Palmera Masinag',lat:14.6256426,lng:121.1386561,terminal:'PPMTODA Terminal',landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:null,name:'MCMSLATODA',  full:'',lat:14.5882785,lng:121.1728689,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:'Red bajaj'},
-  {n:3,  name:'AHSLJTODA',   full:'Antipolo Hinapao San Lorenzo Joyous',lat:14.5849616,lng:121.1919711,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:8,  name:'AMTODA',      full:'Antipolo Market',lat:14.585043,lng:121.177192,terminal:'AMTODA TERMINAL',landmarks:'Antipolo Market Area',colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:9,  name:'ASTDA',       full:'',lat:14.5881885,lng:121.1754818,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:10, name:'ASACTODA',    full:'',lat:14.5813912,lng:121.1693335,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:11, name:'AYATDOA',     full:'Antipolo Yupangco Angono',lat:14.5829958,lng:121.1760855,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:12, name:'ASHTODA',     full:'Antipolo Sumulong Highway',lat:14.5839462,lng:121.1758491,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:18, name:'LJSCTODA',    full:'(Shopwise)',lat:14.5808082,lng:121.1753184,terminal:null,landmarks:'Shopwise Antipolo',colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:20, name:'MLQELCPTODA', full:'M.L. Quezon Extension-Lico Circle Park',lat:14.5840319,lng:121.1758276,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:21, name:'EPRKLTODA',   full:'Eastview Pines City Royale Knights Columbus Loreland',lat:14.5838944,lng:121.175845,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:23, name:'MVMAWTODA',   full:'Mia Vita Maia Alta Woodrow',lat:14.5669276,lng:121.1883521,terminal:'MV MAWTODA terminal',landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:35, name:'UM-ADOTA',    full:'',lat:14.5849783,lng:121.1769699,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:36, name:'PATATODA',    full:'',lat:14.571979, lng:121.2024955,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:39, name:'SHIMACTODA',  full:'',lat:14.5838236,lng:121.1757948,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:41, name:'ROBINSONS HOMES TODA',full:'Robinson Homes',lat:14.5774078,lng:121.1888379,terminal:'RSSATODA Office & Coop',landmarks:'Robinsons Homes San Jose',colors:null,checked:null,status:'draft',robinsons:true,notes:null},
-  {n:42, name:'SSLTODA',     full:'San Isidro San Luis',lat:14.5853935,lng:121.1762174,terminal:null,landmarks:'P. Burgos, Lumang Palengke',colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:45, name:'SLRPMATODA',  full:'Sitio San Lorenzo Ruiz Pamana Milleluce Ahon',lat:14.5825795,lng:121.1762063,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:46, name:'TAKTODA',     full:'',lat:14.5839943,lng:121.175845,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:60, name:'KAMAGONG',    full:'',lat:14.617789, lng:121.1696981,terminal:null,landmarks:'Cogeo Gate 2',colors:null,checked:null,status:'draft',robinsons:false,notes:'Green bajaj'},
-  {n:61, name:'BANATODA',    full:'Bagong Nayon',lat:14.627441,lng:121.16569,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:64, name:'SHAVICTODA',  full:'Sumulong Highway Antipolo Victory Mall iMall Cogeo',lat:14.5874757,lng:121.171568,terminal:null,landmarks:'Victory Mall, iMall Antipolo',colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:86, name:'SPSIMABTODA', full:'Sitio Pinagpala Sitio Mata Angono Binangonan',lat:14.5411688,lng:121.192736,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:91, name:'GLAPTODA',    full:'General Luna Antipolo Poblacion',lat:14.5803123,lng:121.174013,terminal:null,landmarks:null,colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:94, name:'1CIRQTODA',   full:'',lat:14.5769226,lng:121.1711414,terminal:null,landmarks:'(no terminal)',colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:101,name:'SUPER PALENGKE TODA',full:'',lat:14.5849933,lng:121.1776025,terminal:null,landmarks:'Super Palengke Antipolo',colors:null,checked:null,status:'draft',robinsons:false,notes:null},
-  {n:110,name:'STA. ELENA TODA',full:'Sta. Elena Village',lat:14.5779518,lng:121.1934196,terminal:null,landmarks:'Sta. Elena Village',colors:null,checked:null,status:'draft',robinsons:false,notes:null}
-];
+// All terminal data lives in Supabase — no static data here.
+var TODAS=[];
 
 // ═══════════════════════════════════════════════════════════════
 // MAP
@@ -929,7 +945,7 @@ map=L.map('map',{center:_savedPos?[_savedPos.lat,_savedPos.lng]:[14.587,121.178]
 map.on('moveend',function(){try{var c=map.getCenter();localStorage.setItem('atl_pos',JSON.stringify({lat:c.lat,lng:c.lng,zoom:map.getZoom()}));}catch(e){}});
 
 // CartoDB Positron — clean, simple, light
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
   attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a> | Data: Project ATL',
   subdomains:'abcd',
   maxZoom:19
@@ -937,8 +953,8 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
 
 L.control.zoom({position:'bottomright'}).addTo(map);
 
-setTimeout(function(){map.invalidateSize();},100);
-setTimeout(function(){map.invalidateSize();},600);
+setTimeout(function(){map.invalidateSize();},200);
+setTimeout(function(){map.invalidateSize();},800);
 map.on('click',function(){if(!pickingPin&&!pickingForContrib){closePanel();currentPanelKey=null;}});
 
 // ═══════════════════════════════════════════════════════════════
@@ -977,8 +993,9 @@ function addTodaToMap(toda,key){
           addTodaToMap({
             id:row.id,n:row.number,name:row.name,full:row.full_name||'',
             lat:row.lat,lng:row.lng,terminal:row.terminal_name,landmarks:row.landmarks,
-            notes:row.notes||null,colors:Array.isArray(row.colors)?row.colors:[],
-            affiliations:Array.isArray(row.affiliations)?row.affiliations:[],
+            notes:row.notes||null,
+            colors:Array.isArray(row.colors)?row.colors:[],
+            affiliations:Array.isArray(row.affiliations)?row.affiliations:(row.has_robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]),
             checked:row.last_checked,status:row.status||'draft',
             robinsons:row.has_robinsons||false,logoUrl:row.logo_url||null
           },'sb-'+row.id);
@@ -1018,9 +1035,10 @@ function openPanel(t){
   document.getElementById('panel-name').textContent=t.name;
   document.getElementById('panel-fullname').textContent=t.full||'';
 
-  // Robinsons logo
+  // Affiliations + Robinsons badge (workaround: show as badge not img)
   var rl=document.getElementById('panel-rob-logo');
-  rl.style.display=t.robinsons?'block':'none';
+  var affils=Array.isArray(t.affiliations)?t.affiliations:(t.robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]);
+  rl.style.display=affils.some(function(a){return a.name.toLowerCase()==='robinsons';})?'block':'none';
 
   // Logo area
   var li=document.getElementById('panel-logo-img'),lp=document.getElementById('panel-logo-placeholder'),lt=document.getElementById('panel-logo-text');
@@ -1050,22 +1068,24 @@ function openPanel(t){
   if(affils.length){afc.innerHTML='';affils.forEach(function(a){var chip=document.createElement('div');chip.className='affil-chip';chip.style.background=a.color||'#607D8B';chip.textContent=a.name;afc.appendChild(chip);});afr.style.display='';}
   else afr.style.display='none';
 
+  // Hide last confirmed for draft/kolorum
+  var dcrow=document.getElementById('d-checked');
+  if(dcrow){
+    var dcparent=dcrow.closest('.detail-row');
+    if(dcparent)dcparent.style.display=(t.status==='confirmed')?'':'none';
+  }
   sv('d-checked',t.checked,'Not checked yet');
   updateDist(t);
   showDetail();
-  panel.classList.add('open');
-  btnOpen.classList.add('hidden');
-  if(map)setTimeout(function(){map.invalidateSize();},320);
 }
 
-function closePanel(){selectPin(null);panel.classList.remove('open');btnOpen.classList.remove('hidden');showEmpty();if(map)setTimeout(function(){map.invalidateSize();},320);}
+function closePanel(){selectPin(null);showEmpty();}
 document.getElementById('panel-close').addEventListener('click',function(){closePanel();currentPanelKey=null;});
-btnOpen.addEventListener('click',function(){panel.classList.add('open');btnOpen.classList.add('hidden');showEmpty();if(map)setTimeout(function(){map.invalidateSize();},320);});
+// Panel always visible — no toggle needed
 
 // ═══════════════════════════════════════════════════════════════
 // ADMIN AUTH
 // ═══════════════════════════════════════════════════════════════
-var adminSession=null;
 document.getElementById('btn-admin').addEventListener('click',function(){if(adminSession)openModal('modal-admin');else openModal('modal-login');});
 document.getElementById('btn-login-submit').addEventListener('click',async function(){
   var em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-password').value;
@@ -1143,7 +1163,7 @@ window.onEditClick=function(){
   document.getElementById('f-lng').value=t.lng||'';document.getElementById('f-terminal').value=t.terminal||'';
   document.getElementById('f-landmarks').value=t.landmarks||'';document.getElementById('f-logo').value=t.logoUrl||'';
   document.getElementById('f-checked').value=t.checked||'';document.getElementById('f-notes').value=t.notes||'';
-  document.getElementById('f-status').value=t.status||'draft';document.getElementById('f-robinsons').checked=t.robinsons||false;
+  document.getElementById('f-status').value=t.status||'draft';setAffilsFromData(t.affiliations||[]);onStatusChange();
   var cols=normColors(t.colors),ci=document.getElementById('color-inputs');ci.innerHTML='';
   if(cols.length)cols.forEach(function(c){addColorRowValues(c.hex,c.label);});else addColorRowValues('#42A5F5','');
   openModal('modal-add');
@@ -1158,7 +1178,23 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
   var errEl=document.getElementById('add-error'),btn=this;errEl.style.display='none';
   if(!name||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
   var cols=Array.from(document.querySelectorAll('#color-inputs .color-input-row')).map(function(r){return{hex:r.querySelector('input[type="color"]').value,label:r.querySelector('input[type="text"]').value.trim()};}).filter(function(c){return c.label;});
-  var payload={number:parseInt(document.getElementById('f-number').value)||null,name:name,full_name:document.getElementById('f-fullname').value.trim()||null,lat:lat,lng:lng,terminal_name:document.getElementById('f-terminal').value.trim()||null,landmarks:document.getElementById('f-landmarks').value.trim()||null,notes:document.getElementById('f-notes').value.trim()||null,colors:cols,last_checked:document.getElementById('f-checked').value.trim()||null,status:document.getElementById('f-status').value,has_robinsons:document.getElementById('f-robinsons').checked,logo_url:document.getElementById('f-logo').value.trim()||null,city:'Antipolo City'};
+  var _fst=document.getElementById('f-status').value;
+  var _isKol=_fst==='kolorum';
+  var payload={
+    number:_isKol?null:(parseInt(document.getElementById('f-number').value)||null),
+    name:name,
+    full_name:_isKol?null:(document.getElementById('f-fullname').value.trim()||null),
+    lat:lat,lng:lng,
+    terminal_name:document.getElementById('f-terminal').value.trim()||null,
+    landmarks:document.getElementById('f-landmarks').value.trim()||null,
+    notes:document.getElementById('f-notes').value.trim()||null,
+    colors:_isKol?[]:cols,
+    affiliations:_currentAffils,
+    last_checked:_fst==='confirmed'?(document.getElementById('f-checked').value.trim()||null):null,
+    status:_fst,
+    logo_url:_isKol?null:(document.getElementById('f-logo').value.trim()||null),
+    city:'Antipolo City'
+  };
   if(!sb){errEl.textContent='Supabase not configured.';errEl.style.display='block';return;}
   btn.textContent=_editKey?'Saving…':'Registering…';btn.disabled=true;
   try{
@@ -1167,7 +1203,7 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
     else{var ri=await sb.from('todas_admin').insert([payload]).select();if(ri.error)throw ri.error;newId=ri.data&&ri.data[0]?ri.data[0].id:null;}
     if(editEntry&&editEntry.marker&&map)map.removeLayer(editEntry.marker);
     if(_editKey)delete markerStore[_editKey];
-    var nt={id:newId,n:payload.number,name:name,full:payload.full_name||'',lat:lat,lng:lng,terminal:payload.terminal_name,landmarks:payload.landmarks,notes:payload.notes,colors:cols,checked:payload.last_checked,status:payload.status,robinsons:payload.has_robinsons,logoUrl:payload.logo_url};
+    var nt={id:newId,n:payload.number,name:name,full:payload.full_name||'',lat:lat,lng:lng,terminal:payload.terminal_name,landmarks:payload.landmarks,notes:payload.notes,colors:cols,affiliations:_currentAffils,checked:payload.last_checked,status:payload.status,robinsons:_currentAffils.some(function(a){return a.name.toLowerCase()==='robinsons';}),logoUrl:payload.logo_url};
     addTodaToMap(nt,newId?'sb-'+newId:('s-'+name));
     if(tempMarker&&map){map.removeLayer(tempMarker);tempMarker=null;}
     closeModal('modal-add');showToast(name+(_editKey?' updated':' registered'),'success');resetForm();_editKey=null;
@@ -1181,7 +1217,7 @@ function resetForm(){
   document.getElementById('btn-add-submit').textContent='Register Terminal';
   document.getElementById('btn-delete-in-form').style.display='none';
   ['f-number','f-name','f-fullname','f-lat','f-lng','f-terminal','f-landmarks','f-logo','f-checked','f-notes'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('f-status').value='draft';document.getElementById('f-robinsons').checked=false;
+  document.getElementById('f-status').value='draft';_currentAffils=[];renderAffilTags();onStatusChange();
   document.getElementById('color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><input type="text" placeholder="Color name (e.g. Blue)"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button></div>';
   document.getElementById('add-error').style.display='none';
 }
@@ -1367,6 +1403,111 @@ window.saveDrawnArea=async function(){
     document.getElementById('btn-draw-start').style.display='block';
   }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
 };
+
+
+// ═══════════════════════════════════════════════════════════════
+// AFFILIATIONS INPUT SYSTEM
+// ═══════════════════════════════════════════════════════════════
+var _knownAffils=[
+  {name:'Robinsons',color:'#CC2200'},
+  {name:'SM',color:'#0047CC'},
+  {name:'Ayala',color:'#005A32'},
+  {name:'Puregold',color:'#E31837'}
+];
+var _currentAffils=[];
+
+// Load known affiliations from Supabase
+(async function loadAffils(){
+  if(!sb)return;
+  try{
+    var r=await sb.from('affiliations').select('*').order('name');
+    if(!r.error&&r.data)_knownAffils=r.data;
+  }catch(e){}
+})();
+
+function renderAffilTags(){
+  var wrap=document.getElementById('affil-input-wrap');
+  if(!wrap)return;
+  wrap.querySelectorAll('.affil-tag').forEach(function(t){t.remove();});
+  _currentAffils.forEach(function(a,i){
+    var tag=document.createElement('div');
+    tag.className='affil-tag';
+    tag.style.background=a.color||'#607D8B';
+    tag.innerHTML=a.name+'<button onclick="removeAffilTag('+i+')" type="button">✕</button>';
+    wrap.insertBefore(tag,document.getElementById('affil-text'));
+  });
+}
+window.removeAffilTag=function(i){_currentAffils.splice(i,1);renderAffilTags();};
+
+function addAffilByName(name){
+  name=name.trim();if(!name)return;
+  var norm=name.charAt(0).toUpperCase()+name.slice(1).toLowerCase();
+  // check duplicate
+  if(_currentAffils.some(function(a){return a.name.toLowerCase()===norm.toLowerCase();}))return;
+  var known=_knownAffils.find(function(k){return k.name.toLowerCase()===norm.toLowerCase();});
+  var color=known?known.color:'#607D8B';
+  _currentAffils.push({name:known?known.name:norm,color:color});
+  renderAffilTags();
+  // auto-register if new and admin
+  if(!known&&sb&&adminSession){
+    sb.from('affiliations').insert([{name:norm,color:'#607D8B'}]).then(function(r){
+      if(!r.error)_knownAffils.push({name:norm,color:'#607D8B'});
+    });
+  }
+}
+
+var _afText=document.getElementById('affil-text');
+var _afSug=document.getElementById('affil-suggestions');
+if(_afText){
+  _afText.addEventListener('input',function(){
+    var v=this.value.toLowerCase();
+    if(!v){_afSug.style.display='none';return;}
+    var matches=_knownAffils.filter(function(k){return k.name.toLowerCase().includes(v);});
+    if(!matches.length){_afSug.style.display='none';return;}
+    _afSug.innerHTML='';
+    matches.forEach(function(k){
+      var item=document.createElement('div');item.className='affil-sug-item';
+      item.innerHTML='<div class="affil-sug-dot" style="background:'+k.color+'"></div>'+k.name;
+      item.onclick=function(){addAffilByName(k.name);_afText.value='';_afSug.style.display='none';};
+      _afSug.appendChild(item);
+    });
+    _afSug.style.display='block';
+  });
+  _afText.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.key===','){e.preventDefault();addAffilByName(this.value);this.value='';_afSug.style.display='none';}
+    if(e.key==='Backspace'&&!this.value&&_currentAffils.length){_currentAffils.pop();renderAffilTags();}
+  });
+}
+document.addEventListener('click',function(e){if(_afSug&&!e.target.closest('#affil-input-outer'))_afSug.style.display='none';});
+
+function setAffilsFromData(affils){
+  _currentAffils=Array.isArray(affils)?affils.map(function(a){return typeof a==='object'?a:{name:a,color:'#607D8B'};}):[];
+  renderAffilTags();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATUS-DRIVEN FORM (Kolorum hides many fields)
+// ═══════════════════════════════════════════════════════════════
+function onStatusChange(){
+  var s=document.getElementById('f-status').value;
+  var isKolorum=s==='kolorum';
+  var isConfirmed=s==='confirmed';
+  // Number hidden for kolorum
+  var numRow=document.getElementById('f-number');
+  if(numRow)numRow.closest('.form-row').style.display=isKolorum?'none':'';
+  // Full name hidden for kolorum
+  var fn=document.getElementById('f-fullname');
+  if(fn)fn.closest('.form-group').style.display=isKolorum?'none':'';
+  // Colors hidden for kolorum
+  var colorSec=document.getElementById('f-color-section');
+  if(colorSec)colorSec.style.display=isKolorum?'none':'';
+  // Last confirmed only for confirmed
+  var checkedGrp=document.getElementById('f-checked-grp');
+  if(checkedGrp)checkedGrp.style.display=isConfirmed?'':'none';
+}
+// Attach to status select
+var _fStatus=document.getElementById('f-status');
+if(_fStatus)_fStatus.addEventListener('change',onStatusChange);
 
 })();
 </script>
