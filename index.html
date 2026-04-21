@@ -99,7 +99,7 @@
     @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
 
     /* ── MAP ── */
-    #map{position:fixed;top:var(--topbar-h);left:0;right:calc(var(--panel-w) + 24px);bottom:0;z-index:1;transition:right 0.3s ease;}
+    #map{position:fixed;top:var(--topbar-h);left:0;right:calc(var(--panel-w) + 24px);bottom:0;z-index:1;}
 
     /* ── PANEL — floating island ── */
     #panel{
@@ -987,6 +987,8 @@ if(navigator.geolocation){
   },function(){},{timeout:8000});
 }
 
+// Force layout before map init
+document.getElementById('map').style.visibility='hidden';
 // Restore last map position
 var _savedPos=null;
 try{var _sp=localStorage.getItem('atl_pos');if(_sp){var _p=JSON.parse(_sp);if(_p&&_p.lat&&_p.lng&&_p.zoom)_savedPos=_p;}}catch(e){}
@@ -1001,9 +1003,12 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
 }).addTo(map);
 
 L.control.zoom({position:'bottomright'}).addTo(map);
+document.getElementById('map').style.visibility='';
 
-setTimeout(function(){map.invalidateSize();},200);
-setTimeout(function(){map.invalidateSize();},800);
+setTimeout(function(){map.invalidateSize();},100);
+setTimeout(function(){map.invalidateSize();},500);
+setTimeout(function(){map.invalidateSize();},1500);
+map.whenReady(function(){map.invalidateSize();});
 map.on('click',function(){if(!pickingPin&&!pickingForContrib){closePanel();currentPanelKey=null;}});
 
 // ═══════════════════════════════════════════════════════════════
@@ -1281,34 +1286,9 @@ function resetForm(){
 var _lastContribTime=0;
 var _contribCurrentToda=null;
 
-window.openContribute=function(){
-  _contribCurrentToda=currentPanelKey?markerStore[currentPanelKey]&&markerStore[currentPanelKey].toda:null;
-  openModal('modal-contribute');
-};
+// openContribute defined later (unified version)
 
-document.getElementById('btn-contrib-submit').addEventListener('click',async function(){
-  var now=Date.now();
-  if(now-_lastContribTime<60000){
-    var wait=Math.ceil((60000-(now-_lastContribTime))/1000);
-    var errEl=document.getElementById('contrib-error');
-    errEl.textContent='Please wait '+wait+' seconds before submitting again.';errEl.style.display='block';return;
-  }
-  var name=document.getElementById('c-name').value.trim(),lat=parseFloat(document.getElementById('c-lat').value),lng=parseFloat(document.getElementById('c-lng').value);
-  var errEl=document.getElementById('contrib-error'),btn=this;errEl.style.display='none';
-  if(!name||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
-  if(!sb){errEl.textContent='Supabase not configured.';errEl.style.display='block';return;}
-  var payload={number:parseInt(document.getElementById('c-number').value)||null,name:name,full_name:document.getElementById('c-fullname').value.trim()||null,lat:lat,lng:lng,terminal_name:document.getElementById('c-terminal').value.trim()||null,landmarks:document.getElementById('c-landmarks').value.trim()||null,notes:document.getElementById('c-notes').value.trim()||null,colors:[],last_checked:document.getElementById('c-checked').value.trim()||null,status:document.getElementById('c-status').value,review_status:'pending',city:'Antipolo City'};
-  btn.textContent='Submitting…';btn.disabled=true;
-  try{
-    var r=await sb.from('contributions').insert([payload]);
-    if(r.error)throw r.error;
-    _lastContribTime=Date.now();
-    closeModal('modal-contribute');
-    resetContribForm();
-    showToast('Contribution submitted for review','success');
-  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
-  finally{btn.textContent='Submit for Review';btn.disabled=false;}
-});
+// Old contrib submit removed — unified handler below handles both admin and guest
 
 function resetContribForm(){['c-number','c-name','c-fullname','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('c-status').value='draft';document.getElementById('contrib-error').style.display='none';}
 
@@ -1395,9 +1375,7 @@ function showToast(m,type){var t=document.getElementById('toast');t.textContent=
 // ═══════════════════════════════════════════════════════════════
 // LOAD SITE CONTENT ON OPEN
 // ═══════════════════════════════════════════════════════════════
-document.getElementById('btn-about').addEventListener('click',function(){
-  loadSiteContent();openModal('modal-about');
-});
+// About is now a link to /about.html
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -1837,7 +1815,6 @@ syncFormStatus('c');
 
 // ── CONTRIBUTE FORM SUBMIT (with mode detection) ──
 // Replace the old submit listener with a new unified one
-document.getElementById('btn-contrib-submit').removeEventListener('click',arguments[0]);
 document.getElementById('btn-contrib-submit').addEventListener('click',async function(){
   var isAdmin=!!adminSession;
   var st=document.getElementById('c-status').value;
