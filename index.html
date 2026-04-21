@@ -292,21 +292,6 @@
     .btn-reject:hover{color:#e74c3c;border-color:#e74c3c;}
     .no-contribs{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted);text-align:center;padding:24px 0;}
 
-    /* Privacy consent banner */
-    #consent-banner{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:9000;display:flex;align-items:center;justify-content:center;}
-    #consent-banner.hidden{display:none;}
-    .consent-box{background:var(--bg-mid);border:1px solid var(--border);border-radius:12px;max-width:460px;width:calc(100% - 32px);padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.7);}
-    .consent-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
-    .consent-subtitle{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;}
-    .consent-body{font-size:0.82rem;line-height:1.7;color:var(--muted);margin-bottom:20px;}
-    .consent-body b{color:var(--text);}
-    .consent-body a{color:var(--accent-l);cursor:pointer;}
-    .consent-actions{display:flex;flex-direction:column;gap:8px;}
-    .btn-consent-accept{width:100%;padding:11px;border:none;border-radius:6px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;transition:opacity 0.15s;}
-    .btn-consent-accept:hover{opacity:0.88;}
-    .btn-consent-decline{width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
-    .btn-consent-decline:hover{border-color:var(--muted);color:var(--text);}
-
     /* Toast */
     #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1565C0;color:white;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.06em;text-transform:uppercase;padding:10px 20px;border-radius:5px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
     #toast.show{opacity:1;}
@@ -349,23 +334,6 @@
   </style>
 </head>
 <body>
-
-<!-- ── PRIVACY CONSENT BANNER ── -->
-<div id="consent-banner">
-  <div class="consent-box">
-    <div class="consent-title">🛺 Before you continue</div>
-    <div class="consent-subtitle">Project ATL · Data & Privacy Notice</div>
-    <div class="consent-body">
-      By using this site, you agree to our <a onclick="showConsentPolicy('terms')">Terms of Service</a> and <a onclick="showConsentPolicy('privacy')">Privacy Policy</a>.<br><br>
-      <b>Please note:</b> Do not enter personal information such as your home address, passwords, or other sensitive data. Any terminal information you contribute may be visible to the public after admin review.
-      <br><br>This site collects minimal, anonymized data for improvement purposes only.
-    </div>
-    <div class="consent-actions">
-      <button class="btn-consent-accept" onclick="acceptConsent()">I Understand, Continue</button>
-      <button class="btn-consent-decline" onclick="declineConsent()">Leave Site</button>
-    </div>
-  </div>
-</div>
 
 <!-- ── TOPBAR ── -->
 <div id="topbar">
@@ -921,24 +889,6 @@ document.querySelectorAll('.modal-overlay').forEach(function(ov){
   ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');});
 });
 
-// ═══════════════════════════════════════════════════════════════
-// CONSENT BANNER
-// ═══════════════════════════════════════════════════════════════
-function acceptConsent(){
-  try{localStorage.setItem('atl_consent','1');}catch(e){}
-  document.getElementById('consent-banner').classList.add('hidden');
-}
-function declineConsent(){window.location.href='https://www.google.com';}
-window.acceptConsent=acceptConsent; window.declineConsent=declineConsent;
-
-window.showConsentPolicy=function(tab){
-  acceptConsent();
-  openModal('modal-about');
-  setTimeout(function(){switchAboutTab(tab);},100);
-};
-
-// Check existing consent
-try{if(localStorage.getItem('atl_consent')==='1')document.getElementById('consent-banner').classList.add('hidden');}catch(e){}
 
 // ═══════════════════════════════════════════════════════════════
 // ABOUT TABS
