@@ -82,6 +82,8 @@
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     html,body{width:100%;height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);}
+    /* outer body bg is map color, no white box */
+    body::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:-1;}
 
     /* ── TOPBAR ── */
     #topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--bg);border-bottom:1px solid var(--border);z-index:1000;}
@@ -103,12 +105,12 @@
     #panel{
       position:fixed;top:calc(var(--topbar-h) + 12px);right:12px;
       bottom:12px;width:var(--panel-w);
-      background:rgba(15,23,42,0.92);
-      backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-      border:1px solid rgba(56,100,160,0.35);
-      border-radius:16px;
+      background:rgba(10,15,26,0.88);
+      backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+      border:1px solid rgba(56,130,210,0.28);
+      border-radius:20px;
       display:flex;flex-direction:column;
-      box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.04);
+      box-shadow:0 12px 40px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.05),inset 0 1px 0 rgba(255,255,255,0.06);
       z-index:900;overflow:hidden;
     }
     #btn-open-panel{display:none;}
@@ -131,7 +133,7 @@
     #panel-detail.hidden{display:none;}
 
     /* Logo area */
-    #panel-logo{height:88px;width:100%;flex-shrink:0;position:relative;overflow:hidden;background:var(--bg-light);display:flex;align-items:center;justify-content:center;}
+    #panel-logo{height:88px;width:100%;flex-shrink:0;position:relative;overflow:hidden;background:var(--bg-light);display:flex;align-items:center;justify-content:center;border-radius:20px 20px 0 0;}
     #panel-logo-img{width:100%;height:100%;object-fit:contain;display:none;}
     #panel-logo-placeholder{width:100%;height:100%;display:flex;}
     .logo-color-bar{height:100%;flex:1;}
@@ -182,7 +184,7 @@
     #picking-hint button{background:rgba(0,0,0,0.15);border:none;color:#0e1f33;font-size:0.7rem;cursor:pointer;padding:2px 6px;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-weight:600;}
 
     /* ── MODALS ── */
-    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;padding:16px;}
     .modal-overlay.open{display:flex;}
     .modal-box{background:var(--bg-mid);border:1px solid var(--border);border-radius:10px;width:100%;max-width:400px;padding:28px 28px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.7);position:relative;animation:modalIn 0.2s ease both;}
     @keyframes modalIn{from{opacity:0;transform:scale(0.96) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
@@ -328,11 +330,22 @@
     .leaflet-control-attribution a{color:var(--muted)!important;}
 
     .affil-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.04em;color:white;font-weight:600;}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-    #panel-detail .detail-row{animation:fadeUp 0.18s ease both;}
-    #panel-detail .detail-row:nth-child(2){animation-delay:0.04s;}
-    #panel-detail .detail-row:nth-child(3){animation-delay:0.08s;}
-    #panel-detail .detail-row:nth-child(4){animation-delay:0.12s;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+    #panel-detail .detail-row{animation:fadeUp 0.32s cubic-bezier(0.22,1,0.36,1) both;}
+    #panel-detail .detail-row:nth-child(1){animation-delay:0.04s;}
+    #panel-detail .detail-row:nth-child(2){animation-delay:0.1s;}
+    #panel-detail .detail-row:nth-child(3){animation-delay:0.16s;}
+    #panel-detail .detail-row:nth-child(4){animation-delay:0.22s;}
+    #panel-detail .detail-row:nth-child(5){animation-delay:0.28s;}
+    #panel-detail .detail-row:nth-child(6){animation-delay:0.34s;}
+    #panel-logo{transition:all 0.3s ease;}
+    #panel-header{transition:opacity 0.25s ease;}
+    .detail-value{transition:color 0.2s ease;}
+    .toda-pin{transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.2s ease;}
+    .modal-box{transition:none;}
+    .topbar-btn{transition:all 0.2s ease;}
+    .btn-primary,.btn-danger,.btn-pin{transition:all 0.18s ease;}
+    .admin-menu-btn{transition:all 0.18s ease;}
   </style>
 </head>
 <body>
@@ -357,13 +370,11 @@
 <!-- ── TOPBAR ── -->
 <div id="topbar">
   <div class="brand">
-    <div class="logo">Project <span>ATL</span></div>
-    <div class="version-badge">β 2.0.1</div>
+    <div class="logo">🛺 Project <span>ATL</span></div>
+    <div class="version-badge">β 2.1</div>
   </div>
   <div class="topbar-right">
     <a href="/about.html" class="topbar-btn" style="text-decoration:none;">About</a>
-    <button class="topbar-btn" id="btn-contribute" onclick="openContribute()" style="border-color:rgba(33,150,243,0.35);color:var(--accent-l);">✎ Contribute</button>
-    <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 2px;"></span>
     <button class="topbar-btn" id="btn-admin">
       <span>🔒</span><span id="btn-admin-label">Admin</span>
       <span class="notif-dot" id="admin-notif-dot"></span>
@@ -373,6 +384,29 @@
 
 <!-- ── MAP ── -->
 <div id="map"></div>
+
+<!-- ── SEARCHBAR ── -->
+<div id="search-bar" style="position:fixed;top:calc(var(--topbar-h)+12px);left:12px;z-index:800;display:flex;flex-direction:column;gap:6px;width:260px;">
+  <div style="display:flex;gap:6px;">
+    <div style="flex:1;position:relative;">
+      <input id="search-input" type="text" placeholder="🔍 Search terminals..." autocomplete="off"
+        style="width:100%;padding:8px 12px;background:rgba(10,15,26,0.88);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.3);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;outline:none;transition:border-color 0.2s;"/>
+    </div>
+    <button id="btn-search-filter" title="Filter" onclick="toggleSearchFilter()"
+      style="padding:8px 10px;background:rgba(10,15,26,0.88);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.3);border-radius:10px;color:var(--muted);cursor:pointer;font-size:0.75rem;transition:all 0.18s;white-space:nowrap;">⚙ Filter</button>
+  </div>
+  <div id="search-filter-row" style="display:none;background:rgba(10,15,26,0.92);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.25);border-radius:10px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.06em;">
+    <div style="color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Search by:</div>
+    <label style="display:flex;align-items:center;gap:6px;color:var(--text);margin-bottom:5px;cursor:pointer;"><input type="checkbox" id="sf-name" checked style="accent-color:var(--accent);"> Name / Abbreviation</label>
+    <label style="display:flex;align-items:center;gap:6px;color:var(--text);margin-bottom:5px;cursor:pointer;"><input type="checkbox" id="sf-terminal" checked style="accent-color:var(--accent);"> Terminal Name</label>
+    <label style="display:flex;align-items:center;gap:6px;color:var(--text);margin-bottom:5px;cursor:pointer;"><input type="checkbox" id="sf-landmarks" checked style="accent-color:var(--accent);"> Nearby Landmarks</label>
+    <label style="display:flex;align-items:center;gap:6px;color:var(--text);cursor:pointer;"><input type="checkbox" id="sf-affils" style="accent-color:var(--accent);"> Affiliations</label>
+  </div>
+  <div id="search-results" style="display:none;background:rgba(10,15,26,0.95);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.25);border-radius:12px;max-height:240px;overflow-y:auto;">
+  </div>
+</div>
+
+
 
 <!-- ── PANEL ── -->
 <div id="panel">
@@ -386,6 +420,7 @@
     <div class="legend-item"><div class="legend-dot" style="background:var(--confirmed)"></div>Confirmed Terminal</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--draft)"></div>Draft / Unverified</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--kolorum)"></div>Kolorum / Informal</div>
+    <button onclick="openContribute()" style="width:100%;margin-top:10px;padding:10px 14px;background:rgba(33,150,243,0.12);border:1.5px solid rgba(33,150,243,0.4);border-radius:10px;color:var(--accent-l);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;">✎ Suggest a Terminal</button>
   </div>
   <div id="panel-detail" class="hidden">
     <div id="panel-logo">
@@ -507,7 +542,6 @@
       <div class="color-inputs" id="color-inputs">
         <div class="color-input-row">
           <input type="color" value="#42A5F5"/>
-          <input type="text" placeholder="Color name (e.g. Blue)"/>
           <button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>
         </div>
       </div>
@@ -536,26 +570,38 @@
 
 <!-- ── CONTRIBUTE MODAL ── -->
 <div class="modal-overlay" id="modal-contribute">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:540px;max-height:90vh;overflow-y:auto;">
     <button class="modal-close" type="button" onclick="closeModal('modal-contribute')">✕</button>
-    <div class="modal-title">Suggest a Terminal</div>
-    <div class="modal-sub">Contributions are reviewed before going live</div>
-    <div style="background:rgba(33,150,243,0.07);border:1px solid rgba(33,150,243,0.2);border-radius:5px;padding:10px 12px;margin-bottom:16px;font-size:0.78rem;color:var(--muted);line-height:1.6;">
-      ⚠️ Do not submit personal information. One submission per minute. Your contribution will be reviewed by an admin before appearing on the map.
+    <div class="modal-title" id="contrib-modal-title">Suggest a Terminal</div>
+    <div class="modal-sub" id="contrib-modal-sub">Contributions are reviewed before going live</div>
+    <div id="contrib-guest-notice" style="background:rgba(33,150,243,0.07);border:1px solid rgba(33,150,243,0.2);border-radius:5px;padding:10px 12px;margin-bottom:16px;font-size:0.78rem;color:var(--muted);line-height:1.6;">
+      ⚠️ Do not submit personal information. One submission per minute. Your contribution will be reviewed by an admin.
     </div>
-    <div class="form-section-label">Identity</div>
-    <div class="form-row">
-      <div class="form-group"><label>Number (#)</label><input type="number" id="c-number" placeholder="e.g. 42"/></div>
-      <div class="form-group"><label>Status</label>
-        <select id="c-status">
-          <option value="confirmed">Confirmed</option>
-          <option value="draft" selected>Draft</option>
-          <option value="kolorum">Kolorum / Informal</option>
-        </select>
+
+    <!-- STATUS (always visible, drives everything) -->
+    <div class="form-group">
+      <label>Status *</label>
+      <select id="c-status" onchange="syncFormStatus('c')">
+        <option value="confirmed">Confirmed</option>
+        <option value="draft" selected>Draft / Unverified</option>
+        <option value="kolorum">Kolorum / Informal</option>
+      </select>
+    </div>
+
+    <!-- NORMAL fields (hidden for kolorum) -->
+    <div id="c-normal-fields">
+      <div class="form-row" id="c-number-row">
+        <div class="form-group"><label>Number (#)</label><input type="number" id="c-number" placeholder="e.g. 42"/></div>
+        <div class="form-group" style="visibility:hidden;"></div>
       </div>
+      <div class="form-group" id="c-name-grp"><label>TODA Abbreviation *</label><input type="text" id="c-name" placeholder="e.g. APFMCTODA"/></div>
+      <div class="form-group" id="c-fullname-grp"><label>Full Cooperative Name</label><input type="text" id="c-fullname" placeholder="Optional"/></div>
     </div>
-    <div class="form-group"><label>TODA Abbreviation *</label><input type="text" id="c-name" placeholder="e.g. APFMCTODA"/></div>
-    <div class="form-group"><label>Full Cooperative Name</label><input type="text" id="c-fullname" placeholder="Optional"/></div>
+    <!-- Kolorum name field -->
+    <div id="c-kolorum-fields" style="display:none;">
+      <div class="form-group"><label>Informal Name / Label *</label><input type="text" id="c-kolorum-name" placeholder="e.g. Kolorum sa Palengke"/></div>
+    </div>
+
     <hr class="form-divider"/>
     <div class="form-section-label">Location</div>
     <div class="form-group"><label>Terminal Name</label><input type="text" id="c-terminal" placeholder="e.g. Tubigan Terminal"/></div>
@@ -565,10 +611,44 @@
       <div class="form-group"><label>Longitude *</label><input type="number" id="c-lng" step="0.0000001" placeholder="121.174..."/></div>
     </div>
     <button class="btn-pin" type="button" id="btn-pick-pin-contrib">📍 Drop Pin on Map</button>
+
+    <!-- Appearance (hidden for kolorum) -->
+    <div id="c-appearance-section">
+      <hr class="form-divider"/>
+      <div class="form-section-label">Appearance</div>
+      <div class="form-group"><label>Logo / Image URL</label><input type="url" id="c-logo" placeholder="https://..."/></div>
+      <div class="form-group">
+        <label>Colors (pick from palette)</label>
+        <div class="color-inputs" id="c-color-inputs">
+          <div class="color-input-row">
+            <input type="color" value="#42A5F5"/>
+            <button class="btn-remove-color" type="button" onclick="removeColorRowFrom('c-color-inputs',this)">✕</button>
+          </div>
+        </div>
+        <button class="btn-add-color" type="button" onclick="addColorRowTo('c-color-inputs')">+ Add Color</button>
+      </div>
+    </div>
+
     <hr class="form-divider"/>
     <div class="form-section-label">Details</div>
-    <div class="form-group"><label>Last Confirmed As Of</label><input type="text" id="c-checked" placeholder="e.g. April 19, 2026"/></div>
-    <div class="form-group"><label>Notes</label><textarea id="c-notes" placeholder="Anything useful for the admin to know..."></textarea></div>
+    <div class="form-group" id="c-checked-grp"><label>Last Confirmed As Of <span style="color:var(--accent-l);">*</span></label><input type="text" id="c-checked" placeholder="e.g. April 19, 2026"/></div>
+    <div class="form-group"><label>Notes</label><textarea id="c-notes" placeholder="Anything useful..."></textarea></div>
+
+    <!-- Affiliations (hidden for kolorum) -->
+    <div id="c-affil-section">
+      <hr class="form-divider"/>
+      <div class="form-section-label">Affiliations</div>
+      <div class="form-group">
+        <label>Type or pick; press Enter to add</label>
+        <div id="c-affil-input-outer" style="position:relative;">
+          <div id="c-affil-input-wrap" style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;min-height:40px;cursor:text;align-items:center;" onclick="document.getElementById('c-affil-text').focus()">
+            <input id="c-affil-text" placeholder="e.g. Robinsons, SM..." autocomplete="off" style="border:none;background:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.82rem;min-width:100px;flex:1;"/>
+          </div>
+          <div id="c-affil-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-mid);border:1px solid var(--border);border-radius:5px;z-index:300;max-height:140px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="form-error" id="contrib-error"></div>
     <button class="btn-primary" type="button" id="btn-contrib-submit">Submit for Review</button>
   </div>
@@ -632,6 +712,25 @@
     <div class="about-section" id="tab-changelog">
       <div class="about-prose">
         <p style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--accent-l);text-transform:uppercase;margin-bottom:20px;">⚠ Project ATL is still in Beta — features and data are actively being developed.</p>
+        <div class="changelog-entry">
+          <div><span class="changelog-version">β 2.1</span><span class="changelog-date">April 2026</span></div>
+          <div class="changelog-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-change">Change</span></div>
+          <ul class="changelog-ul">
+            <li>Panel floats cleanly (transparent outer background)</li>
+            <li>Smoother panel transitions and detail animations</li>
+            <li>Draw Local Area button fixed</li>
+            <li>Search bar with filter (name, terminal, landmarks, affiliations)</li>
+            <li>All three forms (register, edit, suggest) unified and status-driven in real time</li>
+            <li>Colors: text label no longer required, just pick from palette</li>
+            <li>Affiliations dropdown working — type to search, Enter to add, custom options supported</li>
+            <li>Panel sidebar updates live after admin saves changes</li>
+            <li>All static pins removed — Supabase only</li>
+            <li>TODA name sync — shared fields auto-propagate to same-abbr terminals</li>
+            <li>Search highlights all pins for searched TODA</li>
+            <li>Contribute button moved to legend panel</li>
+            <li>Trike emoji added next to Project ATL logo</li>
+          </ul>
+        </div>
         <div class="changelog-entry">
           <div><span class="changelog-version">β 2.0.1</span><span class="changelog-date">April 2026</span></div>
           <div class="changelog-tags"><span class="tag tag-fix">Fix</span></div>
@@ -1203,10 +1302,14 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
     else{var ri=await sb.from('todas_admin').insert([payload]).select();if(ri.error)throw ri.error;newId=ri.data&&ri.data[0]?ri.data[0].id:null;}
     if(editEntry&&editEntry.marker&&map)map.removeLayer(editEntry.marker);
     if(_editKey)delete markerStore[_editKey];
+    syncTodaFields(newId,payload);
     var nt={id:newId,n:payload.number,name:name,full:payload.full_name||'',lat:lat,lng:lng,terminal:payload.terminal_name,landmarks:payload.landmarks,notes:payload.notes,colors:cols,affiliations:_currentAffils,checked:payload.last_checked,status:payload.status,robinsons:_currentAffils.some(function(a){return a.name.toLowerCase()==='robinsons';}),logoUrl:payload.logo_url};
     addTodaToMap(nt,newId?'sb-'+newId:('s-'+name));
     if(tempMarker&&map){map.removeLayer(tempMarker);tempMarker=null;}
-    closeModal('modal-add');showToast(name+(_editKey?' updated':' registered'),'success');resetForm();_editKey=null;
+    closeModal('modal-add');showToast(name+(_editKey?' updated':' registered'),'success');
+    // Live update sidebar if this was the currently viewed terminal
+    if(nk===currentPanelKey||(exId&&('sb-'+exId)===currentPanelKey)){currentPanelKey=nk;openPanel(nt);}
+    resetForm();_editKey=null;
   }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
   finally{btn.textContent=_editKey?'Save Changes':'Register Terminal';btn.disabled=false;}
 });
@@ -1218,7 +1321,7 @@ function resetForm(){
   document.getElementById('btn-delete-in-form').style.display='none';
   ['f-number','f-name','f-fullname','f-lat','f-lng','f-terminal','f-landmarks','f-logo','f-checked','f-notes'].forEach(function(i){document.getElementById(i).value='';});
   document.getElementById('f-status').value='draft';_currentAffils=[];renderAffilTags();onStatusChange();
-  document.getElementById('color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><input type="text" placeholder="Color name (e.g. Blue)"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button></div>';
+  document.getElementById('color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button></div>';
   document.getElementById('add-error').style.display='none';
 }
 
@@ -1508,6 +1611,371 @@ function onStatusChange(){
 // Attach to status select
 var _fStatus=document.getElementById('f-status');
 if(_fStatus)_fStatus.addEventListener('change',onStatusChange);
+
+
+// ═══════════════════════════════════════════════════════════════
+// TODA NAME SYNC — sync shared fields between same-abbr terminals
+// ═══════════════════════════════════════════════════════════════
+function normalizeName(n){return n.replace(/[\s\-]+/g,'').toUpperCase();}
+
+async function syncTodaFields(savedId,savedPayload){
+  if(!sb||!adminSession)return;
+  var norm=normalizeName(savedPayload.name);
+  try{
+    var r=await sb.from('todas_admin').select('*');
+    if(r.error)return;
+    var siblings=r.data.filter(function(row){
+      return normalizeName(row.name)===norm && row.id!==savedId;
+    });
+    if(!siblings.length)return;
+    // Fields to sync across same-abbr terminals
+    var syncFields=['number','full_name','logo_url','colors','affiliations'];
+    for(var i=0;i<siblings.length;i++){
+      var sib=siblings[i];
+      var patch={};
+      syncFields.forEach(function(field){
+        var newVal=savedPayload[field]||savedPayload[field.replace('_name','_name')];
+        if(field==='number')newVal=savedPayload.number;
+        else if(field==='full_name')newVal=savedPayload.full_name;
+        else if(field==='logo_url')newVal=savedPayload.logo_url;
+        else if(field==='colors')newVal=savedPayload.colors;
+        else if(field==='affiliations')newVal=savedPayload.affiliations;
+        // Only sync if saved terminal has value and sibling doesn't (or force override)
+        if(newVal&&(newVal.length||typeof newVal==='number'))patch[field]=newVal;
+        // If sibling has a value that saved doesn't, copy back to saved
+        if(!newVal&&sib[field]){
+          // Update the saved terminal with sibling's data
+          var backPatch={};backPatch[field]=sib[field];
+          sb.from('todas_admin').update(backPatch).eq('id',savedId).then(function(){});
+        }
+      });
+      if(Object.keys(patch).length){
+        await sb.from('todas_admin').update(patch).eq('id',sib.id);
+        // Update in-memory marker store
+        Object.values(markerStore).forEach(function(entry){
+          if(entry.supabaseId===sib.id){
+            Object.assign(entry.toda,{
+              n:patch.number||entry.toda.n,
+              full:patch.full_name||entry.toda.full,
+              logoUrl:patch.logo_url||entry.toda.logoUrl,
+              colors:patch.colors||entry.toda.colors,
+              affiliations:patch.affiliations||entry.toda.affiliations
+            });
+          }
+        });
+      }
+    }
+    // Also: check if saving duplicate name — find exact match in DB, delete new and keep existing with merged data
+    var exactDup=r.data.filter(function(row){
+      return normalizeName(row.name)===norm && row.id!==savedId && row.name===siblings[0].name;
+    });
+    if(exactDup.length&&exactDup[0].id){
+      showToast('Synced shared fields with '+siblings.length+' related terminal(s)','success');
+    }
+  }catch(e){console.warn('Sync error:',e);}
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// SEARCH BAR
+// ═══════════════════════════════════════════════════════════════
+var _searchHighlights=[];
+
+function toggleSearchFilter(){
+  var row=document.getElementById('search-filter-row');
+  row.style.display=row.style.display==='none'?'block':'none';
+}
+
+document.getElementById('search-input').addEventListener('input',function(){
+  var q=this.value.trim().toLowerCase();
+  var resultsEl=document.getElementById('search-results');
+  // Clear highlights
+  _searchHighlights.forEach(function(key){
+    if(markerStore[key])markerStore[key].marker.setIcon(makeIcon(markerStore[key].toda,key===selectedKey));
+  });
+  _searchHighlights=[];
+
+  if(!q){resultsEl.style.display='none';return;}
+  var byName=document.getElementById('sf-name').checked;
+  var byTerminal=document.getElementById('sf-terminal').checked;
+  var byLandmarks=document.getElementById('sf-landmarks').checked;
+  var byAffils=document.getElementById('sf-affils').checked;
+
+  var matches=[];
+  Object.entries(markerStore).forEach(function(kv){
+    var key=kv[0],entry=kv[1],t=entry.toda;
+    var hit=false;
+    if(byName&&(t.name.toLowerCase().includes(q)||(t.full&&t.full.toLowerCase().includes(q))))hit=true;
+    if(byTerminal&&t.terminal&&t.terminal.toLowerCase().includes(q))hit=true;
+    if(byLandmarks&&t.landmarks&&t.landmarks.toLowerCase().includes(q))hit=true;
+    if(byAffils&&Array.isArray(t.affiliations)&&t.affiliations.some(function(a){return a.name.toLowerCase().includes(q);}))hit=true;
+    if(hit)matches.push({key:key,toda:t});
+  });
+
+  if(!matches.length){resultsEl.style.display='none';return;}
+
+  // Highlight matching pins with a bright pulse icon
+  matches.forEach(function(m){
+    _searchHighlights.push(m.key);
+    var t=m.toda;
+    var sz=t.status==='confirmed'?16:13;
+    markerStore[m.key].marker.setIcon(L.divIcon({
+      html:'<div class="toda-pin '+t.status+' selected" style="width:'+sz+'px;height:'+sz+'px;box-shadow:0 0 0 4px rgba(255,255,255,0.7),0 0 12px rgba(255,255,255,0.4)!important;"></div>',
+      className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
+    }));
+  });
+
+  // Show results list
+  resultsEl.innerHTML='';
+  matches.slice(0,12).forEach(function(m){
+    var t=m.toda;
+    var item=document.createElement('div');
+    item.style.cssText='padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(56,100,160,0.15);display:flex;align-items:center;gap:8px;transition:background 0.15s;';
+    item.innerHTML='<div style="width:8px;height:8px;border-radius:50%;background:var(--'+t.status+');flex-shrink:0;"></div>'
+      +'<div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;color:var(--text);">'+(t.n?'#'+t.n+' ':'')+t.name+'</div>'
+      +(t.terminal?'<div style="font-size:0.68rem;color:var(--muted);">'+t.terminal+'</div>':'')+'</div>';
+    item.addEventListener('mouseenter',function(){this.style.background='rgba(56,130,210,0.1)';});
+    item.addEventListener('mouseleave',function(){this.style.background='';});
+    item.addEventListener('click',function(){
+      map.flyTo([t.lat,t.lng],16,{duration:0.8});
+      selectPin(m.key);currentPanelKey=m.key;openPanel(t);
+      resultsEl.style.display='none';
+      document.getElementById('search-input').value='';
+    });
+    resultsEl.appendChild(item);
+  });
+  if(matches.length>12){
+    var more=document.createElement('div');
+    more.style.cssText='padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted);text-align:center;';
+    more.textContent='+'+(matches.length-12)+' more results';
+    resultsEl.appendChild(more);
+  }
+  resultsEl.style.display='block';
+});
+
+// Close search results on outside click
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#search-bar'))document.getElementById('search-results').style.display='none';
+});
+
+// ═══════════════════════════════════════════════════════════════
+// UNIFIED FORM UTILS — generic color/affil functions
+// ═══════════════════════════════════════════════════════════════
+window.addColorRowTo=function(containerId){
+  var ci=document.getElementById(containerId);
+  var row=document.createElement('div');row.className='color-input-row';
+  row.innerHTML='<input type="color" value="#888888"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom(''+containerId+'',this)">✕</button>';
+  ci.appendChild(row);
+};
+window.removeColorRowFrom=function(containerId,btn){
+  var ci=document.getElementById(containerId);
+  if(ci.children.length>1)btn.parentElement.remove();
+};
+function getColorsFrom(containerId){
+  return Array.from(document.querySelectorAll('#'+containerId+' .color-input-row')).map(function(r){
+    return{hex:r.querySelector('input[type="color"]').value,label:''};
+  });
+}
+
+// ── CONTRIBUTE AFFILIATIONS ──
+var _cAffils=[];
+function renderCAffilTags(){
+  var wrap=document.getElementById('c-affil-input-wrap');
+  if(!wrap)return;
+  wrap.querySelectorAll('.affil-tag').forEach(function(t){t.remove();});
+  _cAffils.forEach(function(a,i){
+    var tag=document.createElement('div');tag.className='affil-tag';
+    tag.style.background=a.color||'#607D8B';
+    tag.innerHTML=a.name+'<button onclick="removeCAffilTag('+i+')" type="button">✕</button>';
+    wrap.insertBefore(tag,document.getElementById('c-affil-text'));
+  });
+}
+window.removeCAffilTag=function(i){_cAffils.splice(i,1);renderCAffilTags();};
+function addCAffilByName(name){
+  name=name.trim();if(!name)return;
+  var norm=name.charAt(0).toUpperCase()+name.slice(1).toLowerCase();
+  if(_cAffils.some(function(a){return a.name.toLowerCase()===norm.toLowerCase();}))return;
+  var known=_knownAffils.find(function(k){return k.name.toLowerCase()===norm.toLowerCase();});
+  var color=known?known.color:'#607D8B';
+  _cAffils.push({name:known?known.name:norm,color:color});
+  renderCAffilTags();
+}
+
+var _cAfText=document.getElementById('c-affil-text');
+var _cAfSug=document.getElementById('c-affil-suggestions');
+if(_cAfText){
+  _cAfText.addEventListener('input',function(){
+    var v=this.value.toLowerCase();
+    if(!v){_cAfSug.style.display='none';return;}
+    var matches=_knownAffils.filter(function(k){return k.name.toLowerCase().includes(v);});
+    _cAfSug.innerHTML='';
+    // Always show "Add custom" option if no exact match
+    var exactMatch=_knownAffils.some(function(k){return k.name.toLowerCase()===v;});
+    matches.forEach(function(k){
+      var item=document.createElement('div');item.className='affil-sug-item';
+      item.innerHTML='<div class="affil-sug-dot" style="background:'+k.color+'"></div>'+k.name;
+      item.onclick=function(){addCAffilByName(k.name);_cAfText.value='';_cAfSug.style.display='none';};
+      _cAfSug.appendChild(item);
+    });
+    if(!exactMatch&&v){
+      var addItem=document.createElement('div');addItem.className='affil-sug-item';
+      addItem.style.color='var(--accent-l)';
+      addItem.innerHTML='<div class="affil-sug-dot" style="background:#607D8B"></div>Add "'+_cAfText.value.charAt(0).toUpperCase()+_cAfText.value.slice(1)+'"';
+      addItem.onclick=function(){addCAffilByName(_cAfText.value);_cAfText.value='';_cAfSug.style.display='none';};
+      _cAfSug.appendChild(addItem);
+    }
+    _cAfSug.style.display=(_cAfSug.children.length>0)?'block':'none';
+  });
+  _cAfText.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.key===','){e.preventDefault();addCAffilByName(this.value);this.value='';_cAfSug.style.display='none';}
+    if(e.key==='Backspace'&&!this.value&&_cAffils.length){_cAffils.pop();renderCAffilTags();}
+  });
+}
+document.addEventListener('click',function(e){if(_cAfSug&&!e.target.closest('#c-affil-input-outer'))_cAfSug.style.display='none';});
+
+// Also fix admin affil suggestions to show "Add custom" option
+var _afSug2=document.getElementById('affil-suggestions');
+var _afText2=document.getElementById('affil-text');
+if(_afText2){
+  // Reattach with "add custom" support
+  _afText2.addEventListener('input',function(){
+    var v=this.value.toLowerCase();
+    if(!v){_afSug2.style.display='none';return;}
+    var matches=_knownAffils.filter(function(k){return k.name.toLowerCase().includes(v);});
+    var exactMatch=_knownAffils.some(function(k){return k.name.toLowerCase()===v;});
+    _afSug2.innerHTML='';
+    matches.forEach(function(k){
+      var item=document.createElement('div');item.className='affil-sug-item';
+      item.innerHTML='<div class="affil-sug-dot" style="background:'+k.color+'"></div>'+k.name;
+      item.onclick=function(){addAffilByName(k.name);_afText2.value='';_afSug2.style.display='none';};
+      _afSug2.appendChild(item);
+    });
+    if(!exactMatch&&v){
+      var addItem=document.createElement('div');addItem.className='affil-sug-item';
+      addItem.style.color='var(--accent-l)';
+      addItem.innerHTML='<div class="affil-sug-dot" style="background:#607D8B"></div>Add "'+this.value.charAt(0).toUpperCase()+this.value.slice(1)+'"';
+      addItem.onclick=function(){addAffilByName(_afText2.value);_afText2.value='';_afSug2.style.display='none';};
+      _afSug2.appendChild(addItem);
+    }
+    _afSug2.style.display=(_afSug2.children.length>0)?'block':'none';
+  });
+}
+
+// ── UNIFIED STATUS SYNC (real-time form field visibility) ──
+window.syncFormStatus=function(prefix){
+  var st=document.getElementById(prefix+'-status').value;
+  var isKol=st==='kolorum';
+  var isConf=st==='confirmed';
+  // Normal vs kolorum fields
+  var nf=document.getElementById(prefix+'-normal-fields');
+  if(nf)nf.style.display=isKol?'none':'';
+  var kf=document.getElementById(prefix+'-kolorum-fields');
+  if(kf)kf.style.display=isKol?'':'none';
+  // Appearance (colors)
+  var ap=document.getElementById(prefix+'-appearance-section');
+  if(ap)ap.style.display=isKol?'none':'';
+  // Last confirmed (only for confirmed)
+  var cg=document.getElementById(prefix+'-checked-grp');
+  if(cg)cg.style.display=isConf?'':'none';
+  // Affiliations (hidden for kolorum)
+  var afk=document.getElementById(prefix+'-affil-section');
+  if(afk)afk.style.display=isKol?'none':'';
+};
+
+// Initialize on load
+syncFormStatus('c');
+
+// ── CONTRIBUTE FORM SUBMIT (with mode detection) ──
+// Replace the old submit listener with a new unified one
+document.getElementById('btn-contrib-submit').removeEventListener('click',arguments[0]);
+document.getElementById('btn-contrib-submit').addEventListener('click',async function(){
+  var isAdmin=!!adminSession;
+  var st=document.getElementById('c-status').value;
+  var isKol=st==='kolorum';
+  var rawName=isKol
+    ?document.getElementById('c-kolorum-name').value.trim()
+    :document.getElementById('c-name').value.trim();
+  var lat=parseFloat(document.getElementById('c-lat').value);
+  var lng=parseFloat(document.getElementById('c-lng').value);
+  var errEl=document.getElementById('contrib-error');errEl.style.display='none';
+  if(!rawName||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
+
+  // Rate limit for non-admins
+  if(!isAdmin){
+    var now=Date.now();
+    if(now-_lastContribTime<60000){
+      var w=Math.ceil((60000-(now-_lastContribTime))/1000);
+      errEl.textContent='Please wait '+w+'s before submitting again.';errEl.style.display='block';return;
+    }
+  }
+
+  var cols=getColorsFrom('c-color-inputs');
+  var payload={
+    number:isKol?null:(parseInt(document.getElementById('c-number').value)||null),
+    name:rawName,
+    full_name:isKol?null:(document.getElementById('c-fullname').value.trim()||null),
+    lat:lat,lng:lng,
+    terminal_name:document.getElementById('c-terminal').value.trim()||null,
+    landmarks:document.getElementById('c-landmarks').value.trim()||null,
+    notes:document.getElementById('c-notes').value.trim()||null,
+    colors:isKol?[]:cols,
+    affiliations:isKol?[]:_cAffils,
+    last_checked:isConf?(document.getElementById('c-checked').value.trim()||null):null,
+    status:st,
+    logo_url:isKol?null:(document.getElementById('c-logo').value.trim()||null),
+    city:'Antipolo City'
+  };
+  var isConf=st==='confirmed';
+
+  var btn=this;btn.textContent=isAdmin?'Registering…':'Submitting…';btn.disabled=true;
+  if(!sb){errEl.textContent='Supabase not configured.';errEl.style.display='block';btn.textContent=isAdmin?'Register Terminal':'Submit for Review';btn.disabled=false;return;}
+
+  try{
+    if(isAdmin){
+      // Admin: goes straight to todas_admin
+      var ri=await sb.from('todas_admin').insert([payload]).select();
+      if(ri.error)throw ri.error;
+      var newId=ri.data&&ri.data[0]?ri.data[0].id:null;
+      syncTodaFields(newId,payload);
+      addTodaToMap({id:newId,n:payload.number,name:rawName,full:payload.full_name||'',
+        lat:lat,lng:lng,terminal:payload.terminal_name,landmarks:payload.landmarks,
+        notes:payload.notes,colors:cols,affiliations:_cAffils,
+        checked:payload.last_checked,status:st,robinsons:false,logoUrl:payload.logo_url},
+        'sb-'+newId);
+      showToast(rawName+' registered','success');
+    } else {
+      // Guest: goes to contributions
+      payload.review_status='pending';
+      var rc=await sb.from('contributions').insert([payload]);
+      if(rc.error)throw rc.error;
+      _lastContribTime=Date.now();
+      showToast('Contribution submitted for review','success');
+    }
+    closeModal('modal-contribute');
+    resetContribForm();
+  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+  finally{btn.textContent=isAdmin?'Register Terminal':'Submit for Review';btn.disabled=false;}
+});
+
+function resetContribForm(){
+  ['c-number','c-name','c-kolorum-name','c-fullname','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked','c-logo'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});
+  document.getElementById('c-status').value='draft';
+  document.getElementById('contrib-error').style.display='none';
+  document.getElementById('c-color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom('c-color-inputs',this)">✕</button></div>';
+  _cAffils=[];renderCAffilTags();
+  syncFormStatus('c');
+}
+
+// ── UPDATE openContribute to adapt modal for admin vs guest ──
+window.openContribute=function(){
+  var isAdmin=!!adminSession;
+  document.getElementById('contrib-modal-title').textContent=isAdmin?'Register TODA Terminal':'Suggest a Terminal';
+  document.getElementById('contrib-modal-sub').textContent=isAdmin?'New entry · Antipolo City':'Contributions are reviewed before going live';
+  document.getElementById('contrib-guest-notice').style.display=isAdmin?'none':'block';
+  document.getElementById('btn-contrib-submit').textContent=isAdmin?'Register Terminal':'Submit for Review';
+  resetContribForm();
+  openModal('modal-contribute');
+};
 
 })();
 </script>
