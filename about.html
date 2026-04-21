@@ -290,7 +290,7 @@
 var SB_URL='https://gmejqjfathciopglshqd.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZWpxamZhdGhjaW9wZ2xzaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTgxMDIsImV4cCI6MjA5MjEzNDEwMn0.ci90256_zc4ZQ6vvXRcGne37B8MA-yag3bzSC_TaFzA';
 var sb=null;
-try{var _S=window.supabase||window.Supabase;if(_S&&_S.createClient)sb=_S.createClient(SB_URL,SB_KEY);}catch(e){}
+try{var _S=window.supabase||window.Supabase;if(_S&&_S.createClient)sb=_S.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,storageKey:'atl_admin_session',storage:window.localStorage}});}catch(e){}
 
 var adminSession=null;
 var siteContent={};
@@ -331,6 +331,23 @@ async function loadContent(){
     });
   }catch(e){console.error(e);}
 }
+// Try to auto-restore admin session from localStorage (shared with map)
+(async function(){
+  if(!sb)return;
+  try{
+    var r=await sb.auth.getSession();
+    if(r.data&&r.data.session){
+      adminSession=r.data.session;
+      document.body.classList.add('admin-mode');
+      document.getElementById('admin-bar-status').textContent='Signed in as '+r.data.session.user.email;
+      document.getElementById('admin-bar-status').classList.add('ok');
+      document.getElementById('ab-email').style.display='none';
+      document.getElementById('ab-pw').style.display='none';
+      document.querySelector('.admin-bar-btn').style.display='none';
+      document.getElementById('ab-logout').style.display='inline-block';
+    }
+  }catch(e){}
+})();
 loadContent();
 
 // EDIT TOGGLE
