@@ -848,51 +848,67 @@
 <script>
 (function(){'use strict';
 
-// ═══════════════════════════════════════════════════════════════
-// SUPABASE — with persistent session
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════════
 var sb=null;
 try{
-  var _s=window.supabase||window.Supabase;
-  if(_s&&_s.createClient)
-    sb=_s.createClient(
+  var _S=window.supabase||window.Supabase;
+  if(_S&&_S.createClient)
+    sb=_S.createClient(
       'https://gmejqjfathciopglshqd.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtZWpxamZhdGhjaW9wZ2xzaHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTgxMDIsImV4cCI6MjA5MjEzNDEwMn0.ci90256_zc4ZQ6vvXRcGne37B8MA-yag3bzSC_TaFzA',
       {auth:{persistSession:true,storageKey:'atl_admin_session',storage:window.localStorage}}
     );
 }catch(e){console.warn('SB:',e);}
 
-// Restore admin session on page load
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
 var adminSession=null;
-(async function restoreSession(){
-  if(!sb)return;
-  try{
-    var r=await sb.auth.getSession();
-    if(r.data&&r.data.session){
-      adminSession=r.data.session;
-      document.getElementById('btn-admin').classList.add('logged-in');
-      document.getElementById('btn-admin-label').textContent='Admin ✓';
-      document.getElementById('admin-email-display').textContent=r.data.session.user.email;
-      document.body.classList.add('admin-mode');
-      checkPendingContributions();
-    }
-  }catch(e){}
-})();
+var markerStore={};
+var currentPanelKey=null;
+var selectedKey=null;
+var userLocation=null;
+var pickingPin=false,pickingForContrib=false,tempMarker=null;
+var _editKey=null;
+var _lastContribTime=0;
+var _knownAffils=[
+  {name:'Robinsons',color:'#CC2200'},
+  {name:'SM',color:'#0047CC'},
+  {name:'Ayala',color:'#005A32'},
+  {name:'Puregold',color:'#E31837'}
+];
+var _currentAffils=[];
+var _cAffils=[];
+var siteContent={};
+var _drawnItems=null,_drawControl=null,_drawnGeoJSON=null;
+var _searchHighlights=[];
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // MODALS
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('open');}
 function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('open');}
-window.openModal=openModal; window.closeModal=closeModal;
+window.openModal=openModal;window.closeModal=closeModal;
 document.querySelectorAll('.modal-overlay').forEach(function(ov){
   ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');});
 });
 
+// ═══════════════════════════════════════════════════
+// COLOR UTILS
+// ═══════════════════════════════════════════════════
+var CHX={green:'#43A047',black:'#222222',white:'#EEEEEE',orange:'#E65100',blue:'#1E88E5','dark blue':'#0D47A1',navy:'#0D1B2A',red:'#E53935',yellow:'#FDD835',vermilion:'#D84315',gray:'#757575',grey:'#757575',brown:'#6D4C41',maroon:'#880E4F',purple:'#7B1FA2',pink:'#E91E63',teal:'#00897B',cream:'#F5F0E0',silver:'#B0BEC5',gold:'#FFC107',beige:'#D7CCC8','light blue':'#42A5F5','dark green':'#2E7D32',violet:'#6A1B9A',cyan:'#00BCD4',lime:'#C6D51F','sky blue':'#29B6F6',magenta:'#D81B60',olive:'#827717',peach:'#FFAB91',rose:'#E91E63'};
+function normColors(c){
+  if(!c)return[];
+  if(Array.isArray(c))return c.map(function(x){return typeof x==='object'&&x.hex?{hex:x.hex,label:x.label||''}:{hex:CHX[(x||'').toLowerCase()]||'#888',label:String(x)};});
+  if(typeof c==='string')return c.split(/\s+and\s+|\s*,\s*/i).map(function(s){var k=s.trim().toLowerCase();return{label:s.trim(),hex:CHX[k]||'#888888'};}).filter(function(x){return x.label;});
+  return[];
+}
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // ABOUT TABS
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 function switchAboutTab(name){
   document.querySelectorAll('.about-tab').forEach(function(t,i){
     var tabs=['about','changelog','contribute','privacy','terms'];
@@ -904,41 +920,30 @@ function switchAboutTab(name){
 }
 window.switchAboutTab=switchAboutTab;
 
-// ═══════════════════════════════════════════════════════════════
-// SITE CONTENT (privacy, terms, about)
-// ═══════════════════════════════════════════════════════════════
-var siteContent={};
-
+// ═══════════════════════════════════════════════════
+// SITE CONTENT
+// ═══════════════════════════════════════════════════
 async function loadSiteContent(){
   if(!sb)return;
   try{
     var r=await sb.from('site_content').select('*');
     if(r.error)return;
-    r.data.forEach(function(row){siteContent[row.key]=row.value;});
-    renderContent('privacy-text','privacy_policy');
-    renderContent('terms-text','terms');
-    renderContent('about-text','about');
+    r.data.forEach(function(row){
+      siteContent[row.key]=row.value;
+      var el=document.getElementById(row.key==='privacy_policy'?'privacy-text':row.key==='terms'?'terms-text':'about-text');
+      if(el)el.textContent=row.value;
+    });
   }catch(e){}
 }
-
-function renderContent(elId,key){
-  var el=document.getElementById(elId);
-  if(el&&siteContent[key])el.textContent=siteContent[key];
-}
-
 window.toggleEditContent=function(displayId,editorId){
   var disp=document.getElementById(displayId),ed=document.getElementById(editorId);
-  var saveBtn=document.getElementById('btn-save-'+editorId.replace('-editor',''));
+  var key='btn-save-'+editorId.replace('-editor','');
+  var saveBtn=document.getElementById(key);
   var isEditing=ed.style.display==='block';
   if(isEditing){ed.style.display='none';disp.style.display='';if(saveBtn)saveBtn.style.display='none';}
   else{ed.value=disp.textContent;ed.style.display='block';disp.style.display='none';if(saveBtn)saveBtn.style.display='block';}
 };
-
-window.previewContent=function(displayId,editorId){
-  var disp=document.getElementById(displayId),ed=document.getElementById(editorId);
-  if(disp)disp.textContent=ed.value;
-};
-
+window.previewContent=function(displayId,editorId){var d=document.getElementById(displayId),e=document.getElementById(editorId);if(d)d.textContent=e.value;};
 window.saveContent=async function(key,editorId,displayId,saveBtnId){
   if(!sb||!adminSession){showToast('Not logged in','error');return;}
   var val=document.getElementById(editorId).value.trim();
@@ -947,7 +952,6 @@ window.saveContent=async function(key,editorId,displayId,saveBtnId){
   try{
     var r=await sb.from('site_content').upsert({key:key,value:val,updated_at:new Date().toISOString()});
     if(r.error)throw r.error;
-    siteContent[key]=val;
     document.getElementById(displayId).textContent=val;
     document.getElementById(editorId).style.display='none';
     document.getElementById(displayId).style.display='';
@@ -957,63 +961,38 @@ window.saveContent=async function(key,editorId,displayId,saveBtnId){
   finally{btn.textContent='Save Changes';btn.disabled=false;}
 };
 
-// ═══════════════════════════════════════════════════════════════
-// COLOR UTILS
-// ═══════════════════════════════════════════════════════════════
-var CHX={'green':'#43A047','black':'#222222','white':'#EEEEEE','orange':'#E65100','blue':'#1E88E5','dark blue':'#0D47A1','navy':'#0D1B2A','red':'#E53935','yellow':'#FDD835','vermilion':'#D84315','gray':'#757575','grey':'#757575','brown':'#6D4C41','maroon':'#880E4F','purple':'#7B1FA2','pink':'#E91E63','teal':'#00897B','cream':'#F5F0E0','silver':'#B0BEC5','gold':'#FFC107','beige':'#D7CCC8','light blue':'#42A5F5','dark green':'#2E7D32','violet':'#6A1B9A','cyan':'#00BCD4','lime':'#C6D51F','sky blue':'#29B6F6','magenta':'#D81B60','olive':'#827717','peach':'#FFAB91','rose':'#E91E63'};
-function normColors(c){
-  if(!c)return[];
-  if(Array.isArray(c))return c.map(function(x){return typeof x==='object'&&x.hex?{hex:x.hex,label:x.label||x.hex}:{hex:CHX[(x||'').toLowerCase()]||'#888',label:String(x)};});
-  if(typeof c==='string')return c.split(/\s+and\s+|\s*,\s*/i).map(function(s){var k=s.trim().toLowerCase();return{label:s.trim(),hex:CHX[k]||'#888888'};}).filter(function(x){return x.label;});
-  return[];
-}
-
-// All terminal data lives in Supabase — no static data here.
-var TODAS=[];
-
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // MAP
-// ═══════════════════════════════════════════════════════════════
-var map=null,pickingPin=false,pickingForContrib=false,tempMarker=null;
-var markerStore={};
-var currentPanelKey=null;
-var selectedKey=null;
-var userLocation=null;
+// ═══════════════════════════════════════════════════
+var _savedPos=null;
+try{var _sp=localStorage.getItem('atl_pos');if(_sp){var _p=JSON.parse(_sp);if(_p&&_p.lat&&_p.lng&&_p.zoom)_savedPos=_p;}}catch(e){}
 
+var map=L.map('map',{
+  center:_savedPos?[_savedPos.lat,_savedPos.lng]:[14.587,121.178],
+  zoom:_savedPos?_savedPos.zoom:14,
+  zoomControl:false,minZoom:11,maxZoom:18
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+  subdomains:'abcd',maxZoom:19
+}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+map.on('moveend',function(){
+  try{var c=map.getCenter();localStorage.setItem('atl_pos',JSON.stringify({lat:c.lat,lng:c.lng,zoom:map.getZoom()}));}catch(e){}
+});
 if(navigator.geolocation){
   navigator.geolocation.getCurrentPosition(function(p){
     userLocation={lat:p.coords.latitude,lng:p.coords.longitude};
     if(currentPanelKey&&markerStore[currentPanelKey])updateDist(markerStore[currentPanelKey].toda);
-  },function(){},{timeout:8000});
+  },null,{timeout:8000});
 }
-
-// Force layout before map init
-document.getElementById('map').style.visibility='hidden';
-// Restore last map position
-var _savedPos=null;
-try{var _sp=localStorage.getItem('atl_pos');if(_sp){var _p=JSON.parse(_sp);if(_p&&_p.lat&&_p.lng&&_p.zoom)_savedPos=_p;}}catch(e){}
-map=L.map('map',{center:_savedPos?[_savedPos.lat,_savedPos.lng]:[14.587,121.178],zoom:_savedPos?_savedPos.zoom:14,zoomControl:false,minZoom:11,maxZoom:18});
-map.on('moveend',function(){try{var c=map.getCenter();localStorage.setItem('atl_pos',JSON.stringify({lat:c.lat,lng:c.lng,zoom:map.getZoom()}));}catch(e){}});
-
-// CartoDB Positron — clean, simple, light
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a> | Data: Project ATL',
-  subdomains:'abcd',
-  maxZoom:19
-}).addTo(map);
-
-L.control.zoom({position:'bottomright'}).addTo(map);
-document.getElementById('map').style.visibility='';
-
-setTimeout(function(){map.invalidateSize();},100);
-setTimeout(function(){map.invalidateSize();},500);
-setTimeout(function(){map.invalidateSize();},1500);
-map.whenReady(function(){map.invalidateSize();});
 map.on('click',function(){if(!pickingPin&&!pickingForContrib){closePanel();currentPanelKey=null;}});
+setTimeout(function(){map.invalidateSize();},200);
+setTimeout(function(){map.invalidateSize();},800);
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // MARKERS
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 function makeIcon(t,sel){
   var sz=t.status==='confirmed'?14:(t.status==='kolorum'?11:10);
   return L.divIcon({
@@ -1026,125 +1005,114 @@ function selectPin(key){
   selectedKey=key;
   if(key&&markerStore[key])markerStore[key].marker.setIcon(makeIcon(markerStore[key].toda,true));
 }
-
 function addTodaToMap(toda,key){
   if(!map)return;
   key=key||('s-'+toda.name+'-'+(toda.n||'x'));
-  var mk=L.marker([toda.lat,toda.lng],{icon:makeIcon(toda)}).addTo(map);
-  mk.bindTooltip((toda.n?'#'+toda.n+' ':'')+toda.name,{permanent:false,direction:'top',offset:[0,-8]});
+  var mk=L.marker([toda.lat,toda.lng],{icon:makeIcon(toda,false)}).addTo(map);
+  mk.bindTooltip((toda.n?'#'+toda.n+' ':'')+(toda.name||'?'),{permanent:false,direction:'top',offset:[0,-8]});
   markerStore[key]={toda:toda,marker:mk,supabaseId:toda.id||null};
-  mk.on('click',function(e){L.DomEvent.stopPropagation(e);selectPin(key);currentPanelKey=key;openPanel(toda);});
+  mk.on('click',function(e){
+    L.DomEvent.stopPropagation(e);
+    selectPin(key);currentPanelKey=key;openPanel(toda);
+  });
 }
-
 (async function loadData(){
-  var sbNames=new Set();
-  if(sb&&map){
-    try{
-      var r=await sb.from('todas_admin').select('*');
-      if(!r.error){
-        r.data.forEach(function(row){
-          sbNames.add(row.name.toUpperCase());
-          addTodaToMap({
-            id:row.id,n:row.number,name:row.name,full:row.full_name||'',
-            lat:row.lat,lng:row.lng,terminal:row.terminal_name,landmarks:row.landmarks,
-            notes:row.notes||null,
-            colors:Array.isArray(row.colors)?row.colors:[],
-            affiliations:Array.isArray(row.affiliations)?row.affiliations:(row.has_robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]),
-            checked:row.last_checked,status:row.status||'draft',
-            robinsons:row.has_robinsons||false,logoUrl:row.logo_url||null
-          },'sb-'+row.id);
-        });
-      }
-    }catch(e){console.warn('[ATL] SB load:',e);}
-  }
-  TODAS.forEach(function(t){if(!sbNames.has(t.name.toUpperCase()))addTodaToMap(t);});
+  if(!sb)return;
+  try{
+    var r=await sb.from('todas_admin').select('*');
+    if(r.error)throw r.error;
+    r.data.forEach(function(row){
+      addTodaToMap({
+        id:row.id,n:row.number,name:row.name,full:row.full_name||'',
+        lat:row.lat,lng:row.lng,terminal:row.terminal_name,landmarks:row.landmarks,
+        notes:row.notes||null,
+        colors:Array.isArray(row.colors)?row.colors:[],
+        affiliations:Array.isArray(row.affiliations)?row.affiliations:(row.has_robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]),
+        checked:row.last_checked,status:row.status||'draft',
+        robinsons:row.has_robinsons||false,logoUrl:row.logo_url||null
+      },'sb-'+row.id);
+    });
+  }catch(e){console.warn('[ATL] load error:',e);}
 })();
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // PANEL
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 var panel=document.getElementById('panel');
 var panelEmpty=document.getElementById('panel-empty');
 var panelLegend=document.getElementById('panel-legend');
 var panelDetail=document.getElementById('panel-detail');
-var btnOpen=document.getElementById('btn-open-panel');
 
 function showEmpty(){panelEmpty.classList.remove('hidden');panelLegend.style.display='';panelDetail.classList.add('hidden');}
 function showDetail(){panelEmpty.classList.add('hidden');panelLegend.style.display='none';panelDetail.classList.remove('hidden');}
 
 function hav(la1,lo1,la2,lo2){var R=6371000,p1=la1*Math.PI/180,p2=la2*Math.PI/180,dp=(la2-la1)*Math.PI/180,dl=(lo2-lo1)*Math.PI/180,a=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function fmtD(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
-function updateDist(t){var row=document.getElementById('d-distance-row'),el=document.getElementById('d-distance');if(userLocation){el.textContent=fmtD(hav(userLocation.lat,userLocation.lng,t.lat,t.lng));el.className='detail-value';row.style.display='';}else row.style.display='none';}
-function sv(id,val,fb){var el=document.getElementById(id);if(!val||val==='?????'||val==='???????'){el.textContent=fb||'Not recorded';el.className='detail-value empty';}else{el.textContent=val;el.className='detail-value';}}
-
+function updateDist(t){
+  var row=document.getElementById('d-distance-row'),el=document.getElementById('d-distance');
+  if(userLocation){el.textContent=fmtD(hav(userLocation.lat,userLocation.lng,t.lat,t.lng));el.className='detail-value';row.style.display='';}
+  else row.style.display='none';
+}
+function sv(id,val,fb){
+  var el=document.getElementById(id);
+  if(!el)return;
+  if(!val||val==='?????'||val==='???????'||val==='[check strava details]'){el.textContent=fb||'Not recorded';el.className='detail-value empty';}
+  else{el.textContent=val;el.className='detail-value';}
+}
 function openPanel(t){
   var ne=document.getElementById('panel-number');
-  if(t.n){ne.textContent='#'+t.n;ne.style.display='';}else ne.style.display='none';
-
+  if(t.n&&t.status!=='kolorum'){ne.textContent='#'+t.n;ne.style.display='';}else ne.style.display='none';
   var st=document.getElementById('panel-status');
-  var statusLabel={confirmed:'● Confirmed',draft:'● Draft',kolorum:'● Kolorum'}[t.status]||'● Draft';
-  st.textContent=statusLabel;
+  st.textContent={confirmed:'● Confirmed',draft:'● Draft',kolorum:'● Kolorum'}[t.status]||'● Draft';
   st.className=t.status||'draft';
-
   document.getElementById('panel-name').textContent=t.name;
-  document.getElementById('panel-fullname').textContent=t.full||'';
-
-  // Affiliations + Robinsons badge (workaround: show as badge not img)
-  var rl=document.getElementById('panel-rob-logo');
+  document.getElementById('panel-fullname').textContent=(t.status!=='kolorum'&&t.full)?t.full:'';
+  // Robinsons badge
   var affils=Array.isArray(t.affiliations)?t.affiliations:(t.robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]);
+  var rl=document.getElementById('panel-rob-logo');
   rl.style.display=affils.some(function(a){return a.name.toLowerCase()==='robinsons';})?'block':'none';
-
-  // Logo area
+  // Logo / color bar
   var li=document.getElementById('panel-logo-img'),lp=document.getElementById('panel-logo-placeholder'),lt=document.getElementById('panel-logo-text');
   var cols=normColors(t.colors);
   if(t.logoUrl){li.src=t.logoUrl;li.style.display='block';lp.style.display='none';}
-  else{
-    li.style.display='none';lp.style.display='flex';lp.innerHTML='';
+  else{li.style.display='none';lp.style.display='flex';lp.innerHTML='';
     if(cols.length){lp.style.background='';cols.forEach(function(c){var b=document.createElement('div');b.className='logo-color-bar';b.style.background=c.hex;lp.appendChild(b);});}
-    else lp.style.background='var(--bg-light)';
-  }
+    else lp.style.background='var(--bg-light)';}
   lt.textContent=t.name;
-
   sv('d-terminal',t.terminal,'Unknown');
   sv('d-landmarks',t.landmarks,'Not recorded');
-
+  // Colors swatches
   var ce=document.getElementById('d-colors');ce.innerHTML='';
-  if(cols.length){cols.forEach(function(c){var d=document.createElement('div');d.className='swatch-dot';d.style.background=c.hex;d.title=c.label;ce.appendChild(d);});}
-  else ce.innerHTML='<span class="detail-value empty">Not recorded</span>';
-
-  var nr=document.getElementById('d-notes-row');
-  if(t.notes){document.getElementById('d-notes').textContent=t.notes;document.getElementById('d-notes').className='detail-value';nr.style.display='';}
-  else nr.style.display='none';
-
+  if(cols.length&&t.status!=='kolorum'){cols.forEach(function(c){var d=document.createElement('div');d.className='swatch-dot';d.style.background=c.hex;d.title=c.label||c.hex;ce.appendChild(d);});}
+  else if(t.status!=='kolorum')ce.innerHTML='<span class="detail-value empty">Not recorded</span>';
   // Affiliations
   var afr=document.getElementById('d-affil-row'),afc=document.getElementById('d-affiliations');
-  var affils=Array.isArray(t.affiliations)?t.affiliations:[];
-  if(affils.length){afc.innerHTML='';affils.forEach(function(a){var chip=document.createElement('div');chip.className='affil-chip';chip.style.background=a.color||'#607D8B';chip.textContent=a.name;afc.appendChild(chip);});afr.style.display='';}
+  if(affils.length&&t.status!=='kolorum'){
+    afc.innerHTML='';affils.forEach(function(a){var chip=document.createElement('div');chip.className='affil-chip';chip.style.background=a.color||'#607D8B';chip.textContent=a.name;afc.appendChild(chip);});
+    afr.style.display='';}
   else afr.style.display='none';
-
-  // Hide last confirmed for draft/kolorum
-  var dcrow=document.getElementById('d-checked');
-  if(dcrow){
-    var dcparent=dcrow.closest('.detail-row');
-    if(dcparent)dcparent.style.display=(t.status==='confirmed')?'':'none';
-  }
+  // Notes
+  var nr=document.getElementById('d-notes-row');
+  if(t.notes){document.getElementById('d-notes').textContent=t.notes;document.getElementById('d-notes').className='detail-value';nr.style.display='';}else nr.style.display='none';
+  // Last confirmed (confirmed only)
+  var cr=document.getElementById('d-checked');
+  if(cr){var cp=cr.closest('.detail-row');if(cp)cp.style.display=t.status==='confirmed'?'':' none';}
   sv('d-checked',t.checked,'Not checked yet');
   updateDist(t);
   showDetail();
 }
-
 function closePanel(){selectPin(null);showEmpty();}
 document.getElementById('panel-close').addEventListener('click',function(){closePanel();currentPanelKey=null;});
-// Panel always visible — no toggle needed
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // ADMIN AUTH
-// ═══════════════════════════════════════════════════════════════
-document.getElementById('btn-admin').addEventListener('click',function(){if(adminSession)openModal('modal-admin');else openModal('modal-login');});
+// ═══════════════════════════════════════════════════
+document.getElementById('btn-admin').addEventListener('click',function(){
+  if(adminSession)openModal('modal-admin');else openModal('modal-login');
+});
 document.getElementById('btn-login-submit').addEventListener('click',async function(){
   var em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-password').value;
-  var err=document.getElementById('login-error'),btn=this;
-  err.style.display='none';
+  var err=document.getElementById('login-error'),btn=this;err.style.display='none';
   if(!sb){err.textContent='Supabase not configured.';err.style.display='block';return;}
   btn.textContent='Signing in…';btn.disabled=true;
   try{
@@ -1162,139 +1130,373 @@ document.getElementById('btn-login-submit').addEventListener('click',async funct
   finally{btn.textContent='Sign In';btn.disabled=false;}
 });
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('btn-login-submit').click();});
-window.adminLogout=async function(){if(sb)await sb.auth.signOut();adminSession=null;closeModal('modal-admin');document.getElementById('btn-admin').classList.remove('logged-in');document.getElementById('btn-admin-label').textContent='Admin';document.body.classList.remove('admin-mode');document.getElementById('admin-notif-dot').style.display='none';};
+window.adminLogout=async function(){
+  if(sb)await sb.auth.signOut();
+  adminSession=null;closeModal('modal-admin');
+  document.getElementById('btn-admin').classList.remove('logged-in');
+  document.getElementById('btn-admin-label').textContent='Admin';
+  document.body.classList.remove('admin-mode');
+  document.getElementById('admin-notif-dot').style.display='none';
+};
+// Restore session on load
+(async function(){
+  if(!sb)return;
+  try{
+    var r=await sb.auth.getSession();
+    if(r.data&&r.data.session){
+      adminSession=r.data.session;
+      document.getElementById('btn-admin').classList.add('logged-in');
+      document.getElementById('btn-admin-label').textContent='Admin ✓';
+      document.getElementById('admin-email-display').textContent=r.data.session.user.email;
+      document.body.classList.add('admin-mode');
+      checkPendingContributions();
+    }
+  }catch(e){}
+})();
 
-// ═══════════════════════════════════════════════════════════════
-// ADD / EDIT TODA
-// ═══════════════════════════════════════════════════════════════
-var _editKey=null;
-window.openAddToda=function(){closeModal('modal-admin');openModal('modal-add');};
-window.addColorRow=function(){addColorRowValues('#42A5F5','');};
+// ═══════════════════════════════════════════════════
+// AFFILIATIONS
+// ═══════════════════════════════════════════════════
+(async function(){if(!sb)return;try{var r=await sb.from('affiliations').select('*').order('name');if(!r.error&&r.data)_knownAffils=r.data;}catch(e){}})();
 
-function addColorRowValues(hex,lbl){
-  var ci=document.getElementById('color-inputs'),r=document.createElement('div');r.className='color-input-row';
-  r.innerHTML='<input type="color" value="'+hex+'"/><input type="text" value="'+lbl+'" placeholder="Color name (e.g. Blue)"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';
-  ci.appendChild(r);
+function makeAffilUI(wrapId,textId,sugId,affilsRef,renderFn){
+  var wrap=document.getElementById(wrapId);
+  var textEl=document.getElementById(textId);
+  var sugEl=document.getElementById(sugId);
+  if(!textEl||!sugEl)return;
+  function addByName(name){
+    name=name.trim();if(!name)return;
+    var norm=name.charAt(0).toUpperCase()+name.slice(1).toLowerCase();
+    if(affilsRef.arr.some(function(a){return a.name.toLowerCase()===norm.toLowerCase();}))return;
+    var known=_knownAffils.find(function(k){return k.name.toLowerCase()===norm.toLowerCase();});
+    affilsRef.arr.push({name:known?known.name:norm,color:known?known.color:'#607D8B'});
+    if(!known&&sb&&adminSession)sb.from('affiliations').insert([{name:norm,color:'#607D8B'}]).then(function(r){if(!r.error)_knownAffils.push({name:norm,color:'#607D8B'});});
+    renderFn();
+  }
+  textEl.addEventListener('input',function(){
+    var v=this.value.toLowerCase();
+    if(!v){sugEl.style.display='none';return;}
+    var matches=_knownAffils.filter(function(k){return k.name.toLowerCase().includes(v);});
+    var exact=_knownAffils.some(function(k){return k.name.toLowerCase()===v;});
+    sugEl.innerHTML='';
+    matches.forEach(function(k){
+      var item=document.createElement('div');item.className='affil-sug-item';
+      item.innerHTML='<div class="affil-sug-dot" style="background:'+k.color+'"></div>'+k.name;
+      item.onclick=function(){addByName(k.name);textEl.value='';sugEl.style.display='none';};
+      sugEl.appendChild(item);
+    });
+    if(!exact){
+      var add=document.createElement('div');add.className='affil-sug-item';
+      add.style.color='var(--accent-l)';
+      var display=v.charAt(0).toUpperCase()+v.slice(1);
+      add.innerHTML='<div class="affil-sug-dot" style="background:#607D8B"></div>Add "'+display+'"';
+      add.onclick=function(){addByName(textEl.value);textEl.value='';sugEl.style.display='none';};
+      sugEl.appendChild(add);
+    }
+    sugEl.style.display=sugEl.children.length?'block':'none';
+  });
+  textEl.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.key===','){e.preventDefault();addByName(this.value);this.value='';sugEl.style.display='none';}
+    if(e.key==='Backspace'&&!this.value&&affilsRef.arr.length){affilsRef.arr.pop();renderFn();}
+  });
+  if(wrap)wrap.addEventListener('click',function(){textEl.focus();});
 }
-window.removeColorRow=function(btn){var c=document.getElementById('color-inputs');if(c.children.length>1)btn.parentElement.remove();};
-window.cancelPickPin=function(){pickingPin=false;pickingForContrib=false;document.getElementById('picking-hint').style.display='none';if(map)map.getContainer().style.cursor='';openModal(pickingForContrib?'modal-contribute':'modal-add');};
+document.addEventListener('click',function(e){
+  ['affil-suggestions','c-affil-suggestions'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el&&!e.target.closest('#'+id.replace('-suggestions','-input-outer')))el.style.display='none';
+  });
+});
+
+var _fAfRef={arr:_currentAffils};
+var _cAfRef={arr:_cAffils};
+
+function renderAffilTags(){
+  var wrap=document.getElementById('affil-input-wrap');if(!wrap)return;
+  wrap.querySelectorAll('.affil-tag').forEach(function(t){t.remove();});
+  _currentAffils.forEach(function(a,i){
+    var tag=document.createElement('div');tag.className='affil-tag';tag.style.background=a.color||'#607D8B';
+    tag.innerHTML=a.name+'<button onclick="window._fAfRef.arr.splice('+i+',1);renderAffilTags();" type="button">✕</button>';
+    wrap.insertBefore(tag,document.getElementById('affil-text'));
+  });
+}
+window._fAfRef=_fAfRef;
+
+function renderCAffilTags(){
+  var wrap=document.getElementById('c-affil-input-wrap');if(!wrap)return;
+  wrap.querySelectorAll('.affil-tag').forEach(function(t){t.remove();});
+  _cAffils.forEach(function(a,i){
+    var tag=document.createElement('div');tag.className='affil-tag';tag.style.background=a.color||'#607D8B';
+    tag.innerHTML=a.name+'<button onclick="window._cAfRef.arr.splice('+i+',1);renderCAffilTags();" type="button">✕</button>';
+    wrap.insertBefore(tag,document.getElementById('c-affil-text'));
+  });
+}
+window._cAfRef=_cAfRef;
+
+function setAffilsFromData(affils){
+  _currentAffils.length=0;
+  (Array.isArray(affils)?affils:[]).forEach(function(a){_currentAffils.push(typeof a==='object'?a:{name:a,color:'#607D8B'});});
+  renderAffilTags();
+}
+
+makeAffilUI('affil-input-wrap','affil-text','affil-suggestions',_fAfRef,renderAffilTags);
+makeAffilUI('c-affil-input-wrap','c-affil-text','c-affil-suggestions',_cAfRef,renderCAffilTags);
+
+// ═══════════════════════════════════════════════════
+// STATUS-DRIVEN FORM
+// ═══════════════════════════════════════════════════
+window.syncFormStatus=function(p){
+  var s=document.getElementById(p+'-status').value;
+  var isKol=s==='kolorum',isConf=s==='confirmed';
+  function show(id,vis){var el=document.getElementById(id);if(el)el.style.display=vis?'':' none';}
+  if(p==='f'){
+    show('f-number',!isKol);
+    var fn=document.getElementById('f-fullname');if(fn)fn.closest('.form-group').style.display=isKol?'none':'';
+    show('f-color-section',!isKol);
+    show('f-checked-grp',isConf);
+  } else {
+    show('c-normal-fields',!isKol);
+    show('c-kolorum-fields',isKol);
+    show('c-appearance-section',!isKol);
+    show('c-checked-grp',isConf);
+    show('c-affil-section',!isKol);
+  }
+};
+var _fStatus=document.getElementById('f-status');
+if(_fStatus)_fStatus.addEventListener('change',function(){window.syncFormStatus('f');});
+syncFormStatus('c');
+
+// ═══════════════════════════════════════════════════
+// FORM UTILITIES
+// ═══════════════════════════════════════════════════
+window.addColorRow=function(){addColorRowTo('color-inputs');};
+window.addColorRowTo=function(cid){
+  var ci=document.getElementById(cid);if(!ci)return;
+  var row=document.createElement('div');row.className='color-input-row';
+  row.innerHTML='<input type="color" value="#888888"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom(\''+cid+'\',this)">✕</button>';
+  ci.appendChild(row);
+};
+window.removeColorRow=function(btn){removeColorRowFrom('color-inputs',btn);};
+window.removeColorRowFrom=function(cid,btn){var ci=document.getElementById(cid);if(ci&&ci.children.length>1)btn.parentElement.remove();};
+function getColorsFrom(cid){
+  return Array.from(document.querySelectorAll('#'+cid+' .color-input-row')).map(function(r){
+    return{hex:r.querySelector('input[type="color"]').value,label:''};
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ADD / EDIT TODA (admin register + edit)
+// ═══════════════════════════════════════════════════
+window.openAddToda=function(){closeModal('modal-admin');resetAdminForm();syncFormStatus('f');openModal('modal-add');};
+window.closeAddModal=function(){closeModal('modal-add');resetAdminForm();_editKey=null;};
+window.cancelPickPin=function(){
+  pickingPin=false;pickingForContrib=false;
+  document.getElementById('picking-hint').style.display='none';
+  if(map)map.getContainer().style.cursor='';
+  openModal(pickingForContrib?'modal-contribute':'modal-add');
+};
 
 document.getElementById('btn-pick-pin').addEventListener('click',function(){
   pickingPin=true;pickingForContrib=false;closeModal('modal-add');
   document.getElementById('picking-hint').style.display='flex';
   if(map)map.getContainer().style.cursor='crosshair';
 });
-
 document.getElementById('btn-pick-pin-contrib').addEventListener('click',function(){
   pickingPin=true;pickingForContrib=true;closeModal('modal-contribute');
   document.getElementById('picking-hint').style.display='flex';
   if(map)map.getContainer().style.cursor='crosshair';
 });
-
 map.on('click',function(e){
   if(!pickingPin)return;
-  pickingPin=false;
+  var wasC=pickingForContrib;pickingPin=false;pickingForContrib=false;
   var la=e.latlng.lat,lo=e.latlng.lng;
-  var latId=pickingForContrib?'c-lat':'f-lat',lngId=pickingForContrib?'c-lng':'f-lng';
-  document.getElementById(latId).value=la.toFixed(7);
-  document.getElementById(lngId).value=lo.toFixed(7);
+  document.getElementById(wasC?'c-lat':'f-lat').value=la.toFixed(7);
+  document.getElementById(wasC?'c-lng':'f-lng').value=lo.toFixed(7);
   if(tempMarker)map.removeLayer(tempMarker);
   tempMarker=L.marker([la,lo],{icon:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:50%;background:#42A5F5;border:2px solid white;box-shadow:0 0 0 3px rgba(66,165,245,0.3);"></div>',className:'',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map);
   document.getElementById('picking-hint').style.display='none';
   if(map)map.getContainer().style.cursor='';
-  openModal(pickingForContrib?'modal-contribute':'modal-add');
+  openModal(wasC?'modal-contribute':'modal-add');
 });
 
 window.onEditClick=function(){
   if(!currentPanelKey||!markerStore[currentPanelKey])return;
-  var e=markerStore[currentPanelKey],t=e.toda;_editKey=currentPanelKey;
+  var entry=markerStore[currentPanelKey],t=entry.toda;_editKey=currentPanelKey;
   document.getElementById('modal-add-title').textContent='Edit TODA Terminal';
   document.getElementById('modal-add-sub').textContent='Editing: '+t.name;
   document.getElementById('btn-add-submit').textContent='Save Changes';
   document.getElementById('btn-delete-in-form').style.display='block';
-  document.getElementById('f-number').value=t.n||'';document.getElementById('f-name').value=t.name||'';
-  document.getElementById('f-fullname').value=t.full||'';document.getElementById('f-lat').value=t.lat||'';
-  document.getElementById('f-lng').value=t.lng||'';document.getElementById('f-terminal').value=t.terminal||'';
-  document.getElementById('f-landmarks').value=t.landmarks||'';document.getElementById('f-logo').value=t.logoUrl||'';
-  document.getElementById('f-checked').value=t.checked||'';document.getElementById('f-notes').value=t.notes||'';
-  document.getElementById('f-status').value=t.status||'draft';setAffilsFromData(t.affiliations||[]);onStatusChange();
+  document.getElementById('f-status').value=t.status||'draft';
+  syncFormStatus('f');
+  document.getElementById('f-number').value=t.n||'';
+  document.getElementById('f-name').value=t.name||'';
+  document.getElementById('f-fullname').value=t.full||'';
+  document.getElementById('f-lat').value=t.lat||'';
+  document.getElementById('f-lng').value=t.lng||'';
+  document.getElementById('f-terminal').value=t.terminal||'';
+  document.getElementById('f-landmarks').value=t.landmarks||'';
+  document.getElementById('f-logo').value=t.logoUrl||'';
+  document.getElementById('f-checked').value=t.checked||'';
+  document.getElementById('f-notes').value=t.notes||'';
+  setAffilsFromData(t.affiliations||[]);
   var cols=normColors(t.colors),ci=document.getElementById('color-inputs');ci.innerHTML='';
-  if(cols.length)cols.forEach(function(c){addColorRowValues(c.hex,c.label);});else addColorRowValues('#42A5F5','');
+  if(cols.length)cols.forEach(function(c){var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="'+c.hex+'"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);});
+  else{var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);}
   openModal('modal-add');
 };
-window.onDeleteClick=function(){if(!currentPanelKey||!markerStore[currentPanelKey])return;var nm=markerStore[currentPanelKey].toda.name;if(!confirm('Delete '+nm+'?\nThis cannot be undone.'))return;doDelete(currentPanelKey);};
-window.onDeleteFromForm=function(){if(!_editKey||!markerStore[_editKey])return;var nm=markerStore[_editKey].toda.name;if(!confirm('Delete '+nm+'?'))return;closeModal('modal-add');doDelete(_editKey);_editKey=null;};
-function doDelete(key){var e=markerStore[key];if(!e)return;if(map)map.removeLayer(e.marker);if(e.supabaseId&&sb)sb.from('todas_admin').delete().eq('id',e.supabaseId);delete markerStore[key];if(currentPanelKey===key){currentPanelKey=null;closePanel();}showToast(e.toda.name+' removed','success');}
-window.closeAddModal=function(){closeModal('modal-add');resetForm();_editKey=null;};
+window.onDeleteClick=function(){
+  if(!currentPanelKey||!markerStore[currentPanelKey])return;
+  if(!confirm('Delete '+markerStore[currentPanelKey].toda.name+'? This cannot be undone.'))return;
+  doDelete(currentPanelKey);
+};
+window.onDeleteFromForm=function(){
+  if(!_editKey||!markerStore[_editKey])return;
+  if(!confirm('Delete '+markerStore[_editKey].toda.name+'?'))return;
+  closeModal('modal-add');doDelete(_editKey);_editKey=null;
+};
+function doDelete(key){
+  var entry=markerStore[key];if(!entry)return;
+  if(map)map.removeLayer(entry.marker);
+  if(entry.supabaseId&&sb)sb.from('todas_admin').delete().eq('id',entry.supabaseId);
+  delete markerStore[key];
+  if(currentPanelKey===key){currentPanelKey=null;closePanel();}
+  showToast(entry.toda.name+' removed','success');
+}
+function resetAdminForm(){
+  document.getElementById('modal-add-title').textContent='Register TODA Terminal';
+  document.getElementById('modal-add-sub').textContent='New entry · Antipolo City';
+  document.getElementById('btn-add-submit').textContent='Register Terminal';
+  document.getElementById('btn-delete-in-form').style.display='none';
+  ['f-number','f-name','f-fullname','f-lat','f-lng','f-terminal','f-landmarks','f-logo','f-checked','f-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-status').value='draft';
+  _currentAffils.length=0;renderAffilTags();syncFormStatus('f');
+  document.getElementById('color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button></div>';
+  document.getElementById('add-error').style.display='none';
+}
 
 document.getElementById('btn-add-submit').addEventListener('click',async function(){
-  var name=document.getElementById('f-name').value.trim(),lat=parseFloat(document.getElementById('f-lat').value),lng=parseFloat(document.getElementById('f-lng').value);
+  var st=document.getElementById('f-status').value;
+  var isKol=st==='kolorum',isConf=st==='confirmed';
+  var name=document.getElementById('f-name').value.trim();
+  var lat=parseFloat(document.getElementById('f-lat').value);
+  var lng=parseFloat(document.getElementById('f-lng').value);
   var errEl=document.getElementById('add-error'),btn=this;errEl.style.display='none';
   if(!name||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
-  var cols=Array.from(document.querySelectorAll('#color-inputs .color-input-row')).map(function(r){return{hex:r.querySelector('input[type="color"]').value,label:r.querySelector('input[type="text"]').value.trim()};}).filter(function(c){return c.label;});
-  var _fst=document.getElementById('f-status').value;
-  var _isKol=_fst==='kolorum';
+  if(isConf&&!document.getElementById('f-checked').value.trim()){errEl.textContent='Last confirmed date required for Confirmed status.';errEl.style.display='block';return;}
+  var cols=getColorsFrom('color-inputs');
   var payload={
-    number:_isKol?null:(parseInt(document.getElementById('f-number').value)||null),
-    name:name,
-    full_name:_isKol?null:(document.getElementById('f-fullname').value.trim()||null),
+    number:isKol?null:(parseInt(document.getElementById('f-number').value)||null),
+    name:name,full_name:isKol?null:(document.getElementById('f-fullname').value.trim()||null),
     lat:lat,lng:lng,
     terminal_name:document.getElementById('f-terminal').value.trim()||null,
     landmarks:document.getElementById('f-landmarks').value.trim()||null,
     notes:document.getElementById('f-notes').value.trim()||null,
-    colors:_isKol?[]:cols,
-    affiliations:_currentAffils,
-    last_checked:_fst==='confirmed'?(document.getElementById('f-checked').value.trim()||null):null,
-    status:_fst,
-    logo_url:_isKol?null:(document.getElementById('f-logo').value.trim()||null),
+    colors:isKol?[]:cols,affiliations:isKol?[]:_currentAffils,
+    last_checked:isConf?(document.getElementById('f-checked').value.trim()||null):null,
+    status:st,logo_url:isKol?null:(document.getElementById('f-logo').value.trim()||null),
     city:'Antipolo City'
   };
   if(!sb){errEl.textContent='Supabase not configured.';errEl.style.display='block';return;}
   btn.textContent=_editKey?'Saving…':'Registering…';btn.disabled=true;
   try{
-    var newId=null,editEntry=_editKey?markerStore[_editKey]:null,exId=editEntry?editEntry.supabaseId:null;
+    var newId=null;
+    var editEntry=_editKey?markerStore[_editKey]:null;
+    var exId=editEntry?editEntry.supabaseId:null;
     if(exId){var ru=await sb.from('todas_admin').update(payload).eq('id',exId);if(ru.error)throw ru.error;newId=exId;}
     else{var ri=await sb.from('todas_admin').insert([payload]).select();if(ri.error)throw ri.error;newId=ri.data&&ri.data[0]?ri.data[0].id:null;}
     if(editEntry&&editEntry.marker&&map)map.removeLayer(editEntry.marker);
     if(_editKey)delete markerStore[_editKey];
-    syncTodaFields(newId,payload);
-    var nt={id:newId,n:payload.number,name:name,full:payload.full_name||'',lat:lat,lng:lng,terminal:payload.terminal_name,landmarks:payload.landmarks,notes:payload.notes,colors:cols,affiliations:_currentAffils,checked:payload.last_checked,status:payload.status,robinsons:_currentAffils.some(function(a){return a.name.toLowerCase()==='robinsons';}),logoUrl:payload.logo_url};
-    addTodaToMap(nt,newId?'sb-'+newId:('s-'+name));
+    var nk='sb-'+(newId||name);
+    var nt={id:newId,n:payload.number,name:name,full:payload.full_name||'',lat:lat,lng:lng,
+      terminal:payload.terminal_name,landmarks:payload.landmarks,notes:payload.notes,
+      colors:cols,affiliations:_currentAffils.slice(),checked:payload.last_checked,
+      status:st,robinsons:_currentAffils.some(function(a){return a.name.toLowerCase()==='robinsons';}),
+      logoUrl:payload.logo_url};
+    addTodaToMap(nt,nk);
+    if(nk===currentPanelKey||(exId&&'sb-'+exId===currentPanelKey)){currentPanelKey=nk;openPanel(nt);}
     if(tempMarker&&map){map.removeLayer(tempMarker);tempMarker=null;}
-    closeModal('modal-add');showToast(name+(_editKey?' updated':' registered'),'success');
-    // Live update sidebar if this was the currently viewed terminal
-    if(nk===currentPanelKey||(exId&&('sb-'+exId)===currentPanelKey)){currentPanelKey=nk;openPanel(nt);}
-    resetForm();_editKey=null;
+    closeModal('modal-add');showToast(name+(_editKey?' updated':' registered'),'success');resetAdminForm();_editKey=null;
   }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
   finally{btn.textContent=_editKey?'Save Changes':'Register Terminal';btn.disabled=false;}
 });
 
-function resetForm(){
-  document.getElementById('modal-add-title').textContent='Register TODA Terminal';
-  document.getElementById('modal-add-sub').textContent='New entry · Antipolo City';
-  document.getElementById('btn-add-submit').textContent='Register Terminal';
-  document.getElementById('btn-delete-in-form').style.display='none';
-  ['f-number','f-name','f-fullname','f-lat','f-lng','f-terminal','f-landmarks','f-logo','f-checked','f-notes'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('f-status').value='draft';_currentAffils=[];renderAffilTags();onStatusChange();
-  document.getElementById('color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button></div>';
-  document.getElementById('add-error').style.display='none';
+// ═══════════════════════════════════════════════════
+// CONTRIBUTE (admin + guest unified)
+// ═══════════════════════════════════════════════════
+window.openContribute=function(){
+  var isAdmin=!!adminSession;
+  document.getElementById('contrib-modal-title').textContent=isAdmin?'Register TODA Terminal':'Suggest a Terminal';
+  document.getElementById('contrib-modal-sub').textContent=isAdmin?'New entry · Antipolo City':'Contributions are reviewed before going live';
+  document.getElementById('contrib-guest-notice').style.display=isAdmin?'none':'block';
+  document.getElementById('btn-contrib-submit').textContent=isAdmin?'Register Terminal':'Submit for Review';
+  resetContribForm();
+  openModal('modal-contribute');
+};
+function resetContribForm(){
+  ['c-number','c-name','c-kolorum-name','c-fullname','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked','c-logo'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('c-status').value='draft';
+  document.getElementById('contrib-error').style.display='none';
+  var ci=document.getElementById('c-color-inputs');
+  if(ci)ci.innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom(\'c-color-inputs\',this)">✕</button></div>';
+  _cAffils.length=0;renderCAffilTags();
+  syncFormStatus('c');
 }
+document.getElementById('btn-contrib-submit').addEventListener('click',async function(){
+  var isAdmin=!!adminSession;
+  var st=document.getElementById('c-status').value;
+  var isKol=st==='kolorum',isConf=st==='confirmed';
+  var rawName=isKol
+    ?(document.getElementById('c-kolorum-name')?document.getElementById('c-kolorum-name').value.trim():'')
+    :document.getElementById('c-name').value.trim();
+  var lat=parseFloat(document.getElementById('c-lat').value);
+  var lng=parseFloat(document.getElementById('c-lng').value);
+  var errEl=document.getElementById('contrib-error'),btn=this;errEl.style.display='none';
+  if(!rawName||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
+  if(!isAdmin){
+    var now=Date.now();
+    if(now-_lastContribTime<60000){errEl.textContent='Please wait '+Math.ceil((60000-(now-_lastContribTime))/1000)+'s.';errEl.style.display='block';return;}
+  }
+  var cols=getColorsFrom('c-color-inputs');
+  var payload={
+    number:isKol?null:(parseInt(document.getElementById('c-number').value)||null),
+    name:rawName,
+    full_name:isKol?null:(document.getElementById('c-fullname').value.trim()||null),
+    lat:lat,lng:lng,
+    terminal_name:document.getElementById('c-terminal').value.trim()||null,
+    landmarks:document.getElementById('c-landmarks').value.trim()||null,
+    notes:document.getElementById('c-notes').value.trim()||null,
+    colors:isKol?[]:cols,affiliations:isKol?[]:_cAffils.slice(),
+    last_checked:isConf?(document.getElementById('c-checked').value.trim()||null):null,
+    status:st,logo_url:isKol?null:(document.getElementById('c-logo')?document.getElementById('c-logo').value.trim():null)||null,
+    city:'Antipolo City'
+  };
+  if(!sb){errEl.textContent='Supabase not configured.';errEl.style.display='block';return;}
+  btn.textContent=isAdmin?'Registering…':'Submitting…';btn.disabled=true;
+  try{
+    if(isAdmin){
+      var ri=await sb.from('todas_admin').insert([payload]).select();
+      if(ri.error)throw ri.error;
+      var newId=ri.data&&ri.data[0]?ri.data[0].id:null;
+      addTodaToMap({id:newId,n:payload.number,name:rawName,full:payload.full_name||'',lat:lat,lng:lng,
+        terminal:payload.terminal_name,landmarks:payload.landmarks,notes:payload.notes,
+        colors:cols,affiliations:_cAffils.slice(),checked:payload.last_checked,
+        status:st,robinsons:false,logoUrl:payload.logo_url},'sb-'+newId);
+      showToast(rawName+' registered','success');
+    } else {
+      payload.review_status='pending';
+      var rc=await sb.from('contributions').insert([payload]);
+      if(rc.error)throw rc.error;
+      _lastContribTime=Date.now();
+      showToast('Contribution submitted for review','success');
+    }
+    closeModal('modal-contribute');resetContribForm();
+  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+  finally{btn.textContent=isAdmin?'Register Terminal':'Submit for Review';btn.disabled=false;}
+});
 
-// ═══════════════════════════════════════════════════════════════
-// CONTRIBUTIONS (rate limit: 1 per minute)
-// ═══════════════════════════════════════════════════════════════
-var _lastContribTime=0;
-var _contribCurrentToda=null;
-
-// openContribute defined later (unified version)
-
-// Old contrib submit removed — unified handler below handles both admin and guest
-
-function resetContribForm(){['c-number','c-name','c-fullname','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('c-status').value='draft';document.getElementById('contrib-error').style.display='none';}
-
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // VERIFY CONTRIBUTIONS
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 async function checkPendingContributions(){
   if(!sb||!adminSession)return;
   try{
@@ -1306,7 +1508,6 @@ async function checkPendingContributions(){
     else{dot.style.display='none';cc.style.display='none';}
   }catch(e){}
 }
-
 window.openVerify=async function(){
   closeModal('modal-admin');openModal('modal-verify');
   var list=document.getElementById('verify-list');list.innerHTML='<div class="no-contribs">Loading…</div>';
@@ -1314,75 +1515,44 @@ window.openVerify=async function(){
   try{
     var r=await sb.from('contributions').select('*').eq('review_status','pending').order('created_at',{ascending:false});
     if(r.error)throw r.error;
-    if(!r.data||r.data.length===0){list.innerHTML='<div class="no-contribs">No pending contributions.</div>';return;}
+    if(!r.data||!r.data.length){list.innerHTML='<div class="no-contribs">No pending contributions.</div>';return;}
     list.innerHTML='';
     r.data.forEach(function(c){
       var card=document.createElement('div');card.className='contrib-card';
-      var date=c.created_at?new Date(c.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}):'Unknown date';
-      card.innerHTML='<div class="contrib-card-name">'+c.name+'</div>'
-        +'<div class="contrib-card-meta">Submitted '+date+' · '+c.status+'</div>'
+      var date=c.created_at?new Date(c.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}):'';
+      card.innerHTML='<div class="contrib-card-name">'+c.name+'</div><div class="contrib-card-meta">Submitted '+date+' · '+c.status+'</div>'
         +(c.full_name?'<div class="contrib-card-row">Full name: <span>'+c.full_name+'</span></div>':'')
         +(c.terminal_name?'<div class="contrib-card-row">Terminal: <span>'+c.terminal_name+'</span></div>':'')
         +(c.landmarks?'<div class="contrib-card-row">Landmarks: <span>'+c.landmarks+'</span></div>':'')
         +'<div class="contrib-card-row">Coords: <span>'+c.lat.toFixed(5)+', '+c.lng.toFixed(5)+'</span></div>'
         +(c.notes?'<div class="contrib-card-row">Notes: <span>'+c.notes+'</span></div>':'')
-        +'<div class="contrib-actions">'
-        +'<button class="btn-approve" onclick="approveContrib(\''+c.id+'\',this.closest(\'.contrib-card\'))">✓ Approve</button>'
-        +'<button class="btn-reject" onclick="rejectContrib(\''+c.id+'\',this.closest(\'.contrib-card\'))">✕ Reject</button>'
-        +'</div>';
+        +'<div class="contrib-actions"><button class="btn-approve" onclick="approveContrib(\''+c.id+'\',this.closest(\'.contrib-card\'))">✓ Approve</button>'
+        +'<button class="btn-reject" onclick="rejectContrib(\''+c.id+'\',this.closest(\'.contrib-card\'))">✕ Reject</button></div>';
       list.appendChild(card);
     });
   }catch(e){list.innerHTML='<div class="no-contribs">Error: '+e.message+'</div>';}
 };
-
 window.approveContrib=async function(id,card){
   if(!sb||!adminSession)return;
   try{
-    // Get the contribution
     var rc=await sb.from('contributions').select('*').eq('id',id).single();
-    if(rc.error)throw rc.error;
-    var c=rc.data;
-    // Insert into todas_admin
-    var payload={number:c.number,name:c.name,full_name:c.full_name,lat:c.lat,lng:c.lng,terminal_name:c.terminal_name,landmarks:c.landmarks,notes:c.notes,colors:c.colors||[],last_checked:c.last_checked,status:c.status,has_robinsons:false,city:c.city||'Antipolo City'};
-    var ri=await sb.from('todas_admin').insert([payload]).select();
+    if(rc.error)throw rc.error;var c=rc.data;
+    var ri=await sb.from('todas_admin').insert([{number:c.number,name:c.name,full_name:c.full_name,lat:c.lat,lng:c.lng,terminal_name:c.terminal_name,landmarks:c.landmarks,notes:c.notes,colors:c.colors||[],affiliations:c.affiliations||[],last_checked:c.last_checked,status:c.status,city:c.city||'Antipolo City'}]).select();
     if(ri.error)throw ri.error;
-    // Mark as approved
     await sb.from('contributions').update({review_status:'approved'}).eq('id',id);
-    // Add to map
     var newId=ri.data&&ri.data[0]?ri.data[0].id:null;
-    addTodaToMap({id:newId,n:c.number,name:c.name,full:c.full_name||'',lat:c.lat,lng:c.lng,terminal:c.terminal_name,landmarks:c.landmarks,notes:c.notes,colors:[],checked:c.last_checked,status:c.status,robinsons:false},newId?'sb-'+newId:'sb-contrib-'+id);
-    card.remove();
-    showToast(c.name+' approved and added to map','success');
-    checkPendingContributions();
+    addTodaToMap({id:newId,n:c.number,name:c.name,full:c.full_name||'',lat:c.lat,lng:c.lng,terminal:c.terminal_name,landmarks:c.landmarks,notes:c.notes,colors:[],affiliations:[],checked:c.last_checked,status:c.status,robinsons:false},'sb-'+newId);
+    card.remove();showToast(c.name+' approved','success');checkPendingContributions();
   }catch(e){showToast('Error: '+e.message,'error');}
 };
-
 window.rejectContrib=async function(id,card){
-  if(!confirm('Reject and delete this contribution?'))return;
-  try{
-    await sb.from('contributions').update({review_status:'rejected'}).eq('id',id);
-    card.remove();
-    showToast('Contribution rejected','success');
-    checkPendingContributions();
-  }catch(e){showToast('Error: '+e.message,'error');}
+  if(!confirm('Reject this contribution?'))return;
+  try{await sb.from('contributions').update({review_status:'rejected'}).eq('id',id);card.remove();showToast('Rejected','');checkPendingContributions();}catch(e){showToast('Error: '+e.message,'error');}
 };
 
-// ═══════════════════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════════════════
-function showToast(m,type){var t=document.getElementById('toast');t.textContent=m;t.className='show'+(type?' '+type:'');setTimeout(function(){t.className='';},3200);}
-
-// ═══════════════════════════════════════════════════════════════
-// LOAD SITE CONTENT ON OPEN
-// ═══════════════════════════════════════════════════════════════
-// About is now a link to /about.html
-
-
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // DRAW LOCAL AREA
-// ═══════════════════════════════════════════════════════════════
-var _drawnItems=null,_drawControl=null,_drawnGeoJSON=null;
-
+// ═══════════════════════════════════════════════════
 window.openDrawArea=function(){closeModal('modal-admin');openModal('modal-draw');};
 window.cancelDraw=function(){
   closeModal('modal-draw');
@@ -1392,8 +1562,7 @@ window.cancelDraw=function(){
 };
 window.startDrawing=function(){
   closeModal('modal-draw');
-  _drawnItems=new L.FeatureGroup();
-  map.addLayer(_drawnItems);
+  _drawnItems=new L.FeatureGroup();map.addLayer(_drawnItems);
   try{
     _drawControl=new L.Control.Draw({
       draw:{polygon:true,polyline:false,rectangle:false,circle:false,marker:false,circlemarker:false},
@@ -1402,32 +1571,28 @@ window.startDrawing=function(){
     map.addControl(_drawControl);
     showToast('Draw a polygon on the map','');
     map.on(L.Draw.Event.CREATED,function(ev){
-      _drawnItems.clearLayers();
-      _drawnItems.addLayer(ev.layer);
+      _drawnItems.clearLayers();_drawnItems.addLayer(ev.layer);
       _drawnGeoJSON=ev.layer.toGeoJSON();
       document.getElementById('draw-status').textContent='Polygon drawn. Name it and save.';
       document.getElementById('btn-draw-save').style.display='block';
       document.getElementById('btn-draw-start').style.display='none';
-      try{map.removeControl(_drawControl);}catch(e){}
-      _drawControl=null;
+      try{map.removeControl(_drawControl);}catch(e){}_drawControl=null;
       openModal('modal-draw');
     });
-  }catch(e){showToast('Leaflet.Draw not loaded','error');openModal('modal-draw');}
+  }catch(e){showToast('Leaflet.Draw not available','error');openModal('modal-draw');}
 };
 window.saveDrawnArea=async function(){
   var name=document.getElementById('draw-name').value.trim();
   var brgy=document.getElementById('draw-barangay').value.trim();
   var errEl=document.getElementById('draw-error');errEl.style.display='none';
-  if(!name){errEl.textContent='Area name is required.';errEl.style.display='block';return;}
-  if(!_drawnGeoJSON){errEl.textContent='Please draw a polygon first.';errEl.style.display='block';return;}
+  if(!name){errEl.textContent='Area name required.';errEl.style.display='block';return;}
+  if(!_drawnGeoJSON){errEl.textContent='Draw a polygon first.';errEl.style.display='block';return;}
   if(!sb||!adminSession){showToast('Not logged in','error');return;}
   try{
     var r=await sb.from('local_areas').insert([{name:name,barangay:brgy||null,geojson:_drawnGeoJSON,city:'Antipolo City'}]);
     if(r.error)throw r.error;
     showToast('"'+name+'" area saved','success');
-    closeModal('modal-draw');
-    if(_drawnItems&&map)map.removeLayer(_drawnItems);
-    _drawnItems=null;_drawnGeoJSON=null;
+    window.cancelDraw();
     document.getElementById('draw-name').value='';document.getElementById('draw-barangay').value='';
     document.getElementById('draw-status').textContent='No polygon drawn yet.';
     document.getElementById('btn-draw-save').style.display='none';
@@ -1435,474 +1600,68 @@ window.saveDrawnArea=async function(){
   }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
 };
 
-
-// ═══════════════════════════════════════════════════════════════
-// AFFILIATIONS INPUT SYSTEM
-// ═══════════════════════════════════════════════════════════════
-var _knownAffils=[
-  {name:'Robinsons',color:'#CC2200'},
-  {name:'SM',color:'#0047CC'},
-  {name:'Ayala',color:'#005A32'},
-  {name:'Puregold',color:'#E31837'}
-];
-var _currentAffils=[];
-
-// Load known affiliations from Supabase
-(async function loadAffils(){
-  if(!sb)return;
-  try{
-    var r=await sb.from('affiliations').select('*').order('name');
-    if(!r.error&&r.data)_knownAffils=r.data;
-  }catch(e){}
-})();
-
-function renderAffilTags(){
-  var wrap=document.getElementById('affil-input-wrap');
-  if(!wrap)return;
-  wrap.querySelectorAll('.affil-tag').forEach(function(t){t.remove();});
-  _currentAffils.forEach(function(a,i){
-    var tag=document.createElement('div');
-    tag.className='affil-tag';
-    tag.style.background=a.color||'#607D8B';
-    tag.innerHTML=a.name+'<button onclick="removeAffilTag('+i+')" type="button">✕</button>';
-    wrap.insertBefore(tag,document.getElementById('affil-text'));
-  });
-}
-window.removeAffilTag=function(i){_currentAffils.splice(i,1);renderAffilTags();};
-
-function addAffilByName(name){
-  name=name.trim();if(!name)return;
-  var norm=name.charAt(0).toUpperCase()+name.slice(1).toLowerCase();
-  // check duplicate
-  if(_currentAffils.some(function(a){return a.name.toLowerCase()===norm.toLowerCase();}))return;
-  var known=_knownAffils.find(function(k){return k.name.toLowerCase()===norm.toLowerCase();});
-  var color=known?known.color:'#607D8B';
-  _currentAffils.push({name:known?known.name:norm,color:color});
-  renderAffilTags();
-  // auto-register if new and admin
-  if(!known&&sb&&adminSession){
-    sb.from('affiliations').insert([{name:norm,color:'#607D8B'}]).then(function(r){
-      if(!r.error)_knownAffils.push({name:norm,color:'#607D8B'});
-    });
-  }
-}
-
-var _afText=document.getElementById('affil-text');
-var _afSug=document.getElementById('affil-suggestions');
-if(_afText){
-  _afText.addEventListener('input',function(){
-    var v=this.value.toLowerCase();
-    if(!v){_afSug.style.display='none';return;}
-    var matches=_knownAffils.filter(function(k){return k.name.toLowerCase().includes(v);});
-    if(!matches.length){_afSug.style.display='none';return;}
-    _afSug.innerHTML='';
-    matches.forEach(function(k){
-      var item=document.createElement('div');item.className='affil-sug-item';
-      item.innerHTML='<div class="affil-sug-dot" style="background:'+k.color+'"></div>'+k.name;
-      item.onclick=function(){addAffilByName(k.name);_afText.value='';_afSug.style.display='none';};
-      _afSug.appendChild(item);
-    });
-    _afSug.style.display='block';
-  });
-  _afText.addEventListener('keydown',function(e){
-    if(e.key==='Enter'||e.key===','){e.preventDefault();addAffilByName(this.value);this.value='';_afSug.style.display='none';}
-    if(e.key==='Backspace'&&!this.value&&_currentAffils.length){_currentAffils.pop();renderAffilTags();}
-  });
-}
-document.addEventListener('click',function(e){if(_afSug&&!e.target.closest('#affil-input-outer'))_afSug.style.display='none';});
-
-function setAffilsFromData(affils){
-  _currentAffils=Array.isArray(affils)?affils.map(function(a){return typeof a==='object'?a:{name:a,color:'#607D8B'};}):[];
-  renderAffilTags();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// STATUS-DRIVEN FORM (Kolorum hides many fields)
-// ═══════════════════════════════════════════════════════════════
-function onStatusChange(){
-  var s=document.getElementById('f-status').value;
-  var isKolorum=s==='kolorum';
-  var isConfirmed=s==='confirmed';
-  // Number hidden for kolorum
-  var numRow=document.getElementById('f-number');
-  if(numRow)numRow.closest('.form-row').style.display=isKolorum?'none':'';
-  // Full name hidden for kolorum
-  var fn=document.getElementById('f-fullname');
-  if(fn)fn.closest('.form-group').style.display=isKolorum?'none':'';
-  // Colors hidden for kolorum
-  var colorSec=document.getElementById('f-color-section');
-  if(colorSec)colorSec.style.display=isKolorum?'none':'';
-  // Last confirmed only for confirmed
-  var checkedGrp=document.getElementById('f-checked-grp');
-  if(checkedGrp)checkedGrp.style.display=isConfirmed?'':'none';
-}
-// Attach to status select
-var _fStatus=document.getElementById('f-status');
-if(_fStatus)_fStatus.addEventListener('change',onStatusChange);
-
-
-// ═══════════════════════════════════════════════════════════════
-// TODA NAME SYNC — sync shared fields between same-abbr terminals
-// ═══════════════════════════════════════════════════════════════
-function normalizeName(n){return n.replace(/[\s\-]+/g,'').toUpperCase();}
-
-async function syncTodaFields(savedId,savedPayload){
-  if(!sb||!adminSession)return;
-  var norm=normalizeName(savedPayload.name);
-  try{
-    var r=await sb.from('todas_admin').select('*');
-    if(r.error)return;
-    var siblings=r.data.filter(function(row){
-      return normalizeName(row.name)===norm && row.id!==savedId;
-    });
-    if(!siblings.length)return;
-    // Fields to sync across same-abbr terminals
-    var syncFields=['number','full_name','logo_url','colors','affiliations'];
-    for(var i=0;i<siblings.length;i++){
-      var sib=siblings[i];
-      var patch={};
-      syncFields.forEach(function(field){
-        var newVal=savedPayload[field]||savedPayload[field.replace('_name','_name')];
-        if(field==='number')newVal=savedPayload.number;
-        else if(field==='full_name')newVal=savedPayload.full_name;
-        else if(field==='logo_url')newVal=savedPayload.logo_url;
-        else if(field==='colors')newVal=savedPayload.colors;
-        else if(field==='affiliations')newVal=savedPayload.affiliations;
-        // Only sync if saved terminal has value and sibling doesn't (or force override)
-        if(newVal&&(newVal.length||typeof newVal==='number'))patch[field]=newVal;
-        // If sibling has a value that saved doesn't, copy back to saved
-        if(!newVal&&sib[field]){
-          // Update the saved terminal with sibling's data
-          var backPatch={};backPatch[field]=sib[field];
-          sb.from('todas_admin').update(backPatch).eq('id',savedId).then(function(){});
-        }
-      });
-      if(Object.keys(patch).length){
-        await sb.from('todas_admin').update(patch).eq('id',sib.id);
-        // Update in-memory marker store
-        Object.values(markerStore).forEach(function(entry){
-          if(entry.supabaseId===sib.id){
-            Object.assign(entry.toda,{
-              n:patch.number||entry.toda.n,
-              full:patch.full_name||entry.toda.full,
-              logoUrl:patch.logo_url||entry.toda.logoUrl,
-              colors:patch.colors||entry.toda.colors,
-              affiliations:patch.affiliations||entry.toda.affiliations
-            });
-          }
-        });
-      }
-    }
-    // Also: check if saving duplicate name — find exact match in DB, delete new and keep existing with merged data
-    var exactDup=r.data.filter(function(row){
-      return normalizeName(row.name)===norm && row.id!==savedId && row.name===siblings[0].name;
-    });
-    if(exactDup.length&&exactDup[0].id){
-      showToast('Synced shared fields with '+siblings.length+' related terminal(s)','success');
-    }
-  }catch(e){console.warn('Sync error:',e);}
-}
-
-
-// ═══════════════════════════════════════════════════════════════
-// SEARCH BAR
-// ═══════════════════════════════════════════════════════════════
-var _searchHighlights=[];
-
-function toggleSearchFilter(){
+// ═══════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════
+window.toggleSearchFilter=function(){
   var row=document.getElementById('search-filter-row');
   row.style.display=row.style.display==='none'?'block':'none';
-}
-
+};
 document.getElementById('search-input').addEventListener('input',function(){
   var q=this.value.trim().toLowerCase();
   var resultsEl=document.getElementById('search-results');
-  // Clear highlights
   _searchHighlights.forEach(function(key){
     if(markerStore[key])markerStore[key].marker.setIcon(makeIcon(markerStore[key].toda,key===selectedKey));
   });
   _searchHighlights=[];
-
   if(!q){resultsEl.style.display='none';return;}
   var byName=document.getElementById('sf-name').checked;
   var byTerminal=document.getElementById('sf-terminal').checked;
   var byLandmarks=document.getElementById('sf-landmarks').checked;
   var byAffils=document.getElementById('sf-affils').checked;
-
   var matches=[];
   Object.entries(markerStore).forEach(function(kv){
-    var key=kv[0],entry=kv[1],t=entry.toda;
-    var hit=false;
+    var key=kv[0],t=kv[1].toda,hit=false;
     if(byName&&(t.name.toLowerCase().includes(q)||(t.full&&t.full.toLowerCase().includes(q))))hit=true;
     if(byTerminal&&t.terminal&&t.terminal.toLowerCase().includes(q))hit=true;
     if(byLandmarks&&t.landmarks&&t.landmarks.toLowerCase().includes(q))hit=true;
     if(byAffils&&Array.isArray(t.affiliations)&&t.affiliations.some(function(a){return a.name.toLowerCase().includes(q);}))hit=true;
     if(hit)matches.push({key:key,toda:t});
   });
-
   if(!matches.length){resultsEl.style.display='none';return;}
-
-  // Highlight matching pins with a bright pulse icon
   matches.forEach(function(m){
     _searchHighlights.push(m.key);
-    var t=m.toda;
-    var sz=t.status==='confirmed'?16:13;
-    markerStore[m.key].marker.setIcon(L.divIcon({
-      html:'<div class="toda-pin '+t.status+' selected" style="width:'+sz+'px;height:'+sz+'px;box-shadow:0 0 0 4px rgba(255,255,255,0.7),0 0 12px rgba(255,255,255,0.4)!important;"></div>',
-      className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
-    }));
+    var t=m.toda,sz=t.status==='confirmed'?16:13;
+    markerStore[m.key].marker.setIcon(L.divIcon({html:'<div class="toda-pin '+t.status+' selected" style="width:'+sz+'px;height:'+sz+'px;"></div>',className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}));
   });
-
-  // Show results list
   resultsEl.innerHTML='';
   matches.slice(0,12).forEach(function(m){
-    var t=m.toda;
-    var item=document.createElement('div');
-    item.style.cssText='padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(56,100,160,0.15);display:flex;align-items:center;gap:8px;transition:background 0.15s;';
+    var t=m.toda,item=document.createElement('div');
+    item.style.cssText='padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(56,100,160,0.15);display:flex;align-items:center;gap:8px;';
     item.innerHTML='<div style="width:8px;height:8px;border-radius:50%;background:var(--'+t.status+');flex-shrink:0;"></div>'
-      +'<div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;color:var(--text);">'+(t.n?'#'+t.n+' ':'')+t.name+'</div>'
-      +(t.terminal?'<div style="font-size:0.68rem;color:var(--muted);">'+t.terminal+'</div>':'')+'</div>';
-    item.addEventListener('mouseenter',function(){this.style.background='rgba(56,130,210,0.1)';});
-    item.addEventListener('mouseleave',function(){this.style.background='';});
-    item.addEventListener('click',function(){
-      map.flyTo([t.lat,t.lng],16,{duration:0.8});
-      selectPin(m.key);currentPanelKey=m.key;openPanel(t);
-      resultsEl.style.display='none';
-      document.getElementById('search-input').value='';
-    });
+      +'<div><div style="font-weight:700;font-size:0.82rem;">'+( t.n?'#'+t.n+' ':'' )+t.name+'</div>'
+      +(t.terminal?'<div style="font-size:0.68rem;color:var(--muted);">'+t.terminal+'</div>':'')
+      +'</div>';
+    item.onmouseenter=function(){this.style.background='rgba(56,130,210,0.1)';};
+    item.onmouseleave=function(){this.style.background='';};
+    item.onclick=function(){map.flyTo([t.lat,t.lng],16,{duration:0.8});selectPin(m.key);currentPanelKey=m.key;openPanel(t);resultsEl.style.display='none';document.getElementById('search-input').value='';};
     resultsEl.appendChild(item);
   });
-  if(matches.length>12){
-    var more=document.createElement('div');
-    more.style.cssText='padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted);text-align:center;';
-    more.textContent='+'+(matches.length-12)+' more results';
-    resultsEl.appendChild(more);
-  }
+  if(matches.length>12){var more=document.createElement('div');more.style.cssText='padding:8px 12px;font-size:0.6rem;color:var(--muted);text-align:center;';more.textContent='+'+(matches.length-12)+' more';resultsEl.appendChild(more);}
   resultsEl.style.display='block';
 });
-
-// Close search results on outside click
 document.addEventListener('click',function(e){
   if(!e.target.closest('#search-bar'))document.getElementById('search-results').style.display='none';
 });
 
-// ═══════════════════════════════════════════════════════════════
-// UNIFIED FORM UTILS — generic color/affil functions
-// ═══════════════════════════════════════════════════════════════
-window.addColorRowTo=function(containerId){
-  var ci=document.getElementById(containerId);
-  var row=document.createElement('div');row.className='color-input-row';
-  row.innerHTML='<input type="color" value="#888888"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom(''+containerId+'',this)">✕</button>';
-  ci.appendChild(row);
-};
-window.removeColorRowFrom=function(containerId,btn){
-  var ci=document.getElementById(containerId);
-  if(ci.children.length>1)btn.parentElement.remove();
-};
-function getColorsFrom(containerId){
-  return Array.from(document.querySelectorAll('#'+containerId+' .color-input-row')).map(function(r){
-    return{hex:r.querySelector('input[type="color"]').value,label:''};
-  });
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+function showToast(m,type){
+  var t=document.getElementById('toast');t.textContent=m;
+  t.className='show'+(type?' '+type:'');
+  setTimeout(function(){t.className='';},3200);
 }
-
-// ── CONTRIBUTE AFFILIATIONS ──
-var _cAffils=[];
-function renderCAffilTags(){
-  var wrap=document.getElementById('c-affil-input-wrap');
-  if(!wrap)return;
-  wrap.querySelectorAll('.affil-tag').forEach(function(t){t.remove();});
-  _cAffils.forEach(function(a,i){
-    var tag=document.createElement('div');tag.className='affil-tag';
-    tag.style.background=a.color||'#607D8B';
-    tag.innerHTML=a.name+'<button onclick="removeCAffilTag('+i+')" type="button">✕</button>';
-    wrap.insertBefore(tag,document.getElementById('c-affil-text'));
-  });
-}
-window.removeCAffilTag=function(i){_cAffils.splice(i,1);renderCAffilTags();};
-function addCAffilByName(name){
-  name=name.trim();if(!name)return;
-  var norm=name.charAt(0).toUpperCase()+name.slice(1).toLowerCase();
-  if(_cAffils.some(function(a){return a.name.toLowerCase()===norm.toLowerCase();}))return;
-  var known=_knownAffils.find(function(k){return k.name.toLowerCase()===norm.toLowerCase();});
-  var color=known?known.color:'#607D8B';
-  _cAffils.push({name:known?known.name:norm,color:color});
-  renderCAffilTags();
-}
-
-var _cAfText=document.getElementById('c-affil-text');
-var _cAfSug=document.getElementById('c-affil-suggestions');
-if(_cAfText){
-  _cAfText.addEventListener('input',function(){
-    var v=this.value.toLowerCase();
-    if(!v){_cAfSug.style.display='none';return;}
-    var matches=_knownAffils.filter(function(k){return k.name.toLowerCase().includes(v);});
-    _cAfSug.innerHTML='';
-    // Always show "Add custom" option if no exact match
-    var exactMatch=_knownAffils.some(function(k){return k.name.toLowerCase()===v;});
-    matches.forEach(function(k){
-      var item=document.createElement('div');item.className='affil-sug-item';
-      item.innerHTML='<div class="affil-sug-dot" style="background:'+k.color+'"></div>'+k.name;
-      item.onclick=function(){addCAffilByName(k.name);_cAfText.value='';_cAfSug.style.display='none';};
-      _cAfSug.appendChild(item);
-    });
-    if(!exactMatch&&v){
-      var addItem=document.createElement('div');addItem.className='affil-sug-item';
-      addItem.style.color='var(--accent-l)';
-      addItem.innerHTML='<div class="affil-sug-dot" style="background:#607D8B"></div>Add "'+_cAfText.value.charAt(0).toUpperCase()+_cAfText.value.slice(1)+'"';
-      addItem.onclick=function(){addCAffilByName(_cAfText.value);_cAfText.value='';_cAfSug.style.display='none';};
-      _cAfSug.appendChild(addItem);
-    }
-    _cAfSug.style.display=(_cAfSug.children.length>0)?'block':'none';
-  });
-  _cAfText.addEventListener('keydown',function(e){
-    if(e.key==='Enter'||e.key===','){e.preventDefault();addCAffilByName(this.value);this.value='';_cAfSug.style.display='none';}
-    if(e.key==='Backspace'&&!this.value&&_cAffils.length){_cAffils.pop();renderCAffilTags();}
-  });
-}
-document.addEventListener('click',function(e){if(_cAfSug&&!e.target.closest('#c-affil-input-outer'))_cAfSug.style.display='none';});
-
-// Also fix admin affil suggestions to show "Add custom" option
-var _afSug2=document.getElementById('affil-suggestions');
-var _afText2=document.getElementById('affil-text');
-if(_afText2){
-  // Reattach with "add custom" support
-  _afText2.addEventListener('input',function(){
-    var v=this.value.toLowerCase();
-    if(!v){_afSug2.style.display='none';return;}
-    var matches=_knownAffils.filter(function(k){return k.name.toLowerCase().includes(v);});
-    var exactMatch=_knownAffils.some(function(k){return k.name.toLowerCase()===v;});
-    _afSug2.innerHTML='';
-    matches.forEach(function(k){
-      var item=document.createElement('div');item.className='affil-sug-item';
-      item.innerHTML='<div class="affil-sug-dot" style="background:'+k.color+'"></div>'+k.name;
-      item.onclick=function(){addAffilByName(k.name);_afText2.value='';_afSug2.style.display='none';};
-      _afSug2.appendChild(item);
-    });
-    if(!exactMatch&&v){
-      var addItem=document.createElement('div');addItem.className='affil-sug-item';
-      addItem.style.color='var(--accent-l)';
-      addItem.innerHTML='<div class="affil-sug-dot" style="background:#607D8B"></div>Add "'+this.value.charAt(0).toUpperCase()+this.value.slice(1)+'"';
-      addItem.onclick=function(){addAffilByName(_afText2.value);_afText2.value='';_afSug2.style.display='none';};
-      _afSug2.appendChild(addItem);
-    }
-    _afSug2.style.display=(_afSug2.children.length>0)?'block':'none';
-  });
-}
-
-// ── UNIFIED STATUS SYNC (real-time form field visibility) ──
-window.syncFormStatus=function(prefix){
-  var st=document.getElementById(prefix+'-status').value;
-  var isKol=st==='kolorum';
-  var isConf=st==='confirmed';
-  // Normal vs kolorum fields
-  var nf=document.getElementById(prefix+'-normal-fields');
-  if(nf)nf.style.display=isKol?'none':'';
-  var kf=document.getElementById(prefix+'-kolorum-fields');
-  if(kf)kf.style.display=isKol?'':'none';
-  // Appearance (colors)
-  var ap=document.getElementById(prefix+'-appearance-section');
-  if(ap)ap.style.display=isKol?'none':'';
-  // Last confirmed (only for confirmed)
-  var cg=document.getElementById(prefix+'-checked-grp');
-  if(cg)cg.style.display=isConf?'':'none';
-  // Affiliations (hidden for kolorum)
-  var afk=document.getElementById(prefix+'-affil-section');
-  if(afk)afk.style.display=isKol?'none':'';
-};
-
-// Initialize on load
-syncFormStatus('c');
-
-// ── CONTRIBUTE FORM SUBMIT (with mode detection) ──
-// Replace the old submit listener with a new unified one
-document.getElementById('btn-contrib-submit').addEventListener('click',async function(){
-  var isAdmin=!!adminSession;
-  var st=document.getElementById('c-status').value;
-  var isKol=st==='kolorum';
-  var rawName=isKol
-    ?document.getElementById('c-kolorum-name').value.trim()
-    :document.getElementById('c-name').value.trim();
-  var lat=parseFloat(document.getElementById('c-lat').value);
-  var lng=parseFloat(document.getElementById('c-lng').value);
-  var errEl=document.getElementById('contrib-error');errEl.style.display='none';
-  if(!rawName||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
-
-  // Rate limit for non-admins
-  if(!isAdmin){
-    var now=Date.now();
-    if(now-_lastContribTime<60000){
-      var w=Math.ceil((60000-(now-_lastContribTime))/1000);
-      errEl.textContent='Please wait '+w+'s before submitting again.';errEl.style.display='block';return;
-    }
-  }
-
-  var cols=getColorsFrom('c-color-inputs');
-  var payload={
-    number:isKol?null:(parseInt(document.getElementById('c-number').value)||null),
-    name:rawName,
-    full_name:isKol?null:(document.getElementById('c-fullname').value.trim()||null),
-    lat:lat,lng:lng,
-    terminal_name:document.getElementById('c-terminal').value.trim()||null,
-    landmarks:document.getElementById('c-landmarks').value.trim()||null,
-    notes:document.getElementById('c-notes').value.trim()||null,
-    colors:isKol?[]:cols,
-    affiliations:isKol?[]:_cAffils,
-    last_checked:isConf?(document.getElementById('c-checked').value.trim()||null):null,
-    status:st,
-    logo_url:isKol?null:(document.getElementById('c-logo').value.trim()||null),
-    city:'Antipolo City'
-  };
-  var isConf=st==='confirmed';
-
-  var btn=this;btn.textContent=isAdmin?'Registering…':'Submitting…';btn.disabled=true;
-  if(!sb){errEl.textContent='Supabase not configured.';errEl.style.display='block';btn.textContent=isAdmin?'Register Terminal':'Submit for Review';btn.disabled=false;return;}
-
-  try{
-    if(isAdmin){
-      // Admin: goes straight to todas_admin
-      var ri=await sb.from('todas_admin').insert([payload]).select();
-      if(ri.error)throw ri.error;
-      var newId=ri.data&&ri.data[0]?ri.data[0].id:null;
-      syncTodaFields(newId,payload);
-      addTodaToMap({id:newId,n:payload.number,name:rawName,full:payload.full_name||'',
-        lat:lat,lng:lng,terminal:payload.terminal_name,landmarks:payload.landmarks,
-        notes:payload.notes,colors:cols,affiliations:_cAffils,
-        checked:payload.last_checked,status:st,robinsons:false,logoUrl:payload.logo_url},
-        'sb-'+newId);
-      showToast(rawName+' registered','success');
-    } else {
-      // Guest: goes to contributions
-      payload.review_status='pending';
-      var rc=await sb.from('contributions').insert([payload]);
-      if(rc.error)throw rc.error;
-      _lastContribTime=Date.now();
-      showToast('Contribution submitted for review','success');
-    }
-    closeModal('modal-contribute');
-    resetContribForm();
-  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
-  finally{btn.textContent=isAdmin?'Register Terminal':'Submit for Review';btn.disabled=false;}
-});
-
-function resetContribForm(){
-  ['c-number','c-name','c-kolorum-name','c-fullname','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked','c-logo'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});
-  document.getElementById('c-status').value='draft';
-  document.getElementById('contrib-error').style.display='none';
-  document.getElementById('c-color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom('c-color-inputs',this)">✕</button></div>';
-  _cAffils=[];renderCAffilTags();
-  syncFormStatus('c');
-}
-
-// ── UPDATE openContribute to adapt modal for admin vs guest ──
-window.openContribute=function(){
-  var isAdmin=!!adminSession;
-  document.getElementById('contrib-modal-title').textContent=isAdmin?'Register TODA Terminal':'Suggest a Terminal';
-  document.getElementById('contrib-modal-sub').textContent=isAdmin?'New entry · Antipolo City':'Contributions are reviewed before going live';
-  document.getElementById('contrib-guest-notice').style.display=isAdmin?'none':'block';
-  document.getElementById('btn-contrib-submit').textContent=isAdmin?'Register Terminal':'Submit for Review';
-  resetContribForm();
-  openModal('modal-contribute');
-};
 
 })();
 </script>
