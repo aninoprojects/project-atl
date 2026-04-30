@@ -100,7 +100,7 @@
     @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
 
     /* ── MAP ── */
-    #map{position:fixed;top:var(--topbar-h);left:0;right:calc(var(--panel-w) + 24px);bottom:0;z-index:1;}
+    #map{position:fixed;top:50px;left:0;right:384px;bottom:0;z-index:1;}
 
     /* ── PANEL — floating island ── */
     #panel{
@@ -1011,28 +1011,53 @@ window.saveContent=async function(key,editorId,displayId,saveBtnId){
 var _savedPos=null;
 try{var _sp=localStorage.getItem('atl_pos');if(_sp){var _p=JSON.parse(_sp);if(_p&&_p.lat&&_p.lng&&_p.zoom)_savedPos=_p;}}catch(e){}
 
-var map=L.map('map',{
-  center:_savedPos?[_savedPos.lat,_savedPos.lng]:[14.587,121.178],
-  zoom:_savedPos?_savedPos.zoom:14,
-  zoomControl:false,minZoom:11,maxZoom:18
-});
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
-  subdomains:'abcd',maxZoom:19
-}).addTo(map);
-L.control.zoom({position:'bottomright'}).addTo(map);
-map.on('moveend',function(){
-  try{var c=map.getCenter();localStorage.setItem('atl_pos',JSON.stringify({lat:c.lat,lng:c.lng,zoom:map.getZoom()}));}catch(e){}
-});
-if(navigator.geolocation){
-  navigator.geolocation.getCurrentPosition(function(p){
-    userLocation={lat:p.coords.latitude,lng:p.coords.longitude};
-    if(currentPanelKey&&markerStore[currentPanelKey])updateDist(markerStore[currentPanelKey].toda);
-  },null,{timeout:8000});
+// Init map after a frame so the CSS layout has settled
+var map = null;
+(function initMap() {
+  var el = document.getElementById('map');
+  // Force the element to have explicit pixel dimensions before Leaflet touches it
+  el.style.position = 'fixed';
+  el.style.top = '50px';
+  el.style.left = '0';
+  el.style.right = '384px';
+  el.style.bottom = '0';
+
+  map = L.map('map', {
+    center: _savedPos ? [_savedPos.lat, _savedPos.lng] : [14.587, 121.178],
+    zoom: _savedPos ? _savedPos.zoom : 14,
+    zoomControl: false,
+    minZoom: 11,
+    maxZoom: 18
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+  map.on('moveend', function() {
+    try { var c = map.getCenter(); localStorage.setItem('atl_pos', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() })); } catch(e) {}
+  });
+  map.on('click', function() {
+    if (!pickingPin && !pickingForContrib) { closePanel(); currentPanelKey = null; }
+  });
+
+  // Multiple invalidateSize calls to handle any layout timing issues
+  map.invalidateSize();
+  setTimeout(function() { map.invalidateSize(); }, 100);
+  setTimeout(function() { map.invalidateSize(); }, 400);
+  setTimeout(function() { map.invalidateSize(); }, 1000);
+})();
+
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(function(p) {
+    userLocation = { lat: p.coords.latitude, lng: p.coords.longitude };
+    if (currentPanelKey && markerStore[currentPanelKey]) updateDist(markerStore[currentPanelKey].toda);
+  }, null, { timeout: 8000 });
 }
-map.on('click',function(){if(!pickingPin&&!pickingForContrib){closePanel();currentPanelKey=null;}});
-setTimeout(function(){map.invalidateSize();},200);
-setTimeout(function(){map.invalidateSize();},800);
 
 // ═══════════════════════════════════════════════════
 // MARKERS
