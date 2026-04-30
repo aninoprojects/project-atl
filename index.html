@@ -1348,7 +1348,10 @@ window.addColorRow=function(){addColorRowTo('color-inputs');};
 window.addColorRowTo=function(cid){
   var ci=document.getElementById(cid);if(!ci)return;
   var row=document.createElement('div');row.className='color-input-row';
-  row.innerHTML='<input type="color" value="#888888"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom(\''+cid+'\',this)">✕</button>';
+  var inp=document.createElement('input');inp.type='color';inp.value='#888888';
+  var btn=document.createElement('button');btn.className='btn-remove-color';btn.type='button';btn.textContent='✕';
+  btn.addEventListener('click',(function(c){return function(){removeColorRowFrom(c,this);};})(cid));
+  row.appendChild(inp);row.appendChild(btn);
   ci.appendChild(row);
 };
 window.removeColorRow=function(btn){removeColorRowFrom('color-inputs',btn);};
@@ -1460,7 +1463,8 @@ function resetAdminForm(){
   _currentAffils.length=0;renderAffilTags();
   _fSelectedAreas.length=0;renderFAreaTags();
   syncFormStatus('f');
-  document.getElementById('color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button></div>';
+  var aci=document.getElementById('color-inputs');
+  if(aci){aci.innerHTML='';var acr=document.createElement('div');acr.className='color-input-row';var acin=document.createElement('input');acin.type='color';acin.value='#42A5F5';var acb=document.createElement('button');acb.className='btn-remove-color';acb.type='button';acb.textContent='✕';acb.addEventListener('click',function(){removeColorRow(this);});acr.appendChild(acin);acr.appendChild(acb);aci.appendChild(acr);}
   document.getElementById('add-error').style.display='none';
 }
 
@@ -1548,7 +1552,7 @@ function resetContribForm(){
   document.getElementById('c-status').value='draft';
   document.getElementById('contrib-error').style.display='none';
   var ci=document.getElementById('c-color-inputs');
-  if(ci)ci.innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom(\'c-color-inputs\',this)">✕</button></div>';
+  if(ci){ci.innerHTML='';var cr=document.createElement('div');cr.className='color-input-row';var ci3=document.createElement('input');ci3.type='color';ci3.value='#42A5F5';var cb3=document.createElement('button');cb3.className='btn-remove-color';cb3.type='button';cb3.textContent='✕';cb3.addEventListener('click',function(){removeColorRowFrom('c-color-inputs',this);});cr.appendChild(ci3);cr.appendChild(cb3);ci.appendChild(cr);}
   _cAffils.length=0;renderCAffilTags();
   _cSelectedAreas.length=0;renderCAreaTags();
   syncFormStatus('c');
@@ -1659,15 +1663,18 @@ window.openVerify=async function(){
     r.data.forEach(function(c){
       var card=document.createElement('div');card.className='contrib-card';
       var date=c.created_at?new Date(c.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}):'';
-      card.innerHTML='<div class="contrib-card-name">'+c.name+'</div><div class="contrib-card-meta">Submitted '+date+' · '+c.status+'</div>'
-        +(c.full_name?'<div class="contrib-card-row">Full name: <span>'+c.full_name+'</span></div>':'')
-        +(c.terminal_name?'<div class="contrib-card-row">Terminal: <span>'+c.terminal_name+'</span></div>':'')
-        +(c.landmarks?'<div class="contrib-card-row">Landmarks: <span>'+c.landmarks+'</span></div>':'')
-        +'<div class="contrib-card-row">Coords: <span>'+c.lat.toFixed(5)+', '+c.lng.toFixed(5)+'</span></div>'
-        +(c.notes?'<div class="contrib-card-row">Notes: <span>'+c.notes+'</span></div>':'')
-        +'<div class="contrib-actions"><button class="btn-approve" onclick="approveContrib(\''+c.id+'\',this.closest(\'.contrib-card\'))">✓ Approve</button>'
-        +'<button class="btn-reject" onclick="rejectContrib(\''+c.id+'\',this.closest(\'.contrib-card\'))">✕ Reject</button></div>';
-      list.appendChild(card);
+      function addRow(lbl,val){if(!val)return;var d=document.createElement('div');d.className='contrib-card-row';d.innerHTML=lbl+': <span>'+val+'</span>';card.appendChild(d);}
+      var nm=document.createElement('div');nm.className='contrib-card-name';nm.textContent=c.name;card.appendChild(nm);
+      var mt=document.createElement('div');mt.className='contrib-card-meta';mt.textContent='Submitted '+date+' · '+c.status;card.appendChild(mt);
+      addRow('Full name',c.full_name);addRow('Terminal',c.terminal_name);addRow('Landmarks',c.landmarks);
+      var co=document.createElement('div');co.className='contrib-card-row';co.innerHTML='Coords: <span>'+c.lat.toFixed(5)+', '+c.lng.toFixed(5)+'</span>';card.appendChild(co);
+      addRow('Notes',c.notes);
+      var acts=document.createElement('div');acts.className='contrib-actions';
+      var ab=document.createElement('button');ab.className='btn-approve';ab.textContent='✓ Approve';
+      ab.addEventListener('click',(function(id){return function(){approveContrib(id,card);};})(c.id));
+      var rb=document.createElement('button');rb.className='btn-reject';rb.textContent='✕ Reject';
+      rb.addEventListener('click',(function(id){return function(){rejectContrib(id,card);};})(c.id));
+      acts.appendChild(ab);acts.appendChild(rb);card.appendChild(acts);
     });
   }catch(e){list.innerHTML='<div class="no-contribs">Error: '+e.message+'</div>';}
 };
@@ -1833,7 +1840,7 @@ function renderAreaTags(wrapId, arr, renderFn) {
   arr.forEach(function(a, i) {
     var tag = document.createElement('div');
     tag.className = 'area-tag';
-    tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:rgba(33,150,243,0.15);border:1px solid rgba(33,150,243,0.4);font-family:\'IBM Plex Mono\',monospace;font-size:0.62rem;color:var(--accent-l);';
+    tag.style.cssText = "display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:rgba(33,150,243,0.15);border:1px solid rgba(33,150,243,0.4);font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--accent-l);";
     // Build remove button safely without nested quote issues
     var btn = document.createElement('button');
     btn.type = 'button';
@@ -1918,7 +1925,7 @@ async function loadPanelAreas(todaId) {
     container.innerHTML = '';
     areas.forEach(function(a) {
       var chip = document.createElement('div');
-      chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;background:rgba(33,150,243,0.12);border:1px solid rgba(33,150,243,0.3);font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;color:var(--accent-l);cursor:pointer;';
+      chip.style.cssText = "display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;background:rgba(33,150,243,0.12);border:1px solid rgba(33,150,243,0.3);font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--accent-l);cursor:pointer;";
       chip.title = 'Click to show on map';
       chip.textContent = '📍 ' + a.name + (a.barangay ? ' · ' + a.barangay : '');
       chip.onclick = function() { toggleAreasOnMap(todaId); };
@@ -1999,13 +2006,21 @@ window.openManageAreas = async function() {
   closeModal('modal-admin');
   openModal('modal-manage-areas');
   var list = document.getElementById('areas-list');
-  list.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.68rem;color:var(--muted);text-align:center;padding:24px 0;">Loading…</div>';
+  list.innerHTML = '<div style="text-align:center;padding:24px 0;font-size:0.78rem;color:var(--muted);">Loading…</div>';
   if (!sb) { list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Supabase not configured.</div>'; return; }
   try {
     var r = await sb.from('local_areas').select('*').order('name');
     if (r.error) throw r.error;
     if (!r.data || !r.data.length) {
-      list.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.68rem;color:var(--muted);text-align:center;padding:24px 0;">No local areas drawn yet.<br><br><button onclick="closeModal(\'modal-manage-areas\');openDrawArea();" style="background:var(--accent);border:none;color:white;padding:8px 16px;border-radius:5px;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;">Draw Your First Area</button></div>';
+      list.innerHTML='';
+      var ed=document.createElement('div');
+      ed.style.cssText='text-align:center;padding:24px 0;font-size:0.78rem;color:var(--muted);';
+      ed.textContent='No local areas drawn yet.';
+      var db=document.createElement('button');
+      db.textContent='Draw Your First Area';
+      db.style.cssText='display:block;margin:14px auto 0;background:var(--accent);border:none;color:white;padding:8px 16px;border-radius:5px;cursor:pointer;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;';
+      db.addEventListener('click',function(){closeModal('modal-manage-areas');openDrawArea();});
+      ed.appendChild(db);list.appendChild(ed);
       return;
     }
     // Also count how many terminals each area is linked to
@@ -2025,7 +2040,7 @@ window.openManageAreas = async function() {
       info.style.flex = '1';
 
       var nameEl = document.createElement('div');
-      nameEl.style.cssText = 'font-family:\'Syne\',sans-serif;font-weight:700;font-size:0.88rem;color:var(--text);';
+      nameEl.style.cssText = "font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;color:var(--text);";
       nameEl.textContent = '\u201c' + area.name + '\u201d';
       info.appendChild(nameEl);
 
@@ -2037,7 +2052,7 @@ window.openManageAreas = async function() {
       }
 
       var countEl = document.createElement('div');
-      countEl.style.cssText = 'font-family:\'IBM Plex Mono\',monospace;font-size:0.58rem;color:var(--accent-l);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;';
+      countEl.style.cssText = "font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--accent-l);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;";
       countEl.textContent = count + ' terminal' + (count !== 1 ? 's' : '') + ' linked';
       info.appendChild(countEl);
       card.appendChild(info);
