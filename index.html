@@ -417,6 +417,11 @@
       <div class="detail-row" id="d-notes-row" style="display:none"><div class="detail-label">Notes</div><div class="detail-value" id="d-notes">—</div></div>
       <div class="detail-row"><div class="detail-label">Last Confirmed As Of</div><div class="detail-value" id="d-checked">—</div></div>
       <div class="detail-row" id="d-distance-row" style="display:none"><div class="detail-label">Distance from You</div><div class="detail-value" id="d-distance">—</div></div>
+      <div class="detail-row" id="d-areas-row" style="display:none">
+        <div class="detail-label">Areas Serviced</div>
+        <div id="d-areas" style="display:flex;flex-wrap:wrap;gap:5px;padding:2px 0;"></div>
+        <button id="btn-show-areas" onclick="toggleAreasOnMap()" style="margin-top:6px;padding:4px 10px;background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);border-radius:6px;color:var(--accent-l);font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">🗺 Show on Map</button>
+      </div>
     </div>
     <div id="panel-admin-actions">
       <button class="btn-panel-edit" onclick="onEditClick()">✏ Edit</button>
@@ -463,8 +468,12 @@
         <span class="admin-notif-count" id="contrib-count" style="display:none">0</span>
       </button>
       <button class="admin-menu-btn" type="button" onclick="openDrawArea()">
-        <span class="menu-icon">🗺</span>
+        <span class="menu-icon">✏️</span>
         <div><div class="menu-label">Draw Local Area</div><div class="menu-desc">Name and define an informal local area on the map</div></div>
+      </button>
+      <button class="admin-menu-btn" type="button" onclick="openManageAreas()">
+        <span class="menu-icon">🗺</span>
+        <div><div class="menu-label">Manage Local Areas</div><div class="menu-desc">View, rename or delete drawn areas</div></div>
       </button>
       <button class="admin-menu-btn" type="button" onclick="window.open('/about.html','_blank')">
         <span class="menu-icon">📄</span>
@@ -516,6 +525,18 @@
       </div>
       <button class="btn-add-color" type="button" onclick="addColorRow()">+ Add Color</button>
     </div></div>
+    <hr class="form-divider"/>
+    <div class="form-section-label">Areas Serviced</div>
+    <div class="form-group">
+      <label>Areas Serviced <span style="font-weight:400;font-size:0.75rem;color:var(--muted);">(type to search drawn areas)</span></label>
+      <div id="f-areas-input-outer" style="position:relative;">
+        <div id="f-areas-input-wrap" style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;min-height:40px;cursor:text;align-items:center;" onclick="document.getElementById('f-areas-text').focus()">
+          <input id="f-areas-text" placeholder="e.g. Maia Alta, Manggahan..." autocomplete="off" style="border:none;background:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.82rem;min-width:100px;flex:1;"/>
+        </div>
+        <div id="f-areas-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-mid);border:1px solid var(--border);border-radius:5px;z-index:300;max-height:160px;overflow-y:auto;"></div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Only areas you've drawn appear here. <button type="button" onclick="closeModal('modal-add');openDrawArea();" style="background:none;border:none;color:var(--accent-l);cursor:pointer;font-size:0.7rem;text-decoration:underline;">Draw a new area</button></div>
+    </div>
     <hr class="form-divider"/>
     <div class="form-section-label">Details</div>
     <div class="form-group" id="f-checked-grp"><label>Last Confirmed As Of <span style="color:var(--accent-l);">*</span></label><input type="text" id="f-checked" placeholder="e.g. April 19, 2026"/></div>
@@ -618,6 +639,17 @@
       </div>
     </div>
 
+    <hr class="form-divider"/>
+    <div class="form-section-label">Areas Serviced</div>
+    <div class="form-group" id="c-areas-section">
+      <label>Areas Serviced <span style="font-weight:400;font-size:0.75rem;color:var(--muted);">(type to search drawn areas)</span></label>
+      <div id="c-areas-input-outer" style="position:relative;">
+        <div id="c-areas-input-wrap" style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;min-height:40px;cursor:text;align-items:center;" onclick="document.getElementById('c-areas-text').focus()">
+          <input id="c-areas-text" placeholder="e.g. Maia Alta, Manggahan..." autocomplete="off" style="border:none;background:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.82rem;min-width:100px;flex:1;"/>
+        </div>
+        <div id="c-areas-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-mid);border:1px solid var(--border);border-radius:5px;z-index:300;max-height:160px;overflow-y:auto;"></div>
+      </div>
+    </div>
     <div class="form-error" id="contrib-error"></div>
     <button class="btn-primary" type="button" id="btn-contrib-submit">Submit for Review</button>
   </div>
@@ -838,6 +870,17 @@
     <div class="form-error" id="draw-error"></div>
     <button class="btn-primary" id="btn-draw-start" type="button" onclick="startDrawing()">Start Drawing on Map</button>
     <button class="btn-primary" id="btn-draw-save" type="button" style="display:none;margin-top:6px;background:var(--accent-d);" onclick="saveDrawnArea()">Save Area</button>
+  </div>
+</div>
+
+
+<!-- ── MANAGE LOCAL AREAS MODAL ── -->
+<div class="modal-overlay" id="modal-manage-areas">
+  <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto;">
+    <button class="modal-close" type="button" onclick="closeModal('modal-manage-areas')">✕</button>
+    <div class="modal-title">Local Areas</div>
+    <div class="modal-sub">Areas you have drawn on the map</div>
+    <div id="areas-list"><div style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted);text-align:center;padding:24px 0;">Loading…</div></div>
   </div>
 </div>
 
@@ -1100,6 +1143,12 @@ function openPanel(t){
   if(cr){var cp=cr.closest('.detail-row');if(cp)cp.style.display=t.status==='confirmed'?'':' none';}
   sv('d-checked',t.checked,'Not checked yet');
   updateDist(t);
+  // Load linked local areas
+  _currentTodaId=t.id||null;
+  // Hide area layers from previous terminal
+  _shownAreaLayers.forEach(function(l){try{map.removeLayer(l);}catch(e){}});_shownAreaLayers=[];_areasShown=false;
+  if(document.getElementById('btn-show-areas'))document.getElementById('btn-show-areas').textContent='🗺 Show on Map';
+  loadPanelAreas(t.id);
   showDetail();
 }
 function closePanel(){selectPin(null);showEmpty();}
@@ -1340,6 +1389,9 @@ window.onEditClick=function(){
   document.getElementById('f-checked').value=t.checked||'';
   document.getElementById('f-notes').value=t.notes||'';
   setAffilsFromData(t.affiliations||[]);
+  // Load linked areas into form
+  _fSelectedAreas.length=0;renderFAreaTags();
+  if(t.id)loadAreasIntoForm(t.id,_fSelectedAreas,renderFAreaTags);
   var cols=normColors(t.colors),ci=document.getElementById('color-inputs');ci.innerHTML='';
   if(cols.length)cols.forEach(function(c){var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="'+c.hex+'"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);});
   else{var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);}
@@ -1380,7 +1432,9 @@ function resetAdminForm(){
   document.getElementById('btn-delete-in-form').style.display='none';
   ['f-number','f-name','f-fullname','f-lat','f-lng','f-terminal','f-landmarks','f-logo','f-checked','f-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-status').value='draft';
-  _currentAffils.length=0;renderAffilTags();syncFormStatus('f');
+  _currentAffils.length=0;renderAffilTags();
+  _fSelectedAreas.length=0;renderFAreaTags();
+  syncFormStatus('f');
   document.getElementById('color-inputs').innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button></div>';
   document.getElementById('add-error').style.display='none';
 }
@@ -1423,9 +1477,13 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
       colors:cols,affiliations:_currentAffils.slice(),checked:payload.last_checked,
       status:st,robinsons:_currentAffils.some(function(a){return a.name.toLowerCase()==='robinsons';}),
       logoUrl:payload.logo_url};
+    // Save area links
+    if(newId) await saveTerminalAreas(newId, _fSelectedAreas);
     addTodaToMap(nt,nk);
     if(nk===currentPanelKey||(exId&&'sb-'+exId===currentPanelKey)){currentPanelKey=nk;openPanel(nt);}
     if(tempMarker&&map){map.removeLayer(tempMarker);tempMarker=null;}
+    // Clear area highlights on save
+    _shownAreaLayers.forEach(function(l){try{map.removeLayer(l);}catch(e){}});_shownAreaLayers=[];_areasShown=false;
     closeModal('modal-add');showToast(name+(_editKey?' updated':' registered'),'success');resetAdminForm();_editKey=null;
   }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
   finally{btn.textContent=_editKey?'Save Changes':'Register Terminal';btn.disabled=false;}
@@ -1467,6 +1525,7 @@ function resetContribForm(){
   var ci=document.getElementById('c-color-inputs');
   if(ci)ci.innerHTML='<div class="color-input-row"><input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRowFrom(\'c-color-inputs\',this)">✕</button></div>';
   _cAffils.length=0;renderCAffilTags();
+  _cSelectedAreas.length=0;renderCAreaTags();
   syncFormStatus('c');
 }
 document.getElementById('btn-contrib-submit').addEventListener('click',async function(){
@@ -1505,6 +1564,7 @@ document.getElementById('btn-contrib-submit').addEventListener('click',async fun
       var ri=await sb.from('todas_admin').insert([payload]).select();
       if(ri.error)throw ri.error;
       var newId=ri.data&&ri.data[0]?ri.data[0].id:null;
+      if(newId) await saveTerminalAreas(newId, _cSelectedAreas);
       addTodaToMap({id:newId,n:payload.number,name:rawName,full:payload.full_name||'',lat:lat,lng:lng,
         terminal:payload.terminal_name,landmarks:payload.landmarks,notes:payload.notes,
         colors:cols,affiliations:_cAffils.slice(),checked:payload.last_checked,
@@ -1716,6 +1776,263 @@ function showToast(m,type){
   t.className='show'+(type?' '+type:'');
   setTimeout(function(){t.className='';},3200);
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// LOCAL AREAS SYSTEM
+// ═══════════════════════════════════════════════════════════════
+var _allLocalAreas = [];       // [{id, name, barangay, geojson}]
+var _fSelectedAreas = [];      // areas selected in admin form [{id,name}]
+var _cSelectedAreas = [];      // areas selected in contribute form
+var _shownAreaLayers = [];     // currently visible L.layers on map
+var _currentTodaId = null;     // Supabase ID of currently open panel terminal
+
+// Load all drawn areas from Supabase on startup
+async function loadLocalAreas() {
+  if (!sb) return;
+  try {
+    var r = await sb.from('local_areas').select('id,name,barangay,city').order('name');
+    if (!r.error && r.data) _allLocalAreas = r.data;
+  } catch(e) {}
+}
+loadLocalAreas();
+
+// ── Render area chips in a wrap element ──
+function renderAreaTags(wrapId, arr, renderFn) {
+  var wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  wrap.querySelectorAll('.area-tag').forEach(function(t) { t.remove(); });
+  arr.forEach(function(a, i) {
+    var tag = document.createElement('div');
+    tag.className = 'area-tag';
+    tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:rgba(33,150,243,0.15);border:1px solid rgba(33,150,243,0.4);font-family:\'IBM Plex Mono\',monospace;font-size:0.62rem;color:var(--accent-l);';
+    tag.innerHTML = '📍 ' + a.name + '<button onclick="' + renderFn + '.splice(' + i + ',1);renderAreaTagsById('' + wrapId + '',' + renderFn + ','' + renderFn + '')" type="button" style="background:none;border:none;color:rgba(100,181,246,0.7);cursor:pointer;font-size:0.75rem;padding:0 0 0 3px;">✕</button>';
+    var textInput = wrapId === 'f-areas-input-wrap' ? document.getElementById('f-areas-text') : document.getElementById('c-areas-text');
+    wrap.insertBefore(tag, textInput);
+  });
+}
+// Wrapper so onclick strings work
+window.renderAreaTagsById = function(wrapId, arr, refName) {
+  if (refName === '_fSelectedAreas') renderAreaTags(wrapId, _fSelectedAreas, '_fSelectedAreas');
+  else renderAreaTags(wrapId, _cSelectedAreas, '_cSelectedAreas');
+};
+
+function renderFAreaTags() { renderAreaTags('f-areas-input-wrap', _fSelectedAreas, '_fSelectedAreas'); }
+function renderCAreaTags() { renderAreaTags('c-areas-input-wrap', _cSelectedAreas, '_cSelectedAreas'); }
+
+// ── Area autocomplete input setup ──
+function makeAreaInput(textId, sugId, arr, renderFn) {
+  var textEl = document.getElementById(textId);
+  var sugEl = document.getElementById(sugId);
+  if (!textEl || !sugEl) return;
+
+  textEl.addEventListener('input', function() {
+    var v = this.value.toLowerCase();
+    if (!v) { sugEl.style.display = 'none'; return; }
+    var matches = _allLocalAreas.filter(function(a) {
+      return a.name.toLowerCase().includes(v) && !arr.some(function(s) { return s.id === a.id; });
+    });
+    sugEl.innerHTML = '';
+    if (!matches.length) { sugEl.style.display = 'none'; return; }
+    matches.forEach(function(a) {
+      var item = document.createElement('div');
+      item.className = 'affil-sug-item';
+      item.innerHTML = '<div class="affil-sug-dot" style="background:var(--accent);"></div>' + a.name + (a.barangay ? ' <span style="color:var(--muted);font-size:0.7rem;">— ' + a.barangay + '</span>' : '');
+      item.onclick = function() {
+        arr.push({id: a.id, name: a.name});
+        renderFn();
+        textEl.value = '';
+        sugEl.style.display = 'none';
+      };
+      sugEl.appendChild(item);
+    });
+    sugEl.style.display = 'block';
+  });
+
+  textEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Backspace' && !this.value && arr.length) { arr.pop(); renderFn(); }
+    if (e.key === 'Escape') sugEl.style.display = 'none';
+  });
+}
+
+// Init both inputs
+makeAreaInput('f-areas-text', 'f-areas-suggestions', _fSelectedAreas, renderFAreaTags);
+makeAreaInput('c-areas-text', 'c-areas-suggestions', _cSelectedAreas, renderCAreaTags);
+
+// Close suggestions on outside click
+document.addEventListener('click', function(e) {
+  ['f-areas-suggestions', 'c-areas-suggestions'].forEach(function(id) {
+    if (!e.target.closest('#' + id.replace('-suggestions', '-input-outer'))) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    }
+  });
+});
+
+// ── Load terminal's linked areas and show in panel ──
+async function loadPanelAreas(todaId) {
+  var row = document.getElementById('d-areas-row');
+  var container = document.getElementById('d-areas');
+  if (!sb || !todaId) { row.style.display = 'none'; return; }
+  try {
+    var r = await sb.from('terminal_areas')
+      .select('local_areas(id,name,barangay)')
+      .eq('toda_id', todaId);
+    if (r.error || !r.data || !r.data.length) { row.style.display = 'none'; return; }
+    var areas = r.data.map(function(x) { return x.local_areas; }).filter(Boolean);
+    if (!areas.length) { row.style.display = 'none'; return; }
+    container.innerHTML = '';
+    areas.forEach(function(a) {
+      var chip = document.createElement('div');
+      chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;background:rgba(33,150,243,0.12);border:1px solid rgba(33,150,243,0.3);font-family:\'IBM Plex Mono\',monospace;font-size:0.6rem;color:var(--accent-l);cursor:pointer;';
+      chip.title = 'Click to show on map';
+      chip.textContent = '📍 ' + a.name + (a.barangay ? ' · ' + a.barangay : '');
+      chip.onclick = function() { toggleAreasOnMap(todaId); };
+      container.appendChild(chip);
+    });
+    row.style.display = '';
+  } catch(e) { row.style.display = 'none'; }
+}
+
+// ── Toggle area polygons on map ──
+var _areasShown = false;
+window.toggleAreasOnMap = async function(todaId) {
+  var btn = document.getElementById('btn-show-areas');
+  if (_areasShown) {
+    _shownAreaLayers.forEach(function(l) { try { map.removeLayer(l); } catch(e) {} });
+    _shownAreaLayers = [];
+    _areasShown = false;
+    if (btn) btn.textContent = '🗺 Show on Map';
+    return;
+  }
+  var id = todaId || _currentTodaId;
+  if (!sb || !id) return;
+  try {
+    var r = await sb.from('terminal_areas')
+      .select('local_areas(id,name,barangay,geojson)')
+      .eq('toda_id', id);
+    if (r.error || !r.data) return;
+    var areas = r.data.map(function(x) { return x.local_areas; }).filter(function(a) { return a && a.geojson; });
+    if (!areas.length) { showToast('No drawn areas linked to this terminal', ''); return; }
+    var bounds = [];
+    areas.forEach(function(a) {
+      var layer = L.geoJSON(a.geojson, {
+        style: { color: '#38BDF8', fillColor: '#38BDF8', fillOpacity: 0.1, weight: 2, dashArray: '6 4' }
+      }).addTo(map).bindTooltip('"' + a.name + '"' + (a.barangay ? ' — ' + a.barangay : ''), { permanent: false, direction: 'center' });
+      _shownAreaLayers.push(layer);
+      bounds.push(layer.getBounds());
+    });
+    if (bounds.length) {
+      var combined = bounds[0];
+      bounds.forEach(function(b) { combined.extend(b); });
+      map.fitBounds(combined.pad(0.25), { duration: 0.6 });
+    }
+    _areasShown = true;
+    if (btn) btn.textContent = '✕ Hide Areas';
+  } catch(e) { showToast('Error loading areas: ' + e.message, 'error'); }
+};
+
+// ── Save terminal_areas links when saving a terminal ──
+async function saveTerminalAreas(todaId, selectedAreas) {
+  if (!sb || !adminSession || !todaId) return;
+  try {
+    // Delete existing links for this terminal
+    await sb.from('terminal_areas').delete().eq('toda_id', todaId);
+    // Insert new links
+    if (selectedAreas.length) {
+      var rows = selectedAreas.map(function(a) { return { toda_id: todaId, area_id: a.id }; });
+      await sb.from('terminal_areas').insert(rows);
+    }
+  } catch(e) { console.warn('saveTerminalAreas error:', e); }
+}
+
+// ── Pre-fill areas in edit form ──
+async function loadAreasIntoForm(todaId, arr, renderFn) {
+  if (!sb || !todaId) return;
+  try {
+    var r = await sb.from('terminal_areas')
+      .select('local_areas(id,name)')
+      .eq('toda_id', todaId);
+    if (r.error || !r.data) return;
+    arr.length = 0;
+    r.data.forEach(function(x) { if (x.local_areas) arr.push({id: x.local_areas.id, name: x.local_areas.name}); });
+    renderFn();
+  } catch(e) {}
+}
+
+// ── MANAGE LOCAL AREAS ──
+window.openManageAreas = async function() {
+  closeModal('modal-admin');
+  openModal('modal-manage-areas');
+  var list = document.getElementById('areas-list');
+  list.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.68rem;color:var(--muted);text-align:center;padding:24px 0;">Loading…</div>';
+  if (!sb) { list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Supabase not configured.</div>'; return; }
+  try {
+    var r = await sb.from('local_areas').select('*').order('name');
+    if (r.error) throw r.error;
+    if (!r.data || !r.data.length) {
+      list.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.68rem;color:var(--muted);text-align:center;padding:24px 0;">No local areas drawn yet.<br><br><button onclick="closeModal(\'modal-manage-areas\');openDrawArea();" style="background:var(--accent);border:none;color:white;padding:8px 16px;border-radius:5px;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;">Draw Your First Area</button></div>';
+      return;
+    }
+    // Also count how many terminals each area is linked to
+    var linkR = await sb.from('terminal_areas').select('area_id');
+    var linkCounts = {};
+    if (!linkR.error && linkR.data) {
+      linkR.data.forEach(function(l) { linkCounts[l.area_id] = (linkCounts[l.area_id] || 0) + 1; });
+    }
+    list.innerHTML = '';
+    r.data.forEach(function(area) {
+      var card = document.createElement('div');
+      card.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;';
+      var count = linkCounts[area.id] || 0;
+      card.innerHTML =
+        '<div style="flex:1;">'
+        + '<div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:0.88rem;color:var(--text);">"' + area.name + '"</div>'
+        + (area.barangay ? '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">' + area.barangay + (area.city ? ', ' + area.city : '') + '</div>' : '')
+        + '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.58rem;color:var(--accent-l);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">' + count + ' terminal' + (count !== 1 ? 's' : '') + ' linked</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+        + '<button onclick="showAreaOnMap('' + area.id + '','' + area.name.replace(/'/g,"\'") + '')" style="padding:5px 10px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);border-radius:5px;color:var(--accent-l);font-size:0.7rem;cursor:pointer;transition:all 0.15s;">👁 View</button>'
+        + '<button onclick="deleteArea('' + area.id + '',this.closest(\'div[style*=border]\'))" style="padding:5px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:5px;color:#f87171;font-size:0.7rem;cursor:pointer;transition:all 0.15s;">🗑 Delete</button>'
+        + '</div>';
+      list.appendChild(card);
+    });
+    _allLocalAreas = r.data; // refresh cache
+  } catch(e) {
+    list.innerHTML = '<div style="color:#f87171;text-align:center;padding:20px;">Error: ' + e.message + '</div>';
+  }
+};
+
+window.showAreaOnMap = async function(areaId, areaName) {
+  closeModal('modal-manage-areas');
+  if (!sb) return;
+  try {
+    var r = await sb.from('local_areas').select('geojson').eq('id', areaId).single();
+    if (r.error || !r.data || !r.data.geojson) { showToast('No polygon data for this area', 'error'); return; }
+    _shownAreaLayers.forEach(function(l) { try { map.removeLayer(l); } catch(e) {} });
+    _shownAreaLayers = [];
+    var layer = L.geoJSON(r.data.geojson, {
+      style: { color: '#38BDF8', fillColor: '#38BDF8', fillOpacity: 0.12, weight: 2.5, dashArray: '6 4' }
+    }).addTo(map).bindTooltip('"' + areaName + '"', { permanent: true, direction: 'center' });
+    _shownAreaLayers.push(layer);
+    map.fitBounds(layer.getBounds().pad(0.3), { duration: 0.7 });
+    showToast('"' + areaName + '" shown on map', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
+
+window.deleteArea = async function(areaId, cardEl) {
+  if (!confirm('Delete this area? It will be unlinked from all terminals.')) return;
+  if (!sb || !adminSession) return;
+  try {
+    // Unlink from all terminals first
+    await sb.from('terminal_areas').delete().eq('area_id', areaId);
+    var r = await sb.from('local_areas').delete().eq('id', areaId);
+    if (r.error) throw r.error;
+    if (cardEl) cardEl.remove();
+    _allLocalAreas = _allLocalAreas.filter(function(a) { return a.id !== areaId; });
+    showToast('Area deleted', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
 
 })();
 </script>
