@@ -1827,20 +1827,29 @@ function renderAreaTags(wrapId, arr, renderFn) {
   var wrap = document.getElementById(wrapId);
   if (!wrap) return;
   wrap.querySelectorAll('.area-tag').forEach(function(t) { t.remove(); });
+  var textInput = wrapId === 'f-areas-input-wrap'
+    ? document.getElementById('f-areas-text')
+    : document.getElementById('c-areas-text');
   arr.forEach(function(a, i) {
     var tag = document.createElement('div');
     tag.className = 'area-tag';
     tag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:rgba(33,150,243,0.15);border:1px solid rgba(33,150,243,0.4);font-family:\'IBM Plex Mono\',monospace;font-size:0.62rem;color:var(--accent-l);';
-    tag.innerHTML = '📍 ' + a.name + '<button onclick="' + renderFn + '.splice(' + i + ',1);renderAreaTagsById('' + wrapId + '',' + renderFn + ','' + renderFn + '')" type="button" style="background:none;border:none;color:rgba(100,181,246,0.7);cursor:pointer;font-size:0.75rem;padding:0 0 0 3px;">✕</button>';
-    var textInput = wrapId === 'f-areas-input-wrap' ? document.getElementById('f-areas-text') : document.getElementById('c-areas-text');
+    // Build remove button safely without nested quote issues
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '✕';
+    btn.style.cssText = 'background:none;border:none;color:rgba(100,181,246,0.7);cursor:pointer;font-size:0.75rem;padding:0 0 0 3px;';
+    btn.addEventListener('click', (function(idx, ref, rfn) {
+      return function() { ref.splice(idx, 1); rfn(); };
+    })(i, arr, renderFn === '_fSelectedAreas' ? renderFAreaTags : renderCAreaTags));
+    var label = document.createElement('span');
+    label.textContent = '📍 ' + a.name;
+    tag.appendChild(label);
+    tag.appendChild(btn);
     wrap.insertBefore(tag, textInput);
   });
 }
-// Wrapper so onclick strings work
-window.renderAreaTagsById = function(wrapId, arr, refName) {
-  if (refName === '_fSelectedAreas') renderAreaTags(wrapId, _fSelectedAreas, '_fSelectedAreas');
-  else renderAreaTags(wrapId, _cSelectedAreas, '_cSelectedAreas');
-};
+// renderAreaTagsById removed — using closures instead
 
 function renderFAreaTags() { renderAreaTags('f-areas-input-wrap', _fSelectedAreas, '_fSelectedAreas'); }
 function renderCAreaTags() { renderAreaTags('c-areas-input-wrap', _cSelectedAreas, '_cSelectedAreas'); }
@@ -2007,19 +2016,53 @@ window.openManageAreas = async function() {
     }
     list.innerHTML = '';
     r.data.forEach(function(area) {
+      var count = linkCounts[area.id] || 0;
       var card = document.createElement('div');
       card.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;';
-      var count = linkCounts[area.id] || 0;
-      card.innerHTML =
-        '<div style="flex:1;">'
-        + '<div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:0.88rem;color:var(--text);">"' + area.name + '"</div>'
-        + (area.barangay ? '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">' + area.barangay + (area.city ? ', ' + area.city : '') + '</div>' : '')
-        + '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.58rem;color:var(--accent-l);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">' + count + ' terminal' + (count !== 1 ? 's' : '') + ' linked</div>'
-        + '</div>'
-        + '<div style="display:flex;gap:6px;flex-shrink:0;">'
-        + '<button onclick="showAreaOnMap('' + area.id + '','' + area.name.replace(/'/g,"\'") + '')" style="padding:5px 10px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);border-radius:5px;color:var(--accent-l);font-size:0.7rem;cursor:pointer;transition:all 0.15s;">👁 View</button>'
-        + '<button onclick="deleteArea('' + area.id + '',this.closest(\'div[style*=border]\'))" style="padding:5px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:5px;color:#f87171;font-size:0.7rem;cursor:pointer;transition:all 0.15s;">🗑 Delete</button>'
-        + '</div>';
+
+      // Info section
+      var info = document.createElement('div');
+      info.style.flex = '1';
+
+      var nameEl = document.createElement('div');
+      nameEl.style.cssText = 'font-family:\'Syne\',sans-serif;font-weight:700;font-size:0.88rem;color:var(--text);';
+      nameEl.textContent = '\u201c' + area.name + '\u201d';
+      info.appendChild(nameEl);
+
+      if (area.barangay) {
+        var brgyEl = document.createElement('div');
+        brgyEl.style.cssText = 'font-size:0.72rem;color:var(--muted);margin-top:2px;';
+        brgyEl.textContent = area.barangay + (area.city ? ', ' + area.city : '');
+        info.appendChild(brgyEl);
+      }
+
+      var countEl = document.createElement('div');
+      countEl.style.cssText = 'font-family:\'IBM Plex Mono\',monospace;font-size:0.58rem;color:var(--accent-l);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;';
+      countEl.textContent = count + ' terminal' + (count !== 1 ? 's' : '') + ' linked';
+      info.appendChild(countEl);
+      card.appendChild(info);
+
+      // Buttons section
+      var btns = document.createElement('div');
+      btns.style.cssText = 'display:flex;gap:6px;flex-shrink:0;';
+
+      var viewBtn = document.createElement('button');
+      viewBtn.textContent = '👁 View';
+      viewBtn.style.cssText = 'padding:5px 10px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);border-radius:5px;color:var(--accent-l);font-size:0.7rem;cursor:pointer;transition:all 0.15s;';
+      viewBtn.addEventListener('click', (function(id, name) {
+        return function() { showAreaOnMap(id, name); };
+      })(area.id, area.name));
+
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '🗑 Delete';
+      delBtn.style.cssText = 'padding:5px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:5px;color:#f87171;font-size:0.7rem;cursor:pointer;transition:all 0.15s;';
+      delBtn.addEventListener('click', (function(id, cardEl) {
+        return function() { deleteArea(id, cardEl); };
+      })(area.id, card));
+
+      btns.appendChild(viewBtn);
+      btns.appendChild(delBtn);
+      card.appendChild(btns);
       list.appendChild(card);
     });
     _allLocalAreas = r.data; // refresh cache
