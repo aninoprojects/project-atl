@@ -26,6 +26,7 @@
     terminal_name text,
     landmarks text,
     colors jsonb DEFAULT '[]',
+    affiliations jsonb DEFAULT '[]',
     last_checked text,
     status text DEFAULT 'draft',
     has_robinsons boolean DEFAULT false,
@@ -1344,23 +1345,33 @@ window.onEditClick=function(){
   else{var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="#42A5F5"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);}
   openModal('modal-add');
 };
-window.onDeleteClick=function(){
+window.onDeleteClick=async function(){
   if(!currentPanelKey||!markerStore[currentPanelKey])return;
   if(!confirm('Delete '+markerStore[currentPanelKey].toda.name+'? This cannot be undone.'))return;
-  doDelete(currentPanelKey);
+  await doDelete(currentPanelKey);
 };
-window.onDeleteFromForm=function(){
+window.onDeleteFromForm=async function(){
   if(!_editKey||!markerStore[_editKey])return;
   if(!confirm('Delete '+markerStore[_editKey].toda.name+'?'))return;
-  closeModal('modal-add');doDelete(_editKey);_editKey=null;
+  closeModal('modal-add');await doDelete(_editKey);_editKey=null;
 };
-function doDelete(key){
+async function doDelete(key){
   var entry=markerStore[key];if(!entry)return;
+  var name=entry.toda.name;
+  // Remove from Supabase FIRST — if it fails, don't remove from UI
+  if(entry.supabaseId&&sb){
+    try{
+      var dr=await sb.from('todas_admin').delete().eq('id',entry.supabaseId);
+      if(dr.error)throw dr.error;
+    }catch(e){
+      showToast('Delete failed: '+e.message,'error');
+      return; // abort — don't remove from UI if DB delete failed
+    }
+  }
   if(map)map.removeLayer(entry.marker);
-  if(entry.supabaseId&&sb)sb.from('todas_admin').delete().eq('id',entry.supabaseId);
   delete markerStore[key];
   if(currentPanelKey===key){currentPanelKey=null;closePanel();}
-  showToast(entry.toda.name+' removed','success');
+  showToast(name+' removed','success');
 }
 function resetAdminForm(){
   document.getElementById('modal-add-title').textContent='Register TODA Terminal';
@@ -1423,13 +1434,30 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
 // ═══════════════════════════════════════════════════
 // CONTRIBUTE (admin + guest unified)
 // ═══════════════════════════════════════════════════
-window.openContribute=function(){
+window.openContribute=function(prefill){
   var isAdmin=!!adminSession;
   document.getElementById('contrib-modal-title').textContent=isAdmin?'Register TODA Terminal':'Suggest a Terminal';
   document.getElementById('contrib-modal-sub').textContent=isAdmin?'New entry · Antipolo City':'Contributions are reviewed before going live';
   document.getElementById('contrib-guest-notice').style.display=isAdmin?'none':'block';
   document.getElementById('btn-contrib-submit').textContent=isAdmin?'Register Terminal':'Submit for Review';
   resetContribForm();
+  // Pre-fill from current panel terminal if suggesting an edit
+  var t=prefill||(currentPanelKey&&markerStore[currentPanelKey]?markerStore[currentPanelKey].toda:null);
+  if(t&&!isAdmin){
+    document.getElementById('contrib-modal-title').textContent='Suggest Edit: '+t.name;
+    document.getElementById('c-status').value=t.status||'draft';
+    syncFormStatus('c');
+    var se=function(id,val){var el=document.getElementById(id);if(el&&val)el.value=val;};
+    se('c-name',t.name);
+    se('c-fullname',t.full);
+    se('c-number',t.n);
+    se('c-terminal',t.terminal);
+    se('c-landmarks',t.landmarks);
+    se('c-lat',t.lat);
+    se('c-lng',t.lng);
+    se('c-notes',t.notes);
+    se('c-checked',t.checked);
+  }
   openModal('modal-contribute');
 };
 function resetContribForm(){
@@ -1483,9 +1511,35 @@ document.getElementById('btn-contrib-submit').addEventListener('click',async fun
         status:st,robinsons:false,logoUrl:payload.logo_url},'sb-'+newId);
       showToast(rawName+' registered','success');
     } else {
-      payload.review_status='pending';
-      var rc=await sb.from('contributions').insert([payload]);
-      if(rc.error)throw rc.error;
+      // Build contribution payload — only fields that exist in contributions table
+      var contribPayload={
+        number:payload.number,
+        name:payload.name,
+        full_name:payload.full_name,
+        lat:payload.lat,
+        lng:payload.lng,
+        terminal_name:payload.terminal_name,
+        landmarks:payload.landmarks,
+        notes:payload.notes,
+        colors:payload.colors,
+        last_checked:payload.last_checked,
+        status:payload.status,
+        city:payload.city,
+        review_status:'pending'
+      };
+      // Add affiliations only if column exists (graceful fallback)
+      try{
+        var rc=await sb.from('contributions').insert([Object.assign({},contribPayload,{affiliations:payload.affiliations||[]})]);
+        if(rc.error){
+          // If affiliations column missing, retry without it
+          if(rc.error.message&&rc.error.message.includes('affiliations')){
+            rc=await sb.from('contributions').insert([contribPayload]);
+            if(rc.error)throw rc.error;
+          } else {
+            throw rc.error;
+          }
+        }
+      }catch(e){throw e;}
       _lastContribTime=Date.now();
       showToast('Contribution submitted for review','success');
     }
