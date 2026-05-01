@@ -332,6 +332,90 @@
     .topbar-btn{transition:all 0.2s ease;}
     .btn-primary,.btn-danger,.btn-pin{transition:all 0.18s ease;}
     .admin-menu-btn{transition:all 0.18s ease;}
+
+    /* ══════════════════════════════════════════════
+       MOBILE RESPONSIVE (≤768px)
+    ══════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      :root { --topbar-h: 48px; --panel-w: 100%; }
+
+      /* Topbar: tighten up */
+      #topbar { padding: 0 10px; gap: 6px; }
+      .logo { font-size: 1rem; }
+      .version-badge { font-size: 0.48rem; padding: 2px 5px; }
+      .topbar-btn { font-size: 0.55rem; padding: 4px 8px; gap: 4px; }
+      #btn-admin-label { display: none; }
+
+      /* Map: full width, top half */
+      #map {
+        position: fixed;
+        top: var(--topbar-h);
+        left: 0; right: 0;
+        bottom: 42vh;
+        z-index: 1;
+      }
+
+      /* Panel: bottom sheet */
+      #panel {
+        position: fixed;
+        top: auto;
+        left: 8px; right: 8px; bottom: 8px;
+        width: auto;
+        height: 42vh;
+        border-radius: 16px;
+        z-index: 900;
+        transform: none !important;
+      }
+
+      /* Search bar: full width below topbar */
+      #search-bar {
+        position: fixed;
+        top: calc(var(--topbar-h) + 8px);
+        left: 8px; right: 8px;
+        width: auto;
+        z-index: 800;
+      }
+
+      /* Panel logo shorter on mobile */
+      #panel-logo { height: 60px; }
+
+      /* Modals: full screen on mobile */
+      .modal-overlay { padding: 8px; align-items: flex-end; }
+      .modal-box {
+        max-width: 100% !important;
+        max-height: 88vh !important;
+        border-radius: 16px 16px 8px 8px;
+        padding: 20px 16px 16px;
+      }
+
+      /* Admin panel wider on mobile */
+      #modal-admin .modal-box { max-width: 100% !important; }
+
+      /* Panel body scrolls */
+      #panel-body { padding: 10px 14px; gap: 10px; }
+      #panel-header { padding: 10px 14px 8px; }
+      .detail-label { font-size: 0.5rem; }
+      .detail-value { font-size: 0.78rem; }
+
+      /* Legend compact */
+      #panel-legend { padding: 8px 14px; gap: 5px; }
+      .legend-item { font-size: 0.52rem; }
+
+      /* Zoom controls: don't overlap panel */
+      .leaflet-control-zoom { margin-bottom: calc(42vh + 16px) !important; }
+
+      /* Forms scrollable */
+      #modal-add .modal-box, #modal-contribute .modal-box {
+        overflow-y: auto;
+      }
+    }
+
+    /* Very small screens */
+    @media (max-width: 400px) {
+      #map { bottom: 44vh; }
+      #panel { height: 44vh; }
+      .leaflet-control-zoom { margin-bottom: calc(44vh + 16px) !important; }
+    }
   </style>
 </head>
 <body>
@@ -1015,12 +1099,13 @@ try{var _sp=localStorage.getItem('atl_pos');if(_sp){var _p=JSON.parse(_sp);if(_p
 var map = null;
 (function initMap() {
   var el = document.getElementById('map');
-  // Force the element to have explicit pixel dimensions before Leaflet touches it
+  // Responsive dimensions before Leaflet measures the container
+  var isMobile = window.innerWidth <= 768;
   el.style.position = 'fixed';
   el.style.top = '50px';
   el.style.left = '0';
-  el.style.right = '384px';
-  el.style.bottom = '0';
+  el.style.right = isMobile ? '0' : '384px';
+  el.style.bottom = isMobile ? '42vh' : '0';
 
   map = L.map('map', {
     center: _savedPos ? [_savedPos.lat, _savedPos.lng] : [14.587, 121.178],
@@ -1051,6 +1136,15 @@ var map = null;
   setTimeout(function() { map.invalidateSize(); }, 400);
   setTimeout(function() { map.invalidateSize(); }, 1000);
 })();
+
+// Handle window resize — update map dimensions and invalidate
+window.addEventListener('resize', function() {
+  var mapEl = document.getElementById('map');
+  var mobile = window.innerWidth <= 768;
+  mapEl.style.right = mobile ? '0' : '384px';
+  mapEl.style.bottom = mobile ? '42vh' : '0';
+  if (map) setTimeout(function() { map.invalidateSize(); }, 50);
+});
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(function(p) {
