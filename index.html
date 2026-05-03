@@ -338,6 +338,8 @@
     ══════════════════════════════════════════════ */
     @media (max-width: 768px) {
       :root { --topbar-h: 48px; --panel-w: 100%; }
+      /* Offset map for search bar row */
+      #map { top: calc(var(--topbar-h) + 46px); bottom: 32vh; }
 
       /* Topbar: tighten up */
       #topbar { padding: 0 10px; gap: 6px; }
@@ -346,22 +348,22 @@
       .topbar-btn { font-size: 0.55rem; padding: 4px 8px; gap: 4px; }
       #btn-admin-label { display: none; }
 
-      /* Map: full width, top half */
+      /* Map: full width, upper portion */
       #map {
         position: fixed;
         top: var(--topbar-h);
         left: 0; right: 0;
-        bottom: 42vh;
+        bottom: 32vh;
         z-index: 1;
       }
 
-      /* Panel: bottom sheet */
+      /* Panel: slim bottom sheet */
       #panel {
         position: fixed;
         top: auto;
-        left: 8px; right: 8px; bottom: 8px;
+        left: 6px; right: 6px; bottom: 6px;
         width: auto;
-        height: 42vh;
+        height: 32vh;
         border-radius: 16px;
         z-index: 900;
         transform: none !important;
@@ -370,10 +372,24 @@
       /* Search bar: full width below topbar */
       #search-bar {
         position: fixed;
-        top: calc(var(--topbar-h) + 8px);
-        left: 8px; right: 8px;
-        width: auto !important;
+        top: var(--topbar-h);
+        left: 0; right: 0;
+        width: 100% !important;
         z-index: 800;
+        padding: 6px 8px;
+        background: rgba(10,15,26,0.95);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(56,130,210,0.2);
+        box-sizing: border-box;
+      }
+      #search-bar input {
+        border-radius: 8px !important;
+        padding: 7px 12px !important;
+        font-size: 0.78rem !important;
+      }
+      /* Push map down to make room for search bar on mobile */
+      #map {
+        top: calc(var(--topbar-h) + 46px) !important;
       }
 
       /* Panel logo shorter on mobile */
@@ -402,7 +418,7 @@
       .legend-item { font-size: 0.52rem; }
 
       /* Zoom controls: don't overlap panel */
-      .leaflet-control-zoom { margin-bottom: calc(42vh + 16px) !important; }
+      .leaflet-control-zoom { margin-bottom: calc(32vh + 16px) !important; }
 
       /* Forms scrollable */
       #modal-add .modal-box, #modal-contribute .modal-box {
@@ -412,9 +428,9 @@
 
     /* Very small screens */
     @media (max-width: 400px) {
-      #map { bottom: 44vh; }
-      #panel { height: 44vh; }
-      .leaflet-control-zoom { margin-bottom: calc(44vh + 16px) !important; }
+      #map { bottom: 34vh; }
+      #panel { height: 34vh; }
+      .leaflet-control-zoom { margin-bottom: calc(34vh + 16px) !important; }
     }
   </style>
 </head>
@@ -1093,7 +1109,7 @@ var map = null;
   el.style.top = '50px';
   el.style.left = '0';
   el.style.right = isMobile ? '0' : '384px';
-  el.style.bottom = isMobile ? '42vh' : '0';
+  el.style.bottom = isMobile ? '32vh' : '0';
 
   map = L.map('map', {
     center: _savedPos ? [_savedPos.lat, _savedPos.lng] : [14.587, 121.178],
@@ -1130,7 +1146,7 @@ window.addEventListener('resize', function() {
   var mapEl = document.getElementById('map');
   var mobile = window.innerWidth <= 768;
   mapEl.style.right = mobile ? '0' : '384px';
-  mapEl.style.bottom = mobile ? '42vh' : '0';
+  mapEl.style.bottom = mobile ? '32vh' : '0';
   if (map) setTimeout(function() { map.invalidateSize(); }, 50);
 });
 
