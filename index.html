@@ -372,7 +372,7 @@
         position: fixed;
         top: calc(var(--topbar-h) + 8px);
         left: 8px; right: 8px;
-        width: auto;
+        width: auto !important;
         z-index: 800;
       }
 
@@ -439,23 +439,11 @@
 <div id="map"></div>
 
 <!-- ── SEARCHBAR ── -->
-<div id="search-bar" style="position:fixed;top:calc(var(--topbar-h)+12px);left:12px;z-index:800;display:flex;flex-direction:column;gap:6px;width:260px;">
-  <div style="display:flex;gap:6px;">
-    <div style="flex:1;position:relative;">
-      <input id="search-input" type="text" placeholder="🔍 Search terminals..." autocomplete="off"
-        style="width:100%;padding:8px 12px;background:rgba(10,15,26,0.88);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.3);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;outline:none;transition:border-color 0.2s;"/>
-    </div>
-    <button id="btn-search-filter" title="Filter" onclick="toggleSearchFilter()"
-      style="padding:8px 10px;background:rgba(10,15,26,0.88);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.3);border-radius:10px;color:var(--muted);cursor:pointer;font-size:0.75rem;transition:all 0.18s;white-space:nowrap;">⚙ Filter</button>
-  </div>
-  <div id="search-filter-row" style="display:none;background:rgba(10,15,26,0.92);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.25);border-radius:10px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.06em;">
-    <div style="color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Search by:</div>
-    <label style="display:flex;align-items:center;gap:6px;color:var(--text);margin-bottom:5px;cursor:pointer;"><input type="checkbox" id="sf-name" checked style="accent-color:var(--accent);"> Name / Abbreviation</label>
-    <label style="display:flex;align-items:center;gap:6px;color:var(--text);margin-bottom:5px;cursor:pointer;"><input type="checkbox" id="sf-terminal" checked style="accent-color:var(--accent);"> Terminal Name</label>
-    <label style="display:flex;align-items:center;gap:6px;color:var(--text);margin-bottom:5px;cursor:pointer;"><input type="checkbox" id="sf-landmarks" checked style="accent-color:var(--accent);"> Nearby Landmarks</label>
-    <label style="display:flex;align-items:center;gap:6px;color:var(--text);cursor:pointer;"><input type="checkbox" id="sf-affils" style="accent-color:var(--accent);"> Affiliations</label>
-  </div>
-  <div id="search-results" style="display:none;background:rgba(10,15,26,0.95);backdrop-filter:blur(16px);border:1px solid rgba(56,130,210,0.25);border-radius:12px;max-height:240px;overflow-y:auto;">
+<div id="search-bar" style="position:fixed;top:calc(var(--topbar-h)+12px);left:12px;z-index:800;width:300px;">
+  <div style="position:relative;">
+    <input id="search-input" type="text" placeholder="🔍 Search everything..." autocomplete="off"
+      style="width:100%;padding:9px 14px 9px 14px;background:rgba(10,15,26,0.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(56,130,210,0.35);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none;transition:border-color 0.2s,box-shadow 0.2s;box-shadow:0 4px 16px rgba(0,0,0,0.3);"/>
+    <div id="search-results" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:rgba(10,15,26,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(56,130,210,0.3);border-radius:12px;max-height:320px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:100;"></div>
   </div>
 </div>
 
@@ -1843,55 +1831,250 @@ window.saveDrawnArea=async function(){
 // ═══════════════════════════════════════════════════
 // SEARCH
 // ═══════════════════════════════════════════════════
-window.toggleSearchFilter=function(){
-  var row=document.getElementById('search-filter-row');
-  row.style.display=row.style.display==='none'?'block':'none';
-};
-document.getElementById('search-input').addEventListener('input',function(){
-  var q=this.value.trim().toLowerCase();
-  var resultsEl=document.getElementById('search-results');
-  _searchHighlights.forEach(function(key){
-    if(markerStore[key])markerStore[key].marker.setIcon(makeIcon(markerStore[key].toda,key===selectedKey));
+// ═══════════════════════════════════════════════════════════════
+// UNIFIED SEARCH — terminals, local areas, TODAs (cooperatives)
+// ═══════════════════════════════════════════════════════════════
+var _searchInput = document.getElementById('search-input');
+var _searchResults = document.getElementById('search-results');
+
+function makeResultSection(label, color, items) {
+  if (!items.length) return null;
+  var frag = document.createDocumentFragment();
+  // Section header
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:5px 12px 3px;font-family:"IBM Plex Mono",monospace;font-size:0.52rem;letter-spacing:0.1em;text-transform:uppercase;color:' + color + ';border-top:1px solid rgba(56,100,160,0.15);margin-top:2px;';
+  header.textContent = label;
+  frag.appendChild(header);
+  items.forEach(function(item) {
+    var row = document.createElement('div');
+    row.style.cssText = 'padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:9px;transition:background 0.12s;';
+    row.addEventListener('mouseenter', function() { this.style.background = 'rgba(56,130,210,0.1)'; });
+    row.addEventListener('mouseleave', function() { this.style.background = ''; });
+    // Left dot / icon
+    var dot = document.createElement('div');
+    dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + (item.dotColor || color) + ';flex-shrink:0;';
+    row.appendChild(dot);
+    // Text
+    var textWrap = document.createElement('div');
+    textWrap.style.cssText = 'min-width:0;flex:1;';
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:0.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    title.textContent = item.title;
+    textWrap.appendChild(title);
+    if (item.sub) {
+      var sub = document.createElement('div');
+      sub.style.cssText = 'font-size:0.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      sub.textContent = item.sub;
+      textWrap.appendChild(sub);
+    }
+    row.appendChild(textWrap);
+    // Badge
+    if (item.badge) {
+      var badge = document.createElement('div');
+      badge.style.cssText = 'font-family:"IBM Plex Mono",monospace;font-size:0.5rem;letter-spacing:0.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;background:' + color + '22;color:' + color + ';flex-shrink:0;';
+      badge.textContent = item.badge;
+      row.appendChild(badge);
+    }
+    row.addEventListener('click', item.action);
+    frag.appendChild(row);
   });
-  _searchHighlights=[];
-  if(!q){resultsEl.style.display='none';return;}
-  var byName=document.getElementById('sf-name').checked;
-  var byTerminal=document.getElementById('sf-terminal').checked;
-  var byLandmarks=document.getElementById('sf-landmarks').checked;
-  var byAffils=document.getElementById('sf-affils').checked;
-  var matches=[];
-  Object.entries(markerStore).forEach(function(kv){
-    var key=kv[0],t=kv[1].toda,hit=false;
-    if(byName&&(t.name.toLowerCase().includes(q)||(t.full&&t.full.toLowerCase().includes(q))))hit=true;
-    if(byTerminal&&t.terminal&&t.terminal.toLowerCase().includes(q))hit=true;
-    if(byLandmarks&&t.landmarks&&t.landmarks.toLowerCase().includes(q))hit=true;
-    if(byAffils&&Array.isArray(t.affiliations)&&t.affiliations.some(function(a){return a.name.toLowerCase().includes(q);}))hit=true;
-    if(hit)matches.push({key:key,toda:t});
+  return frag;
+}
+
+function clearSearchHighlights() {
+  _searchHighlights.forEach(function(key) {
+    if (markerStore[key]) markerStore[key].marker.setIcon(makeIcon(markerStore[key].toda, key === selectedKey));
   });
-  if(!matches.length){resultsEl.style.display='none';return;}
-  matches.forEach(function(m){
-    _searchHighlights.push(m.key);
-    var t=m.toda,sz=t.status==='confirmed'?16:13;
-    markerStore[m.key].marker.setIcon(L.divIcon({html:'<div class="toda-pin '+t.status+' selected" style="width:'+sz+'px;height:'+sz+'px;"></div>',className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}));
-  });
-  resultsEl.innerHTML='';
-  matches.slice(0,12).forEach(function(m){
-    var t=m.toda,item=document.createElement('div');
-    item.style.cssText='padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(56,100,160,0.15);display:flex;align-items:center;gap:8px;';
-    item.innerHTML='<div style="width:8px;height:8px;border-radius:50%;background:var(--'+t.status+');flex-shrink:0;"></div>'
-      +'<div><div style="font-weight:700;font-size:0.82rem;">'+( t.n?'#'+t.n+' ':'' )+t.name+'</div>'
-      +(t.terminal?'<div style="font-size:0.68rem;color:var(--muted);">'+t.terminal+'</div>':'')
-      +'</div>';
-    item.onmouseenter=function(){this.style.background='rgba(56,130,210,0.1)';};
-    item.onmouseleave=function(){this.style.background='';};
-    item.onclick=function(){map.flyTo([t.lat,t.lng],16,{duration:0.8});selectPin(m.key);currentPanelKey=m.key;openPanel(t);resultsEl.style.display='none';document.getElementById('search-input').value='';};
-    resultsEl.appendChild(item);
-  });
-  if(matches.length>12){var more=document.createElement('div');more.style.cssText='padding:8px 12px;font-size:0.6rem;color:var(--muted);text-align:center;';more.textContent='+'+(matches.length-12)+' more';resultsEl.appendChild(more);}
-  resultsEl.style.display='block';
+  _searchHighlights = [];
+}
+
+function highlightPin(key, toda) {
+  _searchHighlights.push(key);
+  var sz = toda.status === 'confirmed' ? 16 : 13;
+  markerStore[key].marker.setIcon(L.divIcon({
+    html: '<div class="toda-pin ' + toda.status + ' selected" style="width:' + sz + 'px;height:' + sz + 'px;"></div>',
+    className: '', iconSize: [sz, sz], iconAnchor: [sz/2, sz/2]
+  }));
+}
+
+function closeSearch() {
+  _searchResults.style.display = 'none';
+  _searchResults.innerHTML = '';
+  clearSearchHighlights();
+  _searchInput.value = '';
+}
+
+_searchInput.addEventListener('focus', function() {
+  this.style.borderColor = 'rgba(56,130,210,0.7)';
+  this.style.boxShadow = '0 0 0 3px rgba(56,130,210,0.12),0 4px 16px rgba(0,0,0,0.3)';
 });
-document.addEventListener('click',function(e){
-  if(!e.target.closest('#search-bar'))document.getElementById('search-results').style.display='none';
+_searchInput.addEventListener('blur', function() {
+  this.style.borderColor = 'rgba(56,130,210,0.35)';
+  this.style.boxShadow = '0 4px 16px rgba(0,0,0,0.3)';
+});
+
+_searchInput.addEventListener('input', function() {
+  var q = this.value.trim().toLowerCase();
+  clearSearchHighlights();
+  if (!q) { _searchResults.style.display = 'none'; _searchResults.innerHTML = ''; return; }
+
+  _searchResults.innerHTML = '';
+  var hasAny = false;
+
+  // ── 1. TERMINALS (pins on map) ──
+  var terminalMatches = [];
+  Object.entries(markerStore).forEach(function(kv) {
+    var key = kv[0], t = kv[1].toda;
+    var score = 0, matchReason = '';
+    if (t.name.toLowerCase().includes(q)) { score += 10; matchReason = t.name; }
+    if (t.full && t.full.toLowerCase().includes(q)) { score += 8; matchReason = matchReason || t.full; }
+    if (t.terminal && t.terminal.toLowerCase().includes(q)) { score += 5; matchReason = matchReason || t.terminal; }
+    if (t.landmarks && t.landmarks.toLowerCase().includes(q)) { score += 3; matchReason = matchReason || t.landmarks; }
+    if (t.notes && t.notes.toLowerCase().includes(q)) { score += 2; }
+    if (Array.isArray(t.affiliations) && t.affiliations.some(function(a) { return a.name.toLowerCase().includes(q); })) { score += 4; }
+    if (score > 0) terminalMatches.push({ key: key, toda: t, score: score, reason: matchReason });
+  });
+  terminalMatches.sort(function(a, b) { return b.score - a.score; });
+
+  var statusColors = { confirmed: 'var(--confirmed)', draft: 'var(--draft)', kolorum: 'var(--kolorum)' };
+  var statusLabels = { confirmed: 'Confirmed', draft: 'Draft', kolorum: 'Kolorum' };
+  var termItems = terminalMatches.slice(0, 8).map(function(m) {
+    var t = m.toda;
+    return {
+      title: (t.n ? '#' + t.n + ' ' : '') + t.name,
+      sub: t.terminal || t.landmarks || t.full || '',
+      badge: statusLabels[t.status] || t.status,
+      dotColor: statusColors[t.status] || 'var(--muted)',
+      action: function() {
+        map.flyTo([t.lat, t.lng], 16, { duration: 0.8 });
+        selectPin(m.key); currentPanelKey = m.key; openPanel(t);
+        closeSearch();
+      }
+    };
+  });
+  // Highlight all matched pins
+  terminalMatches.slice(0, 20).forEach(function(m) { highlightPin(m.key, m.toda); });
+
+  var termSection = makeResultSection('Terminals', '#38BDF8', termItems);
+  if (termSection) { _searchResults.appendChild(termSection); hasAny = true; }
+
+  // ── 2. LOCAL AREAS ──
+  var areaMatches = _allLocalAreas.filter(function(a) {
+    return a.name.toLowerCase().includes(q) || (a.barangay && a.barangay.toLowerCase().includes(q));
+  });
+  var areaItems = areaMatches.slice(0, 5).map(function(a) {
+    return {
+      title: '"' + a.name + '"',
+      sub: a.barangay ? a.barangay + (a.city ? ', ' + a.city : '') : (a.city || ''),
+      badge: 'Local Area',
+      dotColor: '#A78BFA',
+      action: function() {
+        closeSearch();
+        showAreaOnMap(a.id, a.name);
+      }
+    };
+  });
+  var areaSection = makeResultSection('Local Areas', '#A78BFA', areaItems);
+  if (areaSection) { _searchResults.appendChild(areaSection); hasAny = true; }
+
+  // ── 3. COOPERATIVES / TODA NAMES (full names from all loaded terminals) ──
+  // Deduplicated by normalized name — show as group if multiple terminals share it
+  var coopMap = {};
+  Object.values(markerStore).forEach(function(entry) {
+    var t = entry.toda;
+    if (!t.full) return;
+    if (!t.full.toLowerCase().includes(q) && !t.name.toLowerCase().includes(q)) return;
+    var key = t.name.toUpperCase().replace(/[\s\-]+/g, '');
+    if (!coopMap[key]) coopMap[key] = { name: t.name, full: t.full, count: 0, entries: [] };
+    coopMap[key].count++;
+    coopMap[key].entries.push(entry);
+  });
+  var coopItems = Object.values(coopMap).filter(function(c) { return c.full && c.full.toLowerCase().includes(q); }).slice(0, 4).map(function(c) {
+    return {
+      title: c.full,
+      sub: c.name + (c.count > 1 ? ' · ' + c.count + ' terminals' : ''),
+      badge: 'Cooperative',
+      dotColor: '#34D399',
+      action: function() {
+        // Highlight all matching terminals and fit map
+        closeSearch();
+        var lats = [], lngs = [];
+        c.entries.forEach(function(e) {
+          highlightPin(Object.keys(markerStore).find(function(k) { return markerStore[k] === e; }), e.toda);
+          lats.push(e.toda.lat); lngs.push(e.toda.lng);
+        });
+        if (lats.length === 1) {
+          map.flyTo([lats[0], lngs[0]], 16, { duration: 0.8 });
+          selectPin(Object.keys(markerStore).find(function(k) { return markerStore[k] === c.entries[0]; }));
+          openPanel(c.entries[0].toda);
+        } else if (lats.length > 1) {
+          var minLat=Math.min.apply(null,lats),maxLat=Math.max.apply(null,lats);
+          var minLng=Math.min.apply(null,lngs),maxLng=Math.max.apply(null,lngs);
+          map.fitBounds([[minLat,minLng],[maxLat,maxLng]],{padding:[40,40],duration:0.8});
+        }
+      }
+    };
+  });
+  var coopSection = makeResultSection('Cooperatives', '#34D399', coopItems);
+  if (coopSection) { _searchResults.appendChild(coopSection); hasAny = true; }
+
+  // ── 4. AFFILIATIONS ──
+  var affilMatches = _knownAffils.filter(function(a) { return a.name.toLowerCase().includes(q); });
+  var affilItems = affilMatches.slice(0, 4).map(function(af) {
+    return {
+      title: af.name,
+      sub: 'Show all affiliated terminals',
+      badge: 'Affiliation',
+      dotColor: af.color || '#F59E0B',
+      action: function() {
+        // Find and highlight all terminals with this affiliation
+        closeSearch();
+        var found = [];
+        Object.entries(markerStore).forEach(function(kv) {
+          var t = kv[1].toda;
+          if (Array.isArray(t.affiliations) && t.affiliations.some(function(a) { return a.name.toLowerCase() === af.name.toLowerCase(); })) {
+            found.push({ key: kv[0], toda: t });
+          }
+        });
+        found.forEach(function(f) { highlightPin(f.key, f.toda); });
+        if (found.length === 1) {
+          map.flyTo([found[0].toda.lat, found[0].toda.lng], 16, { duration: 0.8 });
+          selectPin(found[0].key); currentPanelKey = found[0].key; openPanel(found[0].toda);
+        } else if (found.length > 1) {
+          var lats = found.map(function(f) { return f.toda.lat; });
+          var lngs = found.map(function(f) { return f.toda.lng; });
+          map.fitBounds([[Math.min.apply(null,lats),Math.min.apply(null,lngs)],[Math.max.apply(null,lats),Math.max.apply(null,lngs)]],{padding:[40,40],duration:0.8});
+          showToast(found.length + ' terminals affiliated with ' + af.name, '');
+        } else {
+          showToast('No terminals with affiliation "' + af.name + '"', '');
+        }
+      }
+    };
+  });
+  var affilSection = makeResultSection('Affiliations', '#F59E0B', affilItems);
+  if (affilSection) { _searchResults.appendChild(affilSection); hasAny = true; }
+
+  // ── No results ──
+  if (!hasAny) {
+    var none = document.createElement('div');
+    none.style.cssText = 'padding:16px 12px;text-align:center;font-size:0.75rem;color:var(--muted);';
+    none.textContent = 'No results for "' + _searchInput.value + '"';
+    _searchResults.appendChild(none);
+  }
+
+  _searchResults.style.display = 'block';
+});
+
+// Keyboard navigation
+_searchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeSearch(); this.blur(); }
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#search-bar')) {
+    _searchResults.style.display = 'none';
+    clearSearchHighlights();
+  }
 });
 
 // ═══════════════════════════════════════════════════
