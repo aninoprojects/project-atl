@@ -371,19 +371,34 @@
       }
 
       /* Search bar: full width below topbar */
-      /* Search bar is inside topbar on mobile — shrink it */
+      /* Search bar: pull out of topbar, sit below it as its own row */
       #search-bar {
-        flex: 1;
-        min-width: 0;
-        margin: 0 6px !important;
+        position: fixed !important;
+        top: var(--topbar-h) !important;
+        left: 0; right: 0;
+        width: 100% !important;
         max-width: none !important;
+        margin: 0 !important;
+        padding: 5px 8px;
+        background: rgba(10,15,26,0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(56,130,210,0.18);
+        z-index: 1000;
+        box-sizing: border-box;
       }
       #search-bar input {
-        font-size: 0.72rem !important;
-        padding: 5px 10px !important;
+        font-size: 0.75rem !important;
+        padding: 7px 12px !important;
+        border-radius: 8px !important;
       }
-      #search-bar input::placeholder {
-        font-size: 0.65rem;
+      /* Push map down to make room */
+      #map {
+        top: calc(var(--topbar-h) + 44px) !important;
+      }
+      /* Hide search bar from topbar flex flow on mobile */
+      #topbar #search-bar {
+        display: none;
       }
 
       /* Panel logo shorter on mobile */
@@ -426,6 +441,28 @@
       #panel { height: 34vh; }
       .leaflet-control-zoom { margin-bottom: calc(34vh + 16px) !important; }
     }
+
+    /* Desktop: search bar sits inside topbar visually */
+    @media (min-width: 769px) {
+      #search-bar {
+        position: fixed;
+        top: 0;
+        left: 220px;
+        right: 200px;
+        height: var(--topbar-h);
+        display: flex;
+        align-items: center;
+        z-index: 1001;
+        margin: 0 !important;
+        padding: 0 8px;
+        background: transparent;
+        pointer-events: auto;
+      }
+      #search-bar input {
+        width: 100%;
+        max-width: 500px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -448,6 +485,14 @@
       <span class="notif-dot" id="admin-notif-dot"></span>
     </button>
   </div>
+</div>
+
+<!-- ── SEARCH BAR (outside topbar so mobile fixed positioning works) ── -->
+<div id="search-bar" style="flex:1;max-width:380px;margin:0 16px;position:relative;">
+  <input id="search-input" type="search" placeholder="🔍 Search everything..." autocomplete="off"
+    name="atl-search" role="searchbox"
+    style="width:100%;padding:6px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(56,130,210,0.3);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.78rem;outline:none;transition:border-color 0.2s,background 0.2s;"/>
+  <div id="search-results" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:rgba(10,15,26,0.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(56,130,210,0.3);border-radius:12px;max-height:360px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:2000;"></div>
 </div>
 
 <!-- ── MAP ── -->
