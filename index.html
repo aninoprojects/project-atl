@@ -308,6 +308,9 @@
     .toda-pin.selected{transform:scale(1.55)!important;box-shadow:0 0 0 4px rgba(255,255,255,0.6),0 0 0 7px rgba(255,255,255,0.15),0 4px 14px rgba(0,0,0,0.4)!important;}
 
     /* Leaflet overrides */
+    .leaflet-container{background:#0a0f1a!important;}
+    .leaflet-tile{will-change:transform;}
+    .leaflet-tile-container{will-change:transform;}
     .leaflet-tooltip{background:#0f172a!important;border:1px solid rgba(56,100,160,0.5)!important;color:#e2e8f0!important;font-family:'IBM Plex Mono',monospace!important;font-size:0.62rem!important;border-radius:3px!important;box-shadow:0 2px 8px rgba(0,0,0,0.4)!important;}
     .leaflet-tooltip::before{border-top-color:var(--border)!important;}
     .leaflet-control-zoom a{background:rgba(15,23,42,0.9)!important;border-color:rgba(56,100,160,0.4)!important;color:#94a3b8!important;}
@@ -431,7 +434,7 @@
 <div id="topbar">
   <div class="brand">
     <div class="logo">🛺 Project <span>ATL</span></div>
-    <div class="version-badge">BETA 2.1</div>
+    <div class="version-badge">BETA 2.2</div>
   </div>
   <div id="search-bar" style="flex:1;max-width:380px;margin:0 16px;position:relative;">
     <input id="search-input" type="search" placeholder="🔍 Search everything..." autocomplete="off" name="atl-search" role="searchbox"
@@ -792,11 +795,35 @@
       <div class="about-prose">
         <p style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--accent-l);text-transform:uppercase;margin-bottom:20px;">⚠ Project ATL is still in Beta — features and data are actively being developed.</p>
         <div class="changelog-entry">
+          <div><span class="changelog-version">β 2.2</span><span class="changelog-date">May 2026</span></div>
+          <div class="changelog-tags"><span class="tag tag-fix">Fix</span></div>
+          <ul class="changelog-ul">
+            <li>Fixed white tile flash on zoom in/out — tiles now pre-load outside viewport (keepBuffer: 6)</li>
+            <li>Disabled tile update during zoom animation to prevent double street name rendering</li>
+            <li>Map container background now matches dark tile color — no more white flicker</li>
+            <li>Added GPU compositing hints for smoother tile transitions</li>
+            <li>Beta 2.1 progress added to changelog</li>
+          </ul>
+        </div>
+        <div class="changelog-entry">
           <div><span class="changelog-version">β 2.1</span><span class="changelog-date">April 2026</span></div>
           <div class="changelog-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-change">Change</span></div>
           <ul class="changelog-ul">
             <li>Panel floats cleanly (transparent outer background)</li>
             <li>Smoother panel transitions and detail animations</li>
+            <li>Draw Local Area button fixed</li>
+            <li>Unified search bar in topbar — searches terminals, local areas, cooperatives, affiliations</li>
+            <li>All three forms (register, edit, suggest) unified and status-driven in real time</li>
+            <li>Colors: no text label required, pick from palette only</li>
+            <li>Affiliations dropdown — type to search, Enter to add, custom options supported</li>
+            <li>Panel sidebar updates live after admin saves changes</li>
+            <li>TODA name sync — shared fields auto-propagate to same-abbr terminals</li>
+            <li>Search highlights all matching pins</li>
+            <li>Delete now awaits Supabase confirmation before removing from UI</li>
+            <li>Suggest edits pre-fills current terminal data for guests</li>
+            <li>Mobile responsive layout — map top, panel bottom sheet</li>
+            <li>Local areas: Manage, View on Map, and Delete from admin panel</li>
+            <li>Areas Serviced field in all forms and sidebar</li>
             <li>Draw Local Area button fixed</li>
             <li>Search bar with filter (name, terminal, landmarks, affiliations)</li>
             <li>All three forms (register, edit, suggest) unified and status-driven in real time</li>
@@ -1106,13 +1133,23 @@ var map = null;
     zoom: _savedPos ? _savedPos.zoom : 14,
     zoomControl: false,
     minZoom: 11,
-    maxZoom: 18
+    maxZoom: 18,
+    zoomAnimation: true,
+    zoomAnimationThreshold: 4,
+    fadeAnimation: true,
+    markerZoomAnimation: true,
+    preferCanvas: true
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
-    maxZoom: 19
+    maxZoom: 19,
+    maxNativeZoom: 19,
+    keepBuffer: 6,
+    updateWhenIdle: false,
+    updateWhenZooming: false,
+    crossOrigin: true
   }).addTo(map);
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
