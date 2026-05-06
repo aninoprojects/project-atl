@@ -2622,9 +2622,11 @@ function renderDb() {
   tbody.innerHTML = '';
   rows.forEach(function(row) {
     var tr = document.createElement('tr');
-    // Highlight if matching terminal on map
+    // Highlight if matching terminal on map - SAFE compare
+    var rowName = (row.toda || '').toUpperCase();
     var onMap = Object.values(markerStore).some(function(e) {
-      return e.toda.name.toUpperCase() === row.toda.toUpperCase();
+      var markerName = (e.toda && e.toda.name || '').toUpperCase();
+      return markerName && markerName === rowName;
     });
     if (onMap) tr.classList.add('db-highlight');
 
@@ -2634,13 +2636,14 @@ function renderDb() {
       td.title = row[col.key] || '';
       if (col.key === 'num') td.className = 'num';
       if (col.key === 'gmaps' || col.key === 'osm') td.className = statusClass(row[col.key]);
-      tbody.appendChild.call(tr, td);
+      tr.appendChild(td);
     });
 
     // Click row — jump to terminal on map if it exists
     tr.addEventListener('click', function() {
       var match = Object.entries(markerStore).find(function(kv) {
-        return kv[1].toda.name.toUpperCase() === row.toda.toUpperCase();
+        var markerName = (kv[1].toda && kv[1].toda.name || '').toUpperCase();
+        return markerName && markerName === rowName;
       });
       if (match) {
         closeModal('modal-database');
