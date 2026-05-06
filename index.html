@@ -2697,15 +2697,24 @@ function renderDb() {
       tr.appendChild(td);
     });
     tr.onclick=function(){
-      var match=Object.entries(markerStore).find(function(kv){
+      var matches=Object.entries(markerStore).filter(function(kv){
         return (kv[1].toda&&kv[1].toda.name||'').toUpperCase()===rowName;
       });
-      if(match){
+      if(matches.length){
         closeModal('modal-database');
-        var t=match[1].toda;
-        map.flyTo([t.lat,t.lng],16,{duration:0.8});
-        selectPin(match[0]); currentPanelKey=match[0]; openPanel(t);
-        showToast(row.toda+' — jumped to map','success');
+        if(matches.length===1){
+          var t=matches[0][1].toda;
+          map.flyTo([t.lat,t.lng],16,{duration:0.8});
+          selectPin(matches[0][0]); currentPanelKey=matches[0][0]; openPanel(t);
+          showToast(row.toda+' — jumped to map','success');
+        } else {
+          // Fit all matching terminals
+          var lats=[],lngs=[];
+          matches.forEach(function(m){ lats.push(m[1].toda.lat); lngs.push(m[1].toda.lng); highlightPin(m[0],m[1].toda); });
+          var bounds=[[Math.min.apply(null,lats),Math.min.apply(null,lngs)],[Math.max.apply(null,lats),Math.max.apply(null,lngs)]];
+          map.fitBounds(bounds,{padding:[50,50],duration:0.8});
+          showToast(row.toda+' — '+matches.length+' terminals shown','success');
+        }
       } else if(row.lat && row.lng){
         closeModal('modal-database');
         map.flyTo([parseFloat(row.lat),parseFloat(row.lng)],16,{duration:0.8});
