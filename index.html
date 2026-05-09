@@ -124,7 +124,7 @@
     .empty-sub{font-family:'IBM Plex Mono',monospace;font-size:0.55rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--bg-light);text-align:center;line-height:1.7;}
 
     /* Legend */
-    #panel-legend{padding:14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px;}
+    #panel-legend{padding:10px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
     .legend-label{font-family:'IBM Plex Mono',monospace;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--bg-light);margin-bottom:2px;}
     .legend-item{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
     .legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -502,6 +502,9 @@
     #db-table td.status-pend{color:var(--draft);font-family:'IBM Plex Mono',monospace;font-size:0.6rem;}
     #db-table tbody tr:hover td{background:rgba(56,130,210,0.07);cursor:pointer;}
     #db-table tbody tr.db-highlight td{background:rgba(56,189,248,0.1);}
+    #db-table tbody tr.db-new-row td{background:rgba(33,150,243,0.08);border-left:2px solid var(--accent);}
+    #db-table td.db-editable:hover{background:rgba(56,130,210,0.12);outline:1px dashed rgba(56,130,210,0.4);cursor:text;}
+    #db-table td input.db-cell-input{background:var(--bg);border:1px solid var(--accent);border-radius:3px;color:var(--text);font-family:inherit;font-size:inherit;width:100%;padding:1px 4px;outline:none;}
     .db-footer{padding:8px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.55rem;color:var(--muted);}
     .db-footer a{color:var(--accent-l);text-decoration:none;text-transform:uppercase;letter-spacing:0.06em;}
     @media(max-width:768px){
@@ -552,10 +555,11 @@
     <div class="empty-sub">Select any terminal<br>to view TODA information</div>
   </div>
   <div id="panel-legend">
-    <div class="legend-label">Map Legend</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--confirmed)"></div>Confirmed Terminal</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--draft)"></div>Draft / Unverified</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--kolorum)"></div>Kolorum / Informal</div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--confirmed)"></div>Confirmed</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--draft)"></div>Unverified</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--kolorum)"></div>Informal</div>
+    </div>
     <button onclick="openContribute()" style="width:100%;margin-top:10px;padding:10px 14px;background:rgba(33,150,243,0.12);border:1.5px solid rgba(33,150,243,0.4);border-radius:10px;color:var(--accent-l);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;">✎ Suggest a Terminal</button>
   </div>
   <div id="panel-detail" class="hidden">
@@ -881,6 +885,29 @@
       <div class="about-prose">
         <p style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--accent-l);text-transform:uppercase;margin-bottom:20px;">⚠ Project ATL is still in Beta — features and data are actively being developed.</p>
         <div class="changelog-entry">
+          <div><span class="changelog-version">β 2.3</span><span class="changelog-date">May 2026</span></div>
+          <div class="changelog-tags"><span class="tag tag-change">Change</span></div>
+          <ul class="changelog-ul">
+            <li>Database columns updated: lat/lng replaces terminal column, city moved to last, GMaps/OSM removed</li>
+            <li>Database now auto-syncs with live map — terminals added to map appear in DB instantly (highlighted blue)</li>
+            <li>Saving a terminal updates matching DB entry in memory (full name, colors, number, city)</li>
+            <li>Click any DB row to jump to its map pin or fly to coordinates if not yet mapped</li>
+            <li>SITODA (Steve Inn) added as entry without number</li>
+            <li>DB merges static spreadsheet data with live Supabase terminals</li>
+          </ul>
+        </div>
+        <div class="changelog-entry">
+          <div><span class="changelog-version">β 2.3</span><span class="changelog-date">May 2026</span></div>
+          <div class="changelog-tags"><span class="tag tag-change">Change</span></div>
+          <ul class="changelog-ul">
+            <li>Terminal sync — when a terminal is saved, siblings sharing the same name, number, or full name are auto-updated with shared fields (number, full name, colors, affiliations, logo, city)</li>
+            <li>Bidirectional gap-fill — if saved terminal is missing a detail a sibling has, it copies it back</li>
+            <li>ATL Database viewer — 124 TODAs from spreadsheet v3.1, merged with live Supabase data</li>
+            <li>Database table shows lat/lng from live terminals, colors overlay, highlighted rows for mapped TODAs</li>
+            <li>Click a database row to fly to and open that terminal on the map</li>
+          </ul>
+        </div>
+        <div class="changelog-entry">
           <div><span class="changelog-version">β 2.2</span><span class="changelog-date">May 2026</span></div>
           <div class="changelog-tags"><span class="tag tag-fix">Fix</span></div>
           <ul class="changelog-ul">
@@ -1082,7 +1109,7 @@
     <div class="db-header">
       <div>
         <div class="db-title">📋 ATL Database</div>
-        <div class="db-sub">Sheet 1 · TODA Registry · 124 entries · <span id="db-count"></span></div>
+        <div class="db-sub">TODA Registry · <span id="db-count"></span> · 🔵 on map · click row to jump</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <input id="db-filter" type="search" placeholder="Filter..." autocomplete="off"/>
@@ -1096,7 +1123,8 @@
       </table>
     </div>
     <div class="db-footer">
-      <span>Source: Project ATL Spreadsheet v3.1 · Read-only</span>
+      <span id="db-edit-hint" style="display:none;color:var(--accent-l);">Admin: click any cell to edit · changes save instantly</span>
+      <span id="db-footer-label">Source: Project ATL Spreadsheet v3.1</span>
       <a href="https://docs.google.com/spreadsheets/d/1ESCD31Vrq1dur2vIXDlDRg802YE3aVs6UDgJ45yQbqA/edit" target="_blank">Open in Sheets ↗</a>
     </div>
   </div>
@@ -1313,6 +1341,8 @@ function selectPin(key){
   if(key&&markerStore[key])markerStore[key].marker.setIcon(makeIcon(markerStore[key].toda,true));
 }
 function addTodaToMap(toda,key){
+  // After adding, refresh DB if open
+  setTimeout(function(){if(document.getElementById('modal-database').classList.contains('open'))renderDb();},100);
   if(!map)return;
   key=key||('s-'+toda.name+'-'+(toda.n||'x'));
   var mk=L.marker([toda.lat,toda.lng],{icon:makeIcon(toda,false)}).addTo(map);
@@ -1710,43 +1740,6 @@ function resetAdminForm(){
   document.getElementById('add-error').style.display='none';
 }
 
-
-// ── SYNC TERMINALS ──
-async function syncRelatedTerminals(savedToda){
-  if(!sb||!adminSession) return;
-  var name = (savedToda.name||'').trim();
-  var num = savedToda.number;
-  var full = (savedToda.full_name||'').trim();
-  if(!name && !num && !full) return;
-  try{
-    var r = await sb.from('todas_admin').select('*');
-    if(r.error) return;
-    var matches = r.data.filter(function(row){
-      return (name && row.name && row.name.toLowerCase()===name.toLowerCase()) ||
-             (num && row.number===num) ||
-             (full && row.full_name && row.full_name.toLowerCase()===full.toLowerCase());
-    });
-    if(matches.length<=1) return;
-    var shared = {
-      full_name: savedToda.full_name||null,
-      colors: savedToda.colors||[],
-      city: savedToda.city||'Antipolo City'
-    };
-    for(var i=0;i<matches.length;i++){
-      var m = matches[i];
-      if(m.id===savedToda.id) continue;
-      await sb.from('todas_admin').update(shared).eq('id', m.id);
-      var key = 'sb-'+m.id;
-      if(markerStore[key]){
-        if(shared.full_name) markerStore[key].toda.full = shared.full_name;
-        if(shared.colors) markerStore[key].toda.colors = shared.colors;
-        if(shared.city) markerStore[key].toda.city = shared.city;
-      }
-    }
-    showToast('Synced '+ (matches.length-1) +' related terminal(s)', 'success');
-  }catch(e){ console.warn('sync error',e); }
-}
-
 document.getElementById('btn-add-submit').addEventListener('click',async function(){
   var st=document.getElementById('f-status').value;
   var isKol=st==='kolorum',isConf=st==='confirmed';
@@ -1788,16 +1781,142 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
     // Save area links
     if(newId) await saveTerminalAreas(newId, _fSelectedAreas);
     addTodaToMap(nt,nk);
-    // Sync related terminals
-    syncRelatedTerminals({id:newId,number:payload.number,name:name,full_name:payload.full_name,colors:cols,city:payload.city});
     if(nk===currentPanelKey||(exId&&'sb-'+exId===currentPanelKey)){currentPanelKey=nk;openPanel(nt);}
     if(tempMarker&&map){map.removeLayer(tempMarker);tempMarker=null;}
     // Clear area highlights on save
     _shownAreaLayers.forEach(function(l){try{map.removeLayer(l);}catch(e){}});_shownAreaLayers=[];_areasShown=false;
+    // ── SYNC siblings after save ──
+    await syncSiblingTerminals(newId, payload, cols);
     closeModal('modal-add');showToast(name+(_editKey?' updated':' registered'),'success');resetAdminForm();_editKey=null;
+    // Refresh DB table if open
+    if(document.getElementById('modal-database').classList.contains('open'))renderDb();
   }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
   finally{btn.textContent=_editKey?'Save Changes':'Register Terminal';btn.disabled=false;}
 });
+
+
+// ═══════════════════════════════════════════════════
+// SYNC SIBLING TERMINALS
+// When a terminal is saved, find all others in Supabase
+// with the same TODA name (or number) and push shared
+// fields to them. Also bi-directionally fill gaps:
+// if the saved terminal is missing a field that a sibling
+// has, copy the sibling's value back onto the saved one.
+// Fields synced: number, full_name, colors, affiliations,
+//                logo_url, city
+// ═══════════════════════════════════════════════════
+async function syncSiblingTerminals(savedId, savedPayload, savedCols){
+  if(!sb||!adminSession||!savedId) return;
+
+  var savedName = (savedPayload.name||'').trim().toUpperCase().replace(/[\s\-]+/g,'');
+  var savedNum  = savedPayload.number||null;
+  var savedFull = (savedPayload.full_name||'').trim().toLowerCase();
+
+  try{
+    // Fetch all terminals once
+    var r = await sb.from('todas_admin').select('*');
+    if(r.error) return;
+
+    // Find siblings: same normalized name, same number, OR same full name
+    var siblings = r.data.filter(function(row){
+      if(row.id === savedId) return false;
+      var rName = (row.name||'').trim().toUpperCase().replace(/[\s\-]+/g,'');
+      var rFull = (row.full_name||'').trim().toLowerCase();
+      return (savedName && rName === savedName)
+          || (savedNum  && row.number === savedNum)
+          || (savedFull && rFull && rFull === savedFull);
+    });
+
+    if(!siblings.length) return;
+
+    // Build the "best known" values by merging saved + siblings
+    // Prefer non-empty values; saved terminal wins on conflicts
+    function best(savedVal, sibVal){
+      if(savedVal !== null && savedVal !== undefined &&
+         (typeof savedVal === 'number' || (Array.isArray(savedVal) ? savedVal.length : (savedVal+'').trim()))){
+        return {val: savedVal, source: 'saved'};
+      }
+      if(sibVal !== null && sibVal !== undefined &&
+         (typeof sibVal === 'number' || (Array.isArray(sibVal) ? sibVal.length : (sibVal+'').trim()))){
+        return {val: sibVal, source: 'sibling'};
+      }
+      return {val: null, source: null};
+    }
+
+    // Accumulate best values across all siblings
+    var bestNum    = {val: savedNum,             source: savedNum ? 'saved' : null};
+    var bestFull   = {val: savedPayload.full_name, source: savedPayload.full_name ? 'saved' : null};
+    var bestColors = {val: savedCols,             source: savedCols&&savedCols.length ? 'saved' : null};
+    var bestAffils = {val: savedPayload.affiliations, source: savedPayload.affiliations&&savedPayload.affiliations.length ? 'saved' : null};
+    var bestLogo   = {val: savedPayload.logo_url, source: savedPayload.logo_url ? 'saved' : null};
+    var bestCity   = {val: savedPayload.city,     source: savedPayload.city ? 'saved' : null};
+
+    siblings.forEach(function(sib){
+      if(!bestNum.val && sib.number)   bestNum   = {val: sib.number,     source: 'sibling'};
+      if(!bestFull.val && sib.full_name) bestFull = {val: sib.full_name, source: 'sibling'};
+      if(!(bestColors.val&&bestColors.val.length) && sib.colors&&sib.colors.length)
+        bestColors = {val: sib.colors, source: 'sibling'};
+      if(!(bestAffils.val&&bestAffils.val.length) && sib.affiliations&&sib.affiliations.length)
+        bestAffils = {val: sib.affiliations, source: 'sibling'};
+      if(!bestLogo.val && sib.logo_url)  bestLogo = {val: sib.logo_url,  source: 'sibling'};
+      if(!bestCity.val && sib.city)      bestCity = {val: sib.city,      source: 'sibling'};
+    });
+
+    var sharedPatch = {
+      number:       bestNum.val,
+      full_name:    bestFull.val,
+      colors:       bestColors.val||[],
+      affiliations: bestAffils.val||[],
+      logo_url:     bestLogo.val||null,
+      city:         bestCity.val||'Antipolo City'
+    };
+
+    // 1. Push to all siblings
+    for(var i=0;i<siblings.length;i++){
+      var sib = siblings[i];
+      await sb.from('todas_admin').update(sharedPatch).eq('id', sib.id);
+      // Update in-memory marker store
+      var sibKey = 'sb-'+sib.id;
+      if(markerStore[sibKey]){
+        var st = markerStore[sibKey].toda;
+        st.n         = sharedPatch.number       || st.n;
+        st.full      = sharedPatch.full_name     || st.full;
+        st.colors    = sharedPatch.colors.length ? sharedPatch.colors : st.colors;
+        st.affiliations = sharedPatch.affiliations.length ? sharedPatch.affiliations : st.affiliations;
+        st.logoUrl   = sharedPatch.logo_url      || st.logoUrl;
+      }
+    }
+
+    // 2. If saved terminal gained values from siblings, patch it back too
+    var backPatch = {};
+    if(bestNum.source==='sibling'  && bestNum.val)    backPatch.number      = bestNum.val;
+    if(bestFull.source==='sibling' && bestFull.val)   backPatch.full_name   = bestFull.val;
+    if(bestColors.source==='sibling' && bestColors.val&&bestColors.val.length)
+                                                       backPatch.colors      = bestColors.val;
+    if(bestAffils.source==='sibling' && bestAffils.val&&bestAffils.val.length)
+                                                       backPatch.affiliations= bestAffils.val;
+    if(bestLogo.source==='sibling' && bestLogo.val)   backPatch.logo_url    = bestLogo.val;
+    if(bestCity.source==='sibling' && bestCity.val)   backPatch.city        = bestCity.val;
+
+    if(Object.keys(backPatch).length){
+      await sb.from('todas_admin').update(backPatch).eq('id', savedId);
+      // Update in-memory too
+      var savedKey = 'sb-'+savedId;
+      if(markerStore[savedKey]){
+        var st2 = markerStore[savedKey].toda;
+        if(backPatch.number)       st2.n         = backPatch.number;
+        if(backPatch.full_name)    st2.full      = backPatch.full_name;
+        if(backPatch.colors)       st2.colors    = backPatch.colors;
+        if(backPatch.affiliations) st2.affiliations = backPatch.affiliations;
+        if(backPatch.logo_url)     st2.logoUrl   = backPatch.logo_url;
+      }
+    }
+
+    var n = siblings.length;
+    showToast('Synced '+n+' related terminal'+(n>1?'s':''), 'success');
+
+  }catch(e){ console.warn('[ATL] sync error:', e); }
+}
 
 // ═══════════════════════════════════════════════════
 // CONTRIBUTE (admin + guest unified)
@@ -2597,130 +2716,217 @@ window.deleteArea = async function(areaId, cardEl) {
 // ═══════════════════════════════════════════════════════════════
 // ATL DATABASE VIEWER
 // ═══════════════════════════════════════════════════════════════
-var ATL_DB_DATA = [{"num": "1", "toda": "ACBTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "2", "toda": "AG2TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "3", "toda": "AHSLJTODA", "full": "Antipolo Hinapao San Lorenzo Joyous", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "pending edit", "osm": ""}, {"num": "4", "toda": "ALCHTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "5", "toda": "ACUATODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "6", "toda": "ADAMSTODA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "7", "toda": "APFMCTODA", "full": "", "city": "Antipolo City", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "8", "toda": "AMTODA", "full": "Antipolo Market", "city": "Antipolo City", "barangay": "Brgy. San Jose", "terminal": "AMTODA TERMINAL", "units": "400+", "colors": "", "gmaps": "//", "osm": ""}, {"num": "9", "toda": "ASTDA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "10", "toda": "ASACTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "11", "toda": "AYATDOA", "full": "Antipolo Yupangco Angono", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "pending edit", "osm": ""}, {"num": "12", "toda": "ASHTODA", "full": "Antipolo Sumulong Highway", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "13", "toda": "BETA", "full": "Bermuda Tricycle Association", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "14", "toda": "BPOACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "15", "toda": "CAPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "16", "toda": "LPATODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "17", "toda": "GEMCASHTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "Gemcashtoda", "units": "", "colors": "", "gmaps": "pending edit", "osm": ""}, {"num": "18", "toda": "(SHOPWISE) LJSCTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "19", "toda": "ADHSRLPTODA", "full": "Antipolo Dalig Hi-way San Roque Lores Plaza", "city": "Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "20", "toda": "MLQELCPTODA", "full": "M. L. Quezon Extension-Lico Circle Park", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "21", "toda": "EPRKLTODA", "full": "Eastview subd. Pines city Royale subd. Knights of columbus Loreland resort", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "22", "toda": "LAMPTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "23", "toda": "MVMAWTODA", "full": "Mia Vita Maia Alta Woodrow", "city": "", "barangay": "Brgy. Dalig", "terminal": "MV MAWTODA terminal", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "24", "toda": "DACTODA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "25", "toda": "PPBAPGNBTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "26", "toda": "MBMATODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "27", "toda": "P-NFLMPBWTODA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "28", "toda": "SFBPTODA", "full": "", "city": "", "barangay": "Brgy. Beverly Hills", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "29", "toda": "PACSTTODA", "full": "", "city": "", "barangay": "", "terminal": "PACSTTODA MAIN TERMINAL", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "30", "toda": "SHATDA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "31", "toda": "MOSPATODA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "32", "toda": "PVACTODA", "full": "Public Vicinity of Antipolo City", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "33", "toda": "PUMDA", "full": "Public Utility Motorcycle Drivers Association", "city": "", "barangay": "Brgy. San Jose", "terminal": "Antipolo Triangle Mall", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "34", "toda": "PAGKATTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "35", "toda": "UM-ADOTA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "36", "toda": "PATATODA", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "37", "toda": "ASMPEGTODA", "full": "Antipolo Super Metro Puregold [speculative]", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "38", "toda": "SUG-SAFTTODA", "full": "Sunflower Upper Gumamela - Silihan Antipolo Federal Tibagan", "city": "", "barangay": "Brgy. Dalig", "terminal": "SUG-SAFTTODA Tricycle Terminal", "units": "", "colors": "", "gmaps": "", "osm": "//"}, {"num": "39", "toda": "SHIMACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "40", "toda": "BFVG-SIKAPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "41", "toda": "ROBINSON", "full": "Robinson Homes", "city": "", "barangay": "Brgy. San Jose", "terminal": "RSSSATODA Office & Coop", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "42", "toda": "SSLTODA", "full": "San Isidro San Luis", "city": "Antipolo City", "barangay": "", "terminal": "Ito po sir ang mga terminal namin. P. Burgos sa lumang palengke, 7/11corner  C Lawis at Circumferential road, Brítany 1, Monte Oro, C, Lawis corner Maguey Rd., La Salle, Empress,  Montego, Fatima Village at Bagong palengke. Soon to be our future terminal Tropical Palm", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "43", "toda": "KALAYAAN", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "44", "toda": "I-MSOPMACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "45", "toda": "SLRPMATODA", "full": "Sitio San Lorenzo Ruiz Pamana Milleluce Ahon", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "46", "toda": "TAKTODA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "47", "toda": "CTPTODA", "full": "Sitio Calumpang Tanza P?", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "48", "toda": "TANAGTODA / T-TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "49", "toda": "FVRCTODA", "full": "FVR Road Sitio Cabading", "city": "", "barangay": "Brgy. San Juan", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "50", "toda": "GUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "51", "toda": "MHPRTODA", "full": "Marcos Highway Pinugay Rizza", "city": "Antipolo City", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "52", "toda": "MHBACSATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "53", "toda": "PANGMASA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "54", "toda": "PPCCBBTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "55", "toda": "KPASSTODA", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "56", "toda": "HPI TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "57", "toda": "CASHTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "58", "toda": "SAIKTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "59", "toda": "FHBSJG2TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "60", "toda": "KAMAGONG", "full": "", "city": "", "barangay": "cogeo-gate2", "terminal": "", "units": "green bajaj", "colors": "", "gmaps": "", "osm": ""}, {"num": "61", "toda": "BANATODA", "full": "Bagong Nayon", "city": "Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "62", "toda": "PAGTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "63", "toda": "CVG2ATODA (or CVG2T...?)", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "64", "toda": "SHAVICTODA", "full": "Sumulong Highway Antipolo Victory Mall iMall Cogeo", "city": "Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "65", "toda": "PPMTODA", "full": "Peñafrancia Palmera Masinag", "city": "Antipolo City", "barangay": "Brgy. Cupang", "terminal": "PPMTODA Terminal", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "66", "toda": "MM-TSOCTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "67", "toda": "MACUPATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "68", "toda": "MMATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "69", "toda": "GMCATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "70", "toda": "LPBA / LOUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "71", "toda": "HRQBMFTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "72", "toda": "BAMGUHTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "73", "toda": "TSSTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "74", "toda": "BUMTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "75", "toda": "ACN-TAMPTODA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "76", "toda": "P5Z8PATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "77", "toda": "PARECUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "78", "toda": "CMPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "79", "toda": "MESRUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "80", "toda": "MCMSLATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "red bajaj", "colors": "", "gmaps": "", "osm": ""}, {"num": "81", "toda": "CABPATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "82", "toda": "MHPCTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "83", "toda": "KBP PIMASTODA", "full": "[providence]", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "84", "toda": "MUNTINDILAW / BMLT-TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "85", "toda": "ANTIPOLO HILLS", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "86", "toda": "SPSIMABTODA", "full": "Sitio Pinagpala Sitio Mata Angono Binangonan", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "87", "toda": "BGRFATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "88", "toda": "RSZAPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "89", "toda": "HLPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "90", "toda": "TATODAI", "full": "Teresa Antipolo", "city": "Teresa, Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "91", "toda": "GLAPTODA", "full": "General Luna Antipolo Poblacion", "city": "Antipolo City", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "92", "toda": "MSSR-ESTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "93", "toda": "MHDPEXTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "94", "toda": "1CIRQTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "(no terminal)", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "95", "toda": "SAMMPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "96", "toda": "WHITEROCKTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "97", "toda": "MARCOPTODA", "full": "Marrero-Acop", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "98", "toda": "SCBMFTODA", "full": "Santa Cruz Blue Mountains Fatima", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "99", "toda": "MHDPEXTODA / VYTG2ATODA", "full": "Villa Ynares Taguisan Gate 2A", "city": "", "barangay": "Brgy. San Isidro", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "100", "toda": "NASHTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "101", "toda": "SUPER PALENGKE TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "102", "toda": "PASABI TODA", "full": "", "city": "", "barangay": "Brgy. San Juan", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "103", "toda": "ECPRLTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "104", "toda": "MAPHTODA", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "105", "toda": "VENZBLADTODA / SALAGTODA?", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "106", "toda": "CAMPDTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "107", "toda": "MASRTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "108", "toda": "PASRECUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "109", "toda": "SALAGTODA?", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "110", "toda": "STA. ELENA TODA", "full": "STA. ELENA village", "city": "", "barangay": "Brgy. San Jose", "terminal": "NOTE, kuya dan 110-103 goated guy", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "111", "toda": "KPGTODA", "full": "", "city": "", "barangay": "Brgy. Inarawan", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "112", "toda": "ASICTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "113", "toda": "SIPAGTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "114", "toda": "BANDERA BISTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "115", "toda": "SPACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "116", "toda": "LNUTODA", "full": "", "city": "", "barangay": "", "terminal": "(a.k.a. ligtasan, no terminal)", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "117", "toda": "BSRATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "118", "toda": "TAKBOTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "119", "toda": "MPMAC2TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "120", "toda": "ETRIKA ILAIA", "full": "", "city": "", "barangay": "", "terminal": "around victory mall iirc", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "121", "toda": "ETRIKE PURE EVS", "full": "", "city": "", "barangay": "", "terminal": "PureEVs E-trike Charging Station", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "122", "toda": "INARAWAN TODA", "full": "", "city": "", "barangay": "", "terminal": "Inuman Inarawan TODA", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "123", "toda": "ETRIKE-YULA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "124", "toda": "PBSTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "", "toda": "SITODA", "full": "Steve Inn", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}];
+var ATL_DB_DATA = [{"num": "1", "toda": "ACBTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "2", "toda": "AG2TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "3", "toda": "AHSLJTODA", "full": "Antipolo Hinapao San Lorenzo Joyous", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "pending edit", "osm": ""}, {"num": "4", "toda": "ALCHTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "5", "toda": "ACUATODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "6", "toda": "ADAMSTODA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "7", "toda": "APFMCTODA", "full": "", "city": "Antipolo City", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "8", "toda": "AMTODA", "full": "Antipolo Market", "city": "Antipolo City", "barangay": "Brgy. San Jose", "terminal": "AMTODA TERMINAL", "units": "400+", "colors": "", "gmaps": "//", "osm": ""}, {"num": "9", "toda": "ASTDA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "10", "toda": "ASACTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "11", "toda": "AYATDOA", "full": "Antipolo Yupangco Angono", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "pending edit", "osm": ""}, {"num": "12", "toda": "ASHTODA", "full": "Antipolo Sumulong Highway", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "13", "toda": "BETA", "full": "Bermuda Tricycle Association", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "14", "toda": "BPOACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "15", "toda": "CAPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "16", "toda": "LPATODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "17", "toda": "GEMCASHTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "Gemcashtoda", "units": "", "colors": "", "gmaps": "pending edit", "osm": ""}, {"num": "18", "toda": "(SHOPWISE) LJSCTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "19", "toda": "ADHSRLPTODA", "full": "Antipolo Dalig Hi-way San Roque Lores Plaza", "city": "Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "20", "toda": "MLQELCPTODA", "full": "M. L. Quezon Extension-Lico Circle Park", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "21", "toda": "EPRKLTODA", "full": "Eastview subd. Pines city Royale subd. Knights of columbus Loreland resort", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "22", "toda": "LAMPTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "23", "toda": "MVMAWTODA", "full": "Mia Vita Maia Alta Woodrow", "city": "", "barangay": "Brgy. Dalig", "terminal": "MV MAWTODA terminal", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "24", "toda": "DACTODA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "25", "toda": "PPBAPGNBTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "26", "toda": "MBMATODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "27", "toda": "P-NFLMPBWTODA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "28", "toda": "SFBPTODA", "full": "", "city": "", "barangay": "Brgy. Beverly Hills", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "29", "toda": "PACSTTODA", "full": "", "city": "", "barangay": "", "terminal": "PACSTTODA MAIN TERMINAL", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "30", "toda": "SHATDA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "31", "toda": "MOSPATODA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "32", "toda": "PVACTODA", "full": "Public Vicinity of Antipolo City", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "33", "toda": "PUMDA", "full": "Public Utility Motorcycle Drivers Association", "city": "", "barangay": "Brgy. San Jose", "terminal": "Antipolo Triangle Mall", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "34", "toda": "PAGKATTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "35", "toda": "UM-ADOTA", "full": "", "city": "", "barangay": "Brgy. Dalig", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "36", "toda": "PATATODA", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "37", "toda": "ASMPEGTODA", "full": "Antipolo Super Metro Puregold [speculative]", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "38", "toda": "SUG-SAFTTODA", "full": "Sunflower Upper Gumamela - Silihan Antipolo Federal Tibagan", "city": "", "barangay": "Brgy. Dalig", "terminal": "SUG-SAFTTODA Tricycle Terminal", "units": "", "colors": "", "gmaps": "", "osm": "//"}, {"num": "39", "toda": "SHIMACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "40", "toda": "BFVG-SIKAPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "41", "toda": "ROBINSON", "full": "Robinson Homes", "city": "", "barangay": "Brgy. San Jose", "terminal": "RSSSATODA Office & Coop", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "42", "toda": "SSLTODA", "full": "San Isidro San Luis", "city": "Antipolo City", "barangay": "", "terminal": "Ito po sir ang mga terminal namin. P. Burgos sa lumang palengke, 7/11corner  C Lawis at Circumferential road, Brítany 1, Monte Oro, C, Lawis corner Maguey Rd., La Salle, Empress,  Montego, Fatima Village at Bagong palengke. Soon to be our future terminal Tropical Palm", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "43", "toda": "KALAYAAN", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "44", "toda": "I-MSOPMACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "45", "toda": "SLRPMATODA", "full": "Sitio San Lorenzo Ruiz Pamana Milleluce Ahon", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "46", "toda": "TAKTODA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "47", "toda": "CTPTODA", "full": "Sitio Calumpang Tanza P?", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "48", "toda": "TANAGTODA / T-TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "49", "toda": "FVRCTODA", "full": "FVR Road Sitio Cabading", "city": "", "barangay": "Brgy. San Juan", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "50", "toda": "GUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "51", "toda": "MHPRTODA", "full": "Marcos Highway Pinugay Rizza", "city": "Antipolo City", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "52", "toda": "MHBACSATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "53", "toda": "PANGMASA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "54", "toda": "PPCCBBTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "55", "toda": "KPASSTODA", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "56", "toda": "HPI TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "57", "toda": "CASHTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "58", "toda": "SAIKTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "59", "toda": "FHBSJG2TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "60", "toda": "KAMAGONG", "full": "", "city": "", "barangay": "cogeo-gate2", "terminal": "", "units": "green bajaj", "colors": "", "gmaps": "", "osm": ""}, {"num": "61", "toda": "BANATODA", "full": "Bagong Nayon", "city": "Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "62", "toda": "PAGTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "63", "toda": "CVG2ATODA (or CVG2T...?)", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "64", "toda": "SHAVICTODA", "full": "Sumulong Highway Antipolo Victory Mall iMall Cogeo", "city": "Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "65", "toda": "PPMTODA", "full": "Peñafrancia Palmera Masinag", "city": "Antipolo City", "barangay": "Brgy. Cupang", "terminal": "PPMTODA Terminal", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "66", "toda": "MM-TSOCTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "67", "toda": "MACUPATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "68", "toda": "MMATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "69", "toda": "GMCATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "70", "toda": "LPBA / LOUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "71", "toda": "HRQBMFTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "72", "toda": "BAMGUHTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "73", "toda": "TSSTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "74", "toda": "BUMTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "75", "toda": "ACN-TAMPTODA", "full": "", "city": "", "barangay": "Brgy. Dela Paz", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "76", "toda": "P5Z8PATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "77", "toda": "PARECUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "78", "toda": "CMPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "79", "toda": "MESRUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "80", "toda": "MCMSLATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "red bajaj", "colors": "", "gmaps": "", "osm": ""}, {"num": "81", "toda": "CABPATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "82", "toda": "MHPCTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "83", "toda": "KBP PIMASTODA", "full": "[providence]", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "84", "toda": "MUNTINDILAW / BMLT-TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "85", "toda": "ANTIPOLO HILLS", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "86", "toda": "SPSIMABTODA", "full": "Sitio Pinagpala Sitio Mata Angono Binangonan", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "87", "toda": "BGRFATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "88", "toda": "RSZAPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "89", "toda": "HLPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "90", "toda": "TATODAI", "full": "Teresa Antipolo", "city": "Teresa, Antipolo City", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "91", "toda": "GLAPTODA", "full": "General Luna Antipolo Poblacion", "city": "Antipolo City", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "92", "toda": "MSSR-ESTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "93", "toda": "MHDPEXTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "94", "toda": "1CIRQTODA", "full": "", "city": "", "barangay": "Brgy. San Roque", "terminal": "(no terminal)", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "95", "toda": "SAMMPTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "96", "toda": "WHITEROCKTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "97", "toda": "MARCOPTODA", "full": "Marrero-Acop", "city": "", "barangay": "Brgy. San Roque", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "98", "toda": "SCBMFTODA", "full": "Santa Cruz Blue Mountains Fatima", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "99", "toda": "MHDPEXTODA / VYTG2ATODA", "full": "Villa Ynares Taguisan Gate 2A", "city": "", "barangay": "Brgy. San Isidro", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "100", "toda": "NASHTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "101", "toda": "SUPER PALENGKE TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "102", "toda": "PASABI TODA", "full": "", "city": "", "barangay": "Brgy. San Juan", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "103", "toda": "ECPRLTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "104", "toda": "MAPHTODA", "full": "", "city": "", "barangay": "Brgy. San Jose", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "105", "toda": "VENZBLADTODA / SALAGTODA?", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "106", "toda": "CAMPDTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "107", "toda": "MASRTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "108", "toda": "PASRECUTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "109", "toda": "SALAGTODA?", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "110", "toda": "STA. ELENA TODA", "full": "STA. ELENA village", "city": "", "barangay": "Brgy. San Jose", "terminal": "NOTE, kuya dan 110-103 goated guy", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "111", "toda": "KPGTODA", "full": "", "city": "", "barangay": "Brgy. Inarawan", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "112", "toda": "ASICTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "113", "toda": "SIPAGTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""}, {"num": "114", "toda": "BANDERA BISTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "115", "toda": "SPACTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "116", "toda": "LNUTODA", "full": "", "city": "", "barangay": "", "terminal": "(a.k.a. ligtasan, no terminal)", "units": "", "colors": "", "gmaps": "x (redirect)", "osm": ""}, {"num": "117", "toda": "BSRATODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "118", "toda": "TAKBOTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "119", "toda": "MPMAC2TODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "120", "toda": "ETRIKA ILAIA", "full": "", "city": "", "barangay": "", "terminal": "around victory mall iirc", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "121", "toda": "ETRIKE PURE EVS", "full": "", "city": "", "barangay": "", "terminal": "PureEVs E-trike Charging Station", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "122", "toda": "INARAWAN TODA", "full": "", "city": "", "barangay": "", "terminal": "Inuman Inarawan TODA", "units": "", "colors": "", "gmaps": "?", "osm": ""}, {"num": "123", "toda": "ETRIKE-YULA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}, {"num": "125", "toda": "SITODA", "full": "Steve Inn", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "", "osm": ""},
+{"num": "124", "toda": "PBSTODA", "full": "", "city": "", "barangay": "", "terminal": "", "units": "", "colors": "", "gmaps": "x", "osm": ""}];
 
+// ── BETA 2.3: DB columns (city/muni last, no gmaps/osm, lat/lng instead of terminal) ──
 var DB_COLS = [
-  {key:'num',    label:'#'},
-  {key:'toda',   label:'TODA'},
-  {key:'full',   label:'Full Name'},
-  {key:'barangay',label:'Barangay'},
-  {key:'terminal',label:'Terminal'},
-  {key:'units',  label:'Est. Units'},
-  {key:'colors', label:'Colors'},
-  {key:'lat',    label:'Latitude'},
-  {key:'lng',    label:'Longitude'},
-  {key:'city',   label:'City / Muni'},
+  {key:'num',      label:'#',           editable:true},
+  {key:'toda',     label:'TODA',        editable:true},
+  {key:'full',     label:'Full Name',   editable:true},
+  {key:'barangay', label:'Barangay',    editable:true},
+  {key:'lat',      label:'Latitude',    editable:false},
+  {key:'lng',      label:'Longitude',   editable:false},
+  {key:'units',    label:'Est. Units',  editable:true},
+  {key:'colors',   label:'Colors',      editable:true},
+  {key:'city',     label:'City / Muni', editable:true},
 ];
 
 var _dbSortCol = 0, _dbSortAsc = true, _dbFilter = '';
+// In-memory overrides for admin edits (toda_key → {col: value})
+var _dbEdits = {};
+try { var _de = localStorage.getItem('atl_db_edits'); if(_de) _dbEdits = JSON.parse(_de); } catch(e) {}
 
-function statusClass(v) {
-  if (!v) return '';
-  var l = v.toLowerCase();
-  if (l === '//' || l === 'done') return 'status-ok';
-  if (l.includes('pending') || l === '?') return 'status-pend';
-  if (l.includes('x')) return 'status-x';
-  return '';
+function saveDbEdits() {
+  try { localStorage.setItem('atl_db_edits', JSON.stringify(_dbEdits)); } catch(e) {}
+}
+
+// Build merged DB rows from static data + live markers + admin edits
+function buildDbRows() {
+  var merged = {};
+
+  // Start with static spreadsheet data
+  ATL_DB_DATA.forEach(function(r) {
+    var key = (r.toda||'').toUpperCase().replace(/\s+/g,'');
+    if (!key) return;
+    merged[key] = {
+      num: r.num||'', toda: r.toda||'', full: r.full||'',
+      barangay: r.barangay||'', lat: '', lng: '',
+      units: r.units||'', colors: r.colors||'', city: r.city||'',
+      _isNew: false
+    };
+  });
+
+  // Overlay live map terminals (one-way: terminal → DB, not vice versa)
+  Object.values(markerStore).forEach(function(e) {
+    var t = e.toda;
+    var key = (t.name||'').toUpperCase().replace(/\s+/g,'');
+    if (!key) return;
+    if (!merged[key]) {
+      // New terminal not in static data — add it highlighted
+      merged[key] = {
+        num:'', toda:t.name, full:'', barangay:'', lat:'', lng:'',
+        units:'', colors:'', city:'', _isNew: true
+      };
+    }
+    var m = merged[key];
+    // Sync fields from live terminal
+    if (t.n) m.num = String(t.n);
+    if (t.full) m.full = t.full;
+    if (t.lat) m.lat = t.lat.toFixed(6);
+    if (t.lng) m.lng = t.lng.toFixed(6);
+    if (t.city) m.city = t.city;
+    if (Array.isArray(t.colors) && t.colors.length) {
+      m.colors = t.colors.map(function(c){return c.label||c.hex||'';}).filter(Boolean).join(', ');
+    }
+  });
+
+  // Apply admin edits on top
+  Object.keys(_dbEdits).forEach(function(key) {
+    if (merged[key]) {
+      Object.assign(merged[key], _dbEdits[key]);
+    }
+  });
+
+  return merged;
 }
 
 function renderDb() {
   var q = _dbFilter.toLowerCase();
-  // Build merged rows: start with static data, overlay live terminals
-  var merged = {};
-  ATL_DB_DATA.forEach(function(r){
-    var key = (r.toda||'').toUpperCase();
-    if(!key) return;
-    merged[key] = {
-      num: r.num||'',
-      toda: r.toda||'',
-      full: r.full||'',
-      barangay: r.barangay||'',
-      terminal: r.terminal||'',
-      units: r.units||'',
-      colors: r.colors||'',
-      lat: '',
-      lng: '',
-      city: r.city||''
-    };
+  var merged = buildDbRows();
+  var rows = Object.values(merged).filter(function(r) {
+    if (!q) return true;
+    return DB_COLS.some(function(c) { return (r[c.key]||'').toLowerCase().includes(q); });
   });
-  // Overlay live markers
-  Object.values(markerStore).forEach(function(e){
-    var t = e.toda;
-    var key = (t.name||'').toUpperCase();
-    if(!key) return;
-    if(!merged[key]) merged[key] = {num:'',toda:t.name,full:'',barangay:'',terminal:'',units:'',colors:'',lat:'',lng:'',city:''};
-    var m = merged[key];
-    if(t.n) m.num = String(t.n);
-    if(t.full) m.full = t.full;
-    if(t.terminal) m.terminal = t.terminal;
-    if(t.lat) m.lat = t.lat.toFixed(6);
-    if(t.lng) m.lng = t.lng.toFixed(6);
-    if(t.city) m.city = t.city;
-    if(Array.isArray(t.colors) && t.colors.length){
-      m.colors = t.colors.map(function(c){return c.label||c.hex||'';}).filter(Boolean).join(', ');
-    }
-  });
-  var rows = Object.values(merged).filter(function(r){
-    if(!q) return true;
-    return DB_COLS.some(function(c){ return (r[c.key]||'').toLowerCase().includes(q); });
-  });
+
   var sk = DB_COLS[_dbSortCol].key;
-  rows = rows.slice().sort(function(a,b){
-    var av=(a[sk]||'').toString(), bv=(b[sk]||'').toString();
-    var an=parseFloat(av), bn=parseFloat(bv);
-    if(!isNaN(an)&&!isNaN(bn)) return _dbSortAsc?an-bn:bn-an;
-    return _dbSortAsc?av.localeCompare(bv):bv.localeCompare(av);
+  rows = rows.slice().sort(function(a, b) {
+    var av = (a[sk]||'').toString(), bv = (b[sk]||'').toString();
+    var an = parseFloat(av), bn = parseFloat(bv);
+    if (!isNaN(an) && !isNaN(bn)) return _dbSortAsc ? an-bn : bn-an;
+    return _dbSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
   });
+
   document.getElementById('db-count').textContent = rows.length + ' shown';
-  var thead=document.getElementById('db-thead'); thead.innerHTML='';
-  var htr=document.createElement('tr');
-  DB_COLS.forEach(function(col,ci){
-    var th=document.createElement('th');
-    th.textContent=col.label+(_dbSortCol===ci?(_dbSortAsc?' ↑':' ↓'):'');
-    th.onclick=function(){ if(_dbSortCol===ci)_dbSortAsc=!_dbSortAsc; else{_dbSortCol=ci;_dbSortAsc=true;} renderDb(); };
+
+  // Show edit hint for admins
+  var hint = document.getElementById('db-edit-hint');
+  var lbl = document.getElementById('db-footer-label');
+  if (hint) hint.style.display = adminSession ? 'inline' : 'none';
+  if (lbl) lbl.style.display = adminSession ? 'none' : 'inline';
+
+  // Header
+  var thead = document.getElementById('db-thead');
+  thead.innerHTML = '';
+  var htr = document.createElement('tr');
+  DB_COLS.forEach(function(col, ci) {
+    var th = document.createElement('th');
+    th.textContent = col.label + (_dbSortCol===ci ? (_dbSortAsc?' ↑':' ↓') : '');
+    th.onclick = function() {
+      if (_dbSortCol===ci) _dbSortAsc = !_dbSortAsc;
+      else { _dbSortCol = ci; _dbSortAsc = true; }
+      renderDb();
+    };
     htr.appendChild(th);
   });
   thead.appendChild(htr);
-  var tbody=document.getElementById('db-tbody'); tbody.innerHTML='';
-  rows.forEach(function(row){
-    var tr=document.createElement('tr');
-    var rowName=(row.toda||'').toUpperCase();
-    var onMap=Object.values(markerStore).some(function(e){
-      return (e.toda&&e.toda.name||'').toUpperCase()===rowName;
+
+  // Body
+  var tbody = document.getElementById('db-tbody');
+  tbody.innerHTML = '';
+  rows.forEach(function(row) {
+    var tr = document.createElement('tr');
+    var rowKey = (row.toda||'').toUpperCase().replace(/\s+/g,'');
+    var rowName = (row.toda||'').toUpperCase();
+
+    // Highlight: blue if has map pin, green-tint if new (not in original sheet)
+    var onMap = Object.values(markerStore).some(function(e) {
+      return (e.toda&&e.toda.name||'').toUpperCase() === rowName;
     });
-    if(onMap) tr.classList.add('db-highlight');
-    DB_COLS.forEach(function(col){
-      var td=document.createElement('td');
-      td.textContent=row[col.key]||'';
-      td.title=row[col.key]||'';
-      if(col.key==='num') td.className='num';
+    if (row._isNew) tr.classList.add('db-new-row');
+    else if (onMap) tr.classList.add('db-highlight');
+
+    DB_COLS.forEach(function(col) {
+      var td = document.createElement('td');
+      var val = row[col.key] || '';
+      td.textContent = val;
+      td.title = val;
+      if (col.key === 'num') td.className = 'num';
+
+      // Admin: make editable cells clickable (except lat/lng which come from map)
+      if (col.editable && adminSession) {
+        td.classList.add('db-editable');
+        td.addEventListener('click', function(ev) {
+          ev.stopPropagation();
+          if (td.querySelector('input')) return; // already editing
+          var inp = document.createElement('input');
+          inp.className = 'db-cell-input';
+          inp.value = td.textContent;
+          td.textContent = '';
+          td.appendChild(inp);
+          inp.focus();
+          inp.select();
+          function saveEdit() {
+            var newVal = inp.value.trim();
+            td.textContent = newVal;
+            // Save to in-memory edits
+            if (!_dbEdits[rowKey]) _dbEdits[rowKey] = {};
+            _dbEdits[rowKey][col.key] = newVal;
+            saveDbEdits();
+            // If editing toda name or full name, also sync to matching map terminals
+            if ((col.key === 'full' || col.key === 'num' || col.key === 'colors') && sb && adminSession) {
+              var matches = Object.entries(markerStore).filter(function(kv) {
+                return (kv[1].toda&&kv[1].toda.name||'').toUpperCase() === rowName;
+              });
+              matches.forEach(async function(kv) {
+                var sId = kv[1].supabaseId;
+                if (!sId) return;
+                var patch = {};
+                if (col.key === 'full') { patch.full_name = newVal; kv[1].toda.full = newVal; }
+                if (col.key === 'num') { patch.number = parseInt(newVal)||null; kv[1].toda.n = parseInt(newVal)||null; }
+                if (col.key === 'colors') { /* colors are complex, skip auto-sync */ }
+                if (Object.keys(patch).length) await sb.from('todas_admin').update(patch).eq('id', sId);
+              });
+            }
+          }
+          inp.addEventListener('blur', saveEdit);
+          inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { inp.blur(); }
+            if (e.key === 'Escape') { td.textContent = val; }
+          });
+        });
+      }
       tr.appendChild(td);
     });
-    tr.onclick=function(){
-      var matches=Object.entries(markerStore).filter(function(kv){
-        return (kv[1].toda&&kv[1].toda.name||'').toUpperCase()===rowName;
+
+    // Row click — jump to map
+    tr.addEventListener('click', function() {
+      var matches = Object.entries(markerStore).filter(function(kv) {
+        return (kv[1].toda&&kv[1].toda.name||'').toUpperCase() === rowName;
       });
-      if(matches.length){
+      if (matches.length) {
         closeModal('modal-database');
-        if(matches.length===1){
-          var t=matches[0][1].toda;
-          map.flyTo([t.lat,t.lng],16,{duration:0.8});
-          selectPin(matches[0][0]); currentPanelKey=matches[0][0]; openPanel(t);
-          showToast(row.toda+' — jumped to map','success');
+        if (matches.length === 1) {
+          var t = matches[0][1].toda;
+          map.flyTo([t.lat, t.lng], 16, {duration: 0.8});
+          selectPin(matches[0][0]); currentPanelKey = matches[0][0]; openPanel(t);
+          showToast(row.toda + ' — jumped to map', 'success');
         } else {
-          // Fit all matching terminals
-          var lats=[],lngs=[];
-          matches.forEach(function(m){ lats.push(m[1].toda.lat); lngs.push(m[1].toda.lng); highlightPin(m[0],m[1].toda); });
-          var bounds=[[Math.min.apply(null,lats),Math.min.apply(null,lngs)],[Math.max.apply(null,lats),Math.max.apply(null,lngs)]];
-          map.fitBounds(bounds,{padding:[50,50],duration:0.8});
-          showToast(row.toda+' — '+matches.length+' terminals shown','success');
+          var lats=[], lngs=[];
+          matches.forEach(function(m) {
+            lats.push(m[1].toda.lat); lngs.push(m[1].toda.lng);
+            highlightPin(m[0], m[1].toda);
+          });
+          var bounds = [[Math.min.apply(null,lats),Math.min.apply(null,lngs)],[Math.max.apply(null,lats),Math.max.apply(null,lngs)]];
+          map.fitBounds(bounds, {padding:[50,50], duration:0.8});
+          showToast(row.toda + ' — ' + matches.length + ' terminals shown', 'success');
         }
-      } else if(row.lat && row.lng){
+      } else if (row.lat && row.lng) {
         closeModal('modal-database');
-        map.flyTo([parseFloat(row.lat),parseFloat(row.lng)],16,{duration:0.8});
-        showToast(row.toda+' — location from database','');
+        map.flyTo([parseFloat(row.lat), parseFloat(row.lng)], 16, {duration: 0.8});
+        showToast(row.toda + ' — location from database', '');
       }
-    };
+    });
     tbody.appendChild(tr);
   });
 }
