@@ -2093,6 +2093,7 @@ window.openVerify=async function(){
       var rb=document.createElement('button');rb.className='btn-reject';rb.textContent='✕ Reject';
       rb.addEventListener('click',(function(id){return function(){rejectContrib(id,card);};})(c.id));
       acts.appendChild(ab);acts.appendChild(rb);card.appendChild(acts);
+      list.appendChild(card);
     });
   }catch(e){list.innerHTML='<div class="no-contribs">Error: '+e.message+'</div>';}
 };
