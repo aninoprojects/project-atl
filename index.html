@@ -556,6 +556,10 @@
   #search-bar{margin:0 8px;max-width:calc(100% - 16px);}
 }
 
+
+.toda-pin.selected{box-shadow:0 0 0 4px rgba(249,115,22,0.5),0 0 0 8px rgba(249,115,22,0.2);animation:pulse-pin 1.5s infinite;z-index:1000!important;}
+@keyframes pulse-pin{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+
 </style>
 </head>
 <body>
@@ -926,7 +930,7 @@
     <!-- CHANGELOG -->
     <div class="about-section" id="tab-changelog">
       <div class="about-prose">
-        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;color:var(--accent-l);text-transform:uppercase;margin-bottom:20px;">⚠ Project ATL is still in Beta — features and data are actively being developed.</p>
+        <div style="text-align:center;margin-bottom:16px;padding:8px;background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent-l);">⚠ Project ATL is in Beta — features actively developed</div>
         <div class="changelog-entry">
           <div><span class="changelog-version">β 3.0</span><span class="changelog-date">May 2026</span></div>
           <div class="changelog-tags"><span class="tag tag-change">Change</span></div>
@@ -3002,6 +3006,131 @@ document.getElementById('db-filter').addEventListener('input', function() {
   _dbFilter = this.value;
   renderDb();
 });
+
+
+// Status-smart forms
+function updateFormVisibility(prefix){
+  var status = document.getElementById(prefix+'-status').value;
+  var numGroup = document.getElementById(prefix+'-number').closest('.form-group');
+  var nameGroup = document.getElementById(prefix+'-name').closest('.form-group');
+  var fullnameGroup = document.getElementById(prefix+'-fullname').closest('.form-group');
+  var colorsGroup = document.querySelector('#'+prefix+'-colors')?.closest('.form-group');
+  var lastGroup = document.getElementById(prefix+'-last')?.closest('.form-group');
+  
+  if(status==='kolorum'){
+    if(numGroup) numGroup.style.display='none';
+    if(nameGroup) nameGroup.querySelector('label').textContent='TODA Name (optional)';
+    if(fullnameGroup) fullnameGroup.style.display='none';
+    if(colorsGroup) colorsGroup.style.display='none';
+    if(lastGroup) lastGroup.style.display='none';
+  } else if(status==='draft'){
+    if(numGroup) numGroup.style.display='none';
+    if(nameGroup) nameGroup.querySelector('label').textContent='TODA Abbreviation *';
+    if(fullnameGroup) fullnameGroup.style.display='';
+    if(colorsGroup) colorsGroup.style.display='';
+    if(lastGroup) lastGroup.style.display='none';
+  } else {
+    if(numGroup) numGroup.style.display='';
+    if(nameGroup) nameGroup.querySelector('label').textContent='TODA Abbreviation *';
+    if(fullnameGroup) fullnameGroup.style.display='';
+    if(colorsGroup) colorsGroup.style.display='';
+    if(lastGroup) lastGroup.style.display='';
+    if(lastGroup) document.getElementById(prefix+'-last').required=true;
+  }
+}
+document.getElementById('f-status')?.addEventListener('change',()=>updateFormVisibility('f'));
+document.getElementById('c-status')?.addEventListener('change',()=>updateFormVisibility('c'));
+// init
+setTimeout(()=>{updateFormVisibility('f');updateFormVisibility('c');},500);
+
+
+// Dynamic affiliations with auto-learn
+async function loadAffiliations(){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.from('todas_admin').select('affiliations');
+    if(error) return;
+    const set=new Set();
+    data.forEach(r=>{ (r.affiliations||[]).forEach(a=>{ if(a.name) set.add(a.name.trim()); }); });
+    // also load from affiliations table if exists
+    const affList=Array.from(set).sort();
+    window._affiliations=affList;
+    // populate datalists
+    ['f-affil-input','c-affil-input'].forEach(id=>{
+      const inp=document.getElementById(id);
+      if(!inp) return;
+      let dl=document.getElementById(id+'-list');
+      if(!dl){ dl=document.createElement('datalist'); dl.id=id+'-list'; document.body.appendChild(dl); inp.setAttribute('list',dl.id); }
+      dl.innerHTML=affList.map(a=>`<option value="${a}">`).join('');
+    });
+  }catch(e){}
+}
+function normalizeAffiliation(s){ return s.trim().toLowerCase().replace(/\s+/g,' ').replace(/\w/g,c=>c.toUpperCase()); }
+// Hook into existing addAffiliation function
+const _origAddAff = window.addAffiliation;
+window.addAffiliation = function(prefix){
+  const inp=document.getElementById(prefix+'-affil-input');
+  if(!inp) return;
+  let val=normalizeAffiliation(inp.value);
+  if(!val) return;
+  // add to global list if new
+  if(window._affiliations && !window._affiliations.includes(val)){
+    window._affiliations.push(val);
+    window._affiliations.sort();
+    loadAffiliations(); // refresh datalist
+    // save to affiliations table
+    if(sb) sb.from('affiliations').upsert({name:val}).then(()=>{});
+  }
+  if(_origAddAff) _origAddAff(prefix);
+};
+// load on start
+setTimeout(loadAffiliations,1000);
+
+
+// Local areas - save drawn polygons
+async function saveLocalArea(name, geojson){
+  if(!sb || !adminSession) return;
+  try{
+    await sb.from('local_areas').upsert({name, geojson, created_by:adminSession.user.id});
+    toast('Local area saved','success');
+    loadLocalAreas();
+  }catch(e){ toast('Error saving area','error'); }
+}
+async function loadLocalAreas(){
+  if(!sb) return;
+  const {data}=await sb.from('local_areas').select('*');
+  window._localAreas=data||[];
+  // clear existing layers
+  if(window._areaLayer) map.removeLayer(window._areaLayer);
+  window._areaLayer=L.layerGroup().addTo(map);
+  (data||[]).forEach(a=>{
+    try{
+      const layer=L.geoJSON(a.geojson,{style:{color:'#F97316',weight:2,fillOpacity:0.1}});
+      layer.bindTooltip(`"${a.name}"`,{permanent:false});
+      window._areaLayer.addLayer(layer);
+    }catch(e){}
+  });
+  window._areaLayer.eachLayer(l=>l.setStyle({opacity:0})); // default off
+}
+function toggleLocalAreas(){
+  if(!window._areaLayer) return;
+  const show = window._areasVisible = !window._areasVisible;
+  window._areaLayer.eachLayer(l=>l.setStyle({opacity:show?0.7:0, fillOpacity:show?0.1:0}));
+  if(show && window._localAreas.length){ const b=window._areaLayer.getBounds(); if(b.isValid()) map.fitBounds(b,{padding:[30,30]}); }
+}
+// init
+setTimeout(loadLocalAreas,1500);
+
+
+// Realtime contributions notification
+if(sb){
+  sb.channel('contribs').on('postgres_changes',{event:'INSERT',schema:'public',table:'contributions'},payload=>{
+    if(adminSession){
+      document.getElementById('notif-dot').style.display='block';
+      toast('New contribution pending','');
+    }
+  }).subscribe();
+}
 
 })();
 </script>
