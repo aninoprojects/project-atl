@@ -1,3 +1,15 @@
+<!--
+  PROJECT ATL - MERGED BUILD (May 2026)
+  Fixes applied vs Claude version:
+  - Single-file architecture (index + about merged) to avoid theme drift
+  - Centralized CSS variables for orange theme, no hardcoded rgba(10,15,26)
+  - Terminal Name → Terminal Type (select with 4 options)
+  - Search input: readonly+onfocus to prevent password manager autofill, proper autocomplete attributes
+  - Header darkened to var(--accent-d) for contrast
+  - Mobile: modal padding, tab scrolling, search bar max-width
+  - Accessibility: role=tablist, aria attributes, focus states preserved
+  - Avoided Claude pattern: no duplicate Supabase init, no string-replace color hacks
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -198,6 +210,9 @@
     .form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
     .form-group label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);}
     .form-group input,.form-group select,.form-group textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none;width:100%;transition:border-color 0.15s;}
+    .form-group select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:5px;font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none;width:100%;transition:border-color 0.15s;}
+    .form-group select:focus{border-color:var(--accent);}
+
     .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);}
     .form-group select option{background:var(--bg);}
     .form-group textarea{resize:vertical;min-height:56px;}
@@ -533,7 +548,15 @@
       #db-table td,#db-table th{padding:5px 8px;font-size:0.65rem;}
       #db-filter{width:110px;}
     }
-  </style>
+  
+@media (max-width:640px){
+  #modal-about .modal-box{max-width:95vw;padding:20px 16px;}
+  .about-tabs{overflow-x:auto;flex-wrap:nowrap;}
+  #topbar{padding:0 12px;}
+  #search-bar{margin:0 8px;max-width:calc(100% - 16px);}
+}
+
+</style>
 </head>
 <body>
 
@@ -601,7 +624,7 @@
       </div>
     </div>
     <div id="panel-body">
-      <div class="detail-row"><div class="detail-label">Terminal Name</div><div class="detail-value" id="d-terminal">—</div></div>
+      <div class="detail-row"><div class="detail-label">Terminal Type</div><div class="detail-value" id="d-terminal">—</div></div>
       <div class="detail-row"><div class="detail-label">Nearby Landmarks</div><div class="detail-value" id="d-landmarks">—</div></div>
       <div class="detail-row"><div class="detail-label">Colors</div><div id="d-colors" class="color-swatches"></div></div>
       <div class="detail-row" id="d-affil-row" style="display:none"><div class="detail-label">Affiliations</div><div id="d-affiliations" style="display:flex;flex-wrap:wrap;gap:5px;padding:2px 0;"></div></div>
@@ -696,7 +719,7 @@
     <div class="form-group"><label>Full Cooperative Name</label><input type="text" id="f-fullname" placeholder="e.g. Antipolo Public Freight..."/></div>
     <hr class="form-divider"/>
     <div class="form-section-label">Location</div>
-    <div class="form-group"><label>Terminal Name</label><input type="text" id="f-terminal" placeholder="e.g. Tubigan Terminal"/></div>
+    <div class="form-group"><label>Terminal Type</label><select id="f-terminal"><option value="">Select type...</option><option>Main Terminal</option><option>Sub-terminal</option><option>Volume Terminal</option><option>Terminal</option></select></div>
     <div class="form-group"><label>Nearby Landmarks</label><input type="text" id="f-landmarks" placeholder="e.g. O!Save Tubigan"/></div>
     <div class="form-row">
       <div class="form-group"><label>Latitude *</label><input type="number" id="f-lat" step="0.0000001" placeholder="14.5805..."/></div>
@@ -785,7 +808,7 @@
 
     <hr class="form-divider"/>
     <div class="form-section-label">Location</div>
-    <div class="form-group"><label>Terminal Name</label><input type="text" id="c-terminal" placeholder="e.g. Tubigan Terminal"/></div>
+    <div class="form-group"><label>Terminal Type</label><select id="c-terminal"><option value="">Select type...</option><option>Main Terminal</option><option>Sub-terminal</option><option>Volume Terminal</option><option>Terminal</option></select></div>
     <div class="form-group"><label>Nearby Landmarks</label><input type="text" id="c-landmarks" placeholder="e.g. Near Jollibee"/></div>
     <div class="form-row">
       <div class="form-group"><label>Latitude *</label><input type="number" id="c-lat" step="0.0000001" placeholder="14.5805..."/></div>
@@ -861,12 +884,12 @@
   <div class="modal-box" style="max-width:600px;">
     <button class="modal-close" type="button" onclick="closeModal('modal-about')">✕</button>
     <div class="modal-title">About Project ATL</div>
-    <div class="about-tabs">
-      <button class="about-tab active" onclick="switchAboutTab('about')">About</button>
-      <button class="about-tab" onclick="switchAboutTab('changelog')">Changelog</button>
-      <button class="about-tab" onclick="switchAboutTab('contribute')">Contribute</button>
-      <button class="about-tab" onclick="switchAboutTab('privacy')">Privacy Policy</button>
-      <button class="about-tab" onclick="switchAboutTab('terms')">Terms</button>
+    <div class="about-tabs" role="tablist" aria-label="About sections">
+      <button class="about-tab active" role="tab" aria-selected="true" aria-controls="tab-about" onclick="switchAboutTab('about')">About</button>
+      <button class="about-tab" role="tab" aria-selected="false" aria-controls="tab-changelog" onclick="switchAboutTab('changelog')">Changelog</button>
+      <button class="about-tab" role="tab" aria-selected="false" aria-controls="tab-contribute" onclick="switchAboutTab('contribute')">Contribute</button>
+      <button class="about-tab" role="tab" aria-selected="false" aria-controls="tab-privacy" onclick="switchAboutTab('privacy')">Privacy Policy</button>
+      <button class="about-tab" role="tab" aria-selected="false" aria-controls="tab-terms" onclick="switchAboutTab('terms')">Terms</button>
     </div>
 
     <!-- ABOUT -->
