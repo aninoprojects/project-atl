@@ -560,6 +560,25 @@
 .toda-pin.selected{box-shadow:0 0 0 4px rgba(249,115,22,0.5),0 0 0 8px rgba(249,115,22,0.2);animation:pulse-pin 1.5s infinite;z-index:1000!important;}
 @keyframes pulse-pin{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
 
+
+/* Sidebar redesign - idle mode compact */
+#panel{transition:all 0.3s ease;}
+#panel:not(.has-content){top:auto!important;bottom:12px;height:auto;max-height:180px;}
+#panel:not(.has-content) #panel-empty{display:none!important;}
+#panel.has-content{top:calc(var(--topbar-h) + 12px);bottom:12px;height:auto;}
+
+/* Remove large logo background, make small thumb */
+#panel-logo{height:64px!important;width:64px!important;border-radius:8px!important;position:absolute!important;left:16px;top:16px;overflow:hidden;cursor:pointer;z-index:2;}
+#panel-logo-img{object-fit:cover!important;}
+#panel-logo-text{display:none!important;}
+#panel-header{padding-left:92px!important;min-height:80px;}
+
+/* Make image clickable - add modal */
+#panel-logo{cursor:pointer;}
+
+/* Routes category - move fullname */
+#panel-fullname{font-size:0.9rem;color:var(--text);margin-top:4px;}
+
 </style>
 </head>
 <body>
@@ -1445,8 +1464,8 @@ var panelEmpty=document.getElementById('panel-empty');
 var panelLegend=document.getElementById('panel-legend');
 var panelDetail=document.getElementById('panel-detail');
 
-function showEmpty(){panelEmpty.classList.remove('hidden');panelLegend.style.display='';panelDetail.classList.add('hidden');}
-function showDetail(){panelEmpty.classList.add('hidden');panelLegend.style.display='none';panelDetail.classList.remove('hidden');}
+function showEmpty(){panelEmpty.classList.remove('hidden');panelLegend.style.display='';panelDetail.classList.add('hidden');document.getElementById('panel').classList.remove('has-content');}
+function showDetail(){panelEmpty.classList.add('hidden');panelLegend.style.display='none';panelDetail.classList.remove('hidden');document.getElementById('panel').classList.add('has-content');}
 
 function hav(la1,lo1,la2,lo2){var R=6371000,p1=la1*Math.PI/180,p2=la2*Math.PI/180,dp=(la2-la1)*Math.PI/180,dl=(lo2-lo1)*Math.PI/180,a=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function fmtD(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
@@ -3131,6 +3150,12 @@ if(sb){
     }
   }).subscribe();
 }
+
+
+document.getElementById('panel-logo')?.addEventListener('click',function(){
+  const img=document.getElementById('panel-logo-img');
+  if(img && img.src){ window.open(img.src,'_blank'); }
+});
 
 })();
 </script>
