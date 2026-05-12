@@ -151,7 +151,7 @@
     #panel-logo-placeholder{width:100%;height:100%;display:flex;}
     .logo-color-bar{height:100%;flex:1;}
     #panel-logo-text{position:absolute;font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;color:rgba(255,255,255,0.9);text-shadow:0 1px 6px rgba(0,0,0,0.7);}
-    #panel-close{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.35);border:none;color:white;font-size:0.8rem;cursor:pointer;padding:4px 7px;border-radius:3px;z-index:10;}
+    #panel-close{position:absolute;top:12px;right:12px;z-index:10;background:rgba(0,0,0,0.4);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.35);border:none;color:white;font-size:0.8rem;cursor:pointer;padding:4px 7px;border-radius:3px;z-index:10;}
     #panel-close:hover{background:rgba(0,0,0,0.6);}
 
     /* Panel header */
@@ -635,8 +635,8 @@
       <img id="panel-logo-img" src="" alt="TODA logo" />
       <div id="panel-logo-placeholder"></div>
       <div id="panel-logo-text"></div>
-      <button id="panel-close" type="button">✕</button>
     </div>
+    <button id="panel-close" type="button">✕</button>
     <div id="panel-header">
       <div class="panel-number-row">
         <span id="panel-number" class="panel-num" style="display:none"></span>
@@ -3159,6 +3159,16 @@ if(sb){
 document.getElementById('panel-logo')?.addEventListener('click',function(){
   const img=document.getElementById('panel-logo-img');
   if(img && img.src){ window.open(img.src,'_blank'); }
+});
+
+
+// Fix close button - prevent opening image
+document.getElementById('panel-close')?.addEventListener('click',function(e){ e.stopPropagation(); closePanel(); currentPanelKey=null; });
+// Fix logo click - don't trigger when clicking close
+document.getElementById('panel-logo')?.addEventListener('click',function(e){
+  e.stopPropagation();
+  const img=document.getElementById('panel-logo-img');
+  if(img && img.src && img.style.display!=='none'){ window.open(img.src,'_blank'); }
 });
 
 })();
