@@ -1,31 +1,32 @@
+<!-- ABOUT PAGE - ORANGE THEME FIX (replaces blue Claude version) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>About — Project ATL</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230e2a45'/%3E%3Ctext y='24' x='3' font-size='22'%3E🛺%3C/text%3E%3C/svg%3E"/>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23C2410C'/%3E%3Ctext y='24' x='3' font-size='22'%3E🛺%3C/text%3E%3C/svg%3E"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500&display=swap"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     :root{
-      --accent:#2196F3;--accent-d:#1565C0;--accent-l:#64B5F6;
-      --bg:#0e1f33;--bg-mid:#132840;--bg-light:#1a3554;--border:#1e3f63;
-      --text:#ddeeff;--muted:#6b90b5;
+      --accent:#F97316;--accent-d:#C2410C;--accent-l:#FB923C;
+      --bg:#1c120a;--bg-mid:#26160c;--bg-light:#3a2212;--border:#6b3d1c;
+      --text:#fff4e6;--muted:#d0a373;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
     /* TOPBAR */
-    #topbar{position:sticky;top:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--bg);border-bottom:1px solid var(--border);z-index:100;}
-    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent-l);text-decoration:none;}
-    .logo span{color:var(--text);}
-    .back-btn{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;background:var(--bg-light);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;text-decoration:none;transition:all 0.15s;}
+    #topbar{position:sticky;top:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--accent-d);border-bottom:1px solid #9a3412;z-index:100;}
+    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:#ffffff;text-decoration:none;}
+    .logo span{color:#ffffff;}
+    .back-btn{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.3);color:#ffffff;padding:5px 12px;border-radius:6px;cursor:pointer;text-decoration:none;transition:all 0.15s;}
     .back-btn:hover{border-color:var(--muted);color:var(--text);}
 
     /* BETA BANNER */
-    .beta-banner{background:rgba(33,150,243,0.08);border-bottom:1px solid rgba(33,150,243,0.2);padding:10px 24px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-l);}
+    .beta-banner{background:rgba(249,115,22,0.08);border-bottom:1px solid rgba(249,115,22,0.25);padding:10px 24px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-l);}
 
     /* LAYOUT */
     .container{max-width:760px;margin:0 auto;padding:40px 24px 80px;}
@@ -50,9 +51,9 @@
 
     /* EDITABLE CONTENT */
     .content-display{white-space:pre-wrap;}
-    .btn-edit{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.07em;text-transform:uppercase;background:rgba(33,150,243,0.08);border:1px solid rgba(33,150,243,0.3);color:var(--accent-l);padding:5px 12px;border-radius:4px;cursor:pointer;margin-bottom:16px;transition:all 0.15s;display:none;}
+    .btn-edit{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.07em;text-transform:uppercase;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.35);color:var(--accent-l);padding:5px 12px;border-radius:4px;cursor:pointer;margin-bottom:16px;transition:all 0.15s;display:none;}
     body.admin-mode .btn-edit{display:inline-flex;align-items:center;gap:5px;}
-    .btn-edit:hover{background:rgba(33,150,243,0.15);}
+    .btn-edit:hover{background:rgba(249,115,22,0.15);}
     .content-editor{width:100%;min-height:280px;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--text);padding:12px;font-family:'DM Sans',sans-serif;font-size:0.88rem;line-height:1.8;resize:vertical;outline:none;display:none;margin-bottom:10px;}
     .btn-save{display:none;width:100%;padding:10px;border:none;border-radius:5px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;margin-top:4px;}
     .btn-save:hover{opacity:0.88;}
@@ -71,7 +72,7 @@
     .cl-ul li{margin-bottom:3px;}
 
     /* CONTRIBUTE SECTION */
-    .contribute-cta{background:rgba(33,150,243,0.06);border:1px solid rgba(33,150,243,0.2);border-radius:8px;padding:20px;margin-top:16px;}
+    .contribute-cta{background:rgba(249,115,22,0.06);border:1px solid rgba(33,150,243,0.2);border-radius:8px;padding:20px;margin-top:16px;}
     .btn-cta{display:inline-block;padding:10px 20px;border:none;border-radius:5px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;text-decoration:none;margin-top:12px;transition:opacity 0.15s;}
     .btn-cta:hover{opacity:0.88;}
 
@@ -82,12 +83,14 @@
     #toast.error{background:#b71c1c;}
 
     /* Login bar for admin */
-    #admin-bar{display:flex;align-items:center;gap:10px;padding:8px 24px;background:rgba(33,150,243,0.06);border-bottom:1px solid rgba(33,150,243,0.15);font-size:0.78rem;}
+    #admin-bar{display:flex;align-items:center;gap:10px;padding:8px 24px;background:rgba(249,115,22,0.06);border-bottom:1px solid rgba(249,115,22,0.2);font-size:0.78rem;}
     #admin-bar input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:4px;font-size:0.78rem;outline:none;width:160px;}
-    #admin-bar input:focus{border-color:var(--accent);}
+    #admin-bar input:focus{border-color:var(--accent);outline:none;}
     .admin-bar-btn{background:var(--accent);border:none;color:white;padding:5px 12px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;}
     #admin-bar-status{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--muted);}
     #admin-bar-status.ok{color:#81c784;}
+  
+    @media (max-width:640px){.container{padding:24px 16px 60px;}#topbar{padding:0 16px;}.tabs{overflow-x:auto;}}
   </style>
 </head>
 <body>
