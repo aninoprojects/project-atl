@@ -86,7 +86,7 @@
       --muted:     #d0a373;
       --yellow:    #F5C842;
       --robinsons: #CC2200;
-      --confirmed: #f59e0b;
+      --confirmed: #42A5F5;
       --draft:     #F5C842;
       --kolorum:   #e53935;
       --topbar-h:  50px;
@@ -317,7 +317,7 @@
     /* Pin styles */
     .toda-pin{border-radius:50%;cursor:pointer;transition:transform 0.15s;}
     .toda-pin:hover{transform:scale(1.4);}
-    .toda-pin.confirmed{background:var(--confirmed);box-shadow:0 0 0 3px rgba(245,158,11,0.25),0 2px 6px rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.3);}
+    .toda-pin.confirmed{background:var(--confirmed);box-shadow:0 0 0 3px rgba(66,165,245,0.25),0 2px 6px rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.3);}
     .toda-pin.draft{background:var(--draft);box-shadow:0 0 0 3px rgba(245,200,66,0.2),0 2px 6px rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.25);}
     .toda-pin.kolorum{background:var(--kolorum);box-shadow:0 0 0 3px rgba(229,57,53,0.2),0 2px 6px rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.25);}
     .toda-pin.selected{transform:scale(1.55)!important;box-shadow:0 0 0 4px rgba(255,255,255,0.6),0 0 0 7px rgba(255,255,255,0.15),0 4px 14px rgba(0,0,0,0.4)!important;}
@@ -367,7 +367,7 @@
       --muted:     #d0a373;
       --yellow:    #F5C842;
       --robinsons: #CC2200;
-      --confirmed: #f59e0b;
+      --confirmed: #42A5F5;
       --draft:     #F5C842;
       --kolorum:   #e53935;
       --topbar-h:  50px;
@@ -562,8 +562,8 @@
 
 
 /* Sidebar redesign - idle mode compact */
-#panel{transition:all 0.3s ease;}
-#panel:not(.has-content){top:auto!important;bottom:12px;height:auto;max-height:180px;}
+#panel{transition:all 0.35s cubic-bezier(0.4,0,0.2,1);}
+#panel:not(.has-content){top:auto!important;bottom:12px;height:auto;max-height:160px;width:var(--panel-w);padding-bottom:8px;}
 #panel:not(.has-content) #panel-empty{display:none!important;}
 #panel.has-content{top:calc(var(--topbar-h) + 12px);bottom:12px;height:auto;}
 
@@ -579,6 +579,8 @@
 /* Routes category - move fullname */
 #panel-fullname{font-size:0.9rem;color:var(--text);margin-top:4px;}
 
+#panel.has-content{transform:translateY(0);opacity:1;}#panel:not(.has-content){transform:translateY(10px);}
+#panel-body .detail-row{transition:opacity 0.25s ease;}
 </style>
 </head>
 <body>
@@ -647,6 +649,7 @@
       </div>
     </div>
     <div id="panel-body">
+      <div class="detail-row"><div class="detail-label">ROUTES</div><div class="detail-value" id="d-routes">—</div></div>
       <div class="detail-row"><div class="detail-label">Terminal Type</div><div class="detail-value" id="d-terminal">—</div></div>
       <div class="detail-row"><div class="detail-label">Nearby Landmarks</div><div class="detail-value" id="d-landmarks">—</div></div>
       <div class="detail-row"><div class="detail-label">Colors</div><div id="d-colors" class="color-swatches"></div></div>
@@ -1464,7 +1467,7 @@ var panelEmpty=document.getElementById('panel-empty');
 var panelLegend=document.getElementById('panel-legend');
 var panelDetail=document.getElementById('panel-detail');
 
-function showEmpty(){panelEmpty.classList.remove('hidden');panelLegend.style.display='';panelDetail.classList.add('hidden');document.getElementById('panel').classList.remove('has-content');}
+function showEmpty(){panelEmpty.classList.add('hidden');panelLegend.style.display='';panelDetail.classList.add('hidden');document.getElementById('panel').classList.remove('has-content');}
 function showDetail(){panelEmpty.classList.add('hidden');panelLegend.style.display='none';panelDetail.classList.remove('hidden');document.getElementById('panel').classList.add('has-content');}
 
 function hav(la1,lo1,la2,lo2){var R=6371000,p1=la1*Math.PI/180,p2=la2*Math.PI/180,dp=(la2-la1)*Math.PI/180,dl=(lo2-lo1)*Math.PI/180,a=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
@@ -1487,7 +1490,8 @@ function openPanel(t){
   st.textContent={confirmed:'● Confirmed',draft:'● Draft',kolorum:'● Kolorum'}[t.status]||'● Draft';
   st.className=t.status||'draft';
   document.getElementById('panel-name').textContent=t.name;
-  document.getElementById('panel-fullname').textContent=(t.status!=='kolorum'&&t.full)?t.full:'';
+  document.getElementById('panel-fullname').textContent='';
+  document.getElementById('d-routes').textContent=(t.status!=='kolorum'&&t.full)?t.full:'—';
   // Robinsons badge
   var affils=Array.isArray(t.affiliations)?t.affiliations:(t.robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]);
   var rl=document.getElementById('panel-rob-logo');
@@ -1747,7 +1751,7 @@ map.on('click',function(e){
   document.getElementById(wasC?'c-lat':'f-lat').value=la.toFixed(7);
   document.getElementById(wasC?'c-lng':'f-lng').value=lo.toFixed(7);
   if(tempMarker)map.removeLayer(tempMarker);
-  tempMarker=L.marker([la,lo],{icon:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;border:2px solid white;box-shadow:0 0 0 3px rgba(245,158,11,0.35);"></div>',className:'',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map);
+  tempMarker=L.marker([la,lo],{icon:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:50%;background:#42A5F5;border:2px solid white;box-shadow:0 0 0 3px rgba(66,165,245,0.35);"></div>',className:'',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(map);
   document.getElementById('picking-hint').style.display='none';
   if(map)map.getContainer().style.cursor='';
   openModal(wasC?'modal-contribute':'modal-add');
@@ -3124,12 +3128,12 @@ async function loadLocalAreas(){
   window._areaLayer=L.layerGroup().addTo(map);
   (data||[]).forEach(a=>{
     try{
-      const layer=L.geoJSON(a.geojson,{style:{color:'#F97316',weight:2,fillOpacity:0.1}});
+      const layer=L.geoJSON(a.geojson,{style:{color:'#F97316',weight:2,opacity:0,fillOpacity:0}});
       layer.bindTooltip(`"${a.name}"`,{permanent:false});
       window._areaLayer.addLayer(layer);
     }catch(e){}
   });
-  window._areaLayer.eachLayer(l=>l.setStyle({opacity:0})); // default off
+  window._areaLayer.eachLayer(l=>l.setStyle({opacity:0,fillOpacity:0})); // default off
 }
 function toggleLocalAreas(){
   if(!window._areaLayer) return;
