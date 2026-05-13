@@ -8,354 +8,178 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500&display=swap" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-
   <style>
     :root {
-      --accent:    #F97316;
-      --accent-d:  #C2410C;
-      --accent-l:  #FB923C;
-      --bg:        #1c120a;
-      --bg-mid:    #26160c;
-      --bg-light:  #3a2212;
-      --border:    #6b3d1c;
-      --text:      #fff4e6;
-      --muted:     #d0a373;
-      --yellow:    #F5C842;
-      --robinsons: #CC2200;
-      --confirmed: #42A5F5;
-      --draft:     #F5C842;
-      --kolorum:   #e53935;
-      --topbar-h:  50px;
-      --panel-w:   340px;
-      --radius:    6px;
+      --accent: #F97316; --accent-d: #C2410C; --accent-l: #FB923C;
+      --bg: #1c120a; --bg-mid: #26160c; --bg-light: #3a2212;
+      --border: #6b3d1c; --text: #fff4e6; --muted: #d0a373;
+      --confirmed: #42A5F5; --draft: #F5C842; --kolorum: #e53935;
+      --topbar-h: 60px; --panel-w: 360px;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
-    body::after { content: ''; position: fixed; inset: 0; background: var(--bg); z-index: -1; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
 
-    /* ── TOPBAR ── */
-    #topbar { position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); display: flex; align-items: center; gap: 10px; padding: 0 16px; background: var(--accent-d); border-bottom: 1px solid #9a3412; z-index: 1000; }
-    .brand { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .menu-toggle-btn { background: transparent; border: none; color: white; font-size: 1.4rem; cursor: pointer; padding: 0 4px; display: flex; align-items: center; }
-    .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; color: #ffffff; letter-spacing: -0.01em; text-decoration: none; }
-    .logo span { color: #ffffff; }
-    .version-badge { font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #ffffff; background: var(--bg); padding: 2px 6px; border-radius: 2px; }
-    .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
-    .topbar-btn { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.07em; text-transform: uppercase; background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.3); color: #ffffff; padding: 5px 11px; border-radius: var(--radius); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; text-decoration: none; }
-    .topbar-btn:hover { border-color: #ffffff; background: rgba(0,0,0,0.25); }
-    #btn-admin.logged-in { border-color: rgba(255,255,255,0.6); background: rgba(0,0,0,0.25); }
-    .notif-dot { position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%; background: #e53935; border: 2px solid var(--accent-d); display: none; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+    /* --- TOPBAR --- */
+    #topbar { 
+      position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); 
+      background: var(--accent-d); display: flex; align-items: center; 
+      padding: 0 16px; z-index: 1000; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .logo { font-family: 'Syne', sans-serif; font-weight: 800; color: white; text-decoration: none; font-size: 1.2rem; }
+    #menu-toggle { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
 
-    /* ── LEFT DRAWER ── */
-    #left-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: #1c120a; border-right: 1px solid #6b3d1c; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 3000; display: flex; flex-direction: column; }
-    #left-drawer.open { transform: translateX(0); }
-    #ld-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 2999; }
-    #ld-backdrop.show { opacity: 1; pointer-events: auto; }
-    .ld-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #6b3d1c; font-family: 'Syne', sans-serif; font-size: 1.1rem; }
-    .ld-header button { background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
-    .ld-body { flex: 1; padding: 20px 16px; overflow-y: auto; }
-    .ld-toggle { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; margin-bottom: 24px; cursor: pointer; }
-    .ld-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-    .ld-legend { display: flex; flex-direction: column; gap: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-    .ld-legend > div { display: flex; align-items: center; gap: 10px; }
-    .ld-legend .dot { width: 12px; height: 12px; border-radius: 50%; }
-    .ld-footer { padding: 16px; border-top: 1px solid #6b3d1c; display: flex; flex-direction: column; gap: 10px; }
-    .ld-btn { padding: 12px; border-radius: 6px; border: 1px solid #6b3d1c; background: #26160c; color: #fff4e6; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; text-align: center; text-decoration: none; }
-    .ld-btn:hover { background: #3a2212; }
-    .ld-btn.primary { background: var(--accent); border: none; font-weight: 600; }
-    .ld-btn.primary:hover { background: var(--accent-d); }
+    /* --- MAP --- */
+    #map { position: absolute; top: var(--topbar-h); bottom: 0; left: 0; right: 0; z-index: 1; }
 
-    /* ── MAP ── */
-    #map { position: fixed; top: var(--topbar-h); left: 0; right: 0; bottom: 0; z-index: 1; }
+    /* --- SEARCH --- */
+    #search-bar { flex: 1; max-width: 500px; position: relative; }
+    #search-input { 
+      width: 100%; padding: 8px 16px; border-radius: 20px; border: none; 
+      background: rgba(0,0,0,0.2); color: white; font-size: 0.9rem;
+    }
 
-    /* ── SEARCH BAR (Desktop) ── */
-    #search-bar { flex: 1; max-width: 400px; margin: 0 auto; position: relative; z-index: 1001; }
-    #search-bar input { width: 100%; padding: 7px 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.8rem; outline: none; transition: 0.2s; }
-    #search-bar input:focus { border-color: rgba(234,88,12,0.8); background: rgba(255,255,255,0.1); }
-    #search-results { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: rgba(28,18,10,0.95); backdrop-filter: blur(10px); border: 1px solid rgba(234,88,12,0.3); border-radius: 10px; max-height: 350px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 2000; }
-
-    /* ── RIGHT PANEL (Floating Card) ── */
+    /* --- SLIDE PANEL (DESKTOP) --- */
     #panel {
-      position: fixed; top: auto; bottom: 20px; right: 20px; left: auto;
-      width: var(--panel-w); max-height: calc(100vh - var(--topbar-h) - 40px);
-      z-index: 900; pointer-events: none;
-      display: flex; flex-direction: column; justify-content: flex-end;
+      position: fixed; top: var(--topbar-h); right: -400px; bottom: 0; 
+      width: var(--panel-w); background: var(--bg-mid); border-left: 1px solid var(--border);
+      z-index: 999; transition: right 0.3s ease; display: flex; flex-direction: column;
     }
-    #panel.has-content { pointer-events: auto; }
-    #panel > div {
-      background: rgba(28,18,10,0.95); backdrop-filter: blur(20px);
-      border: 1px solid rgba(249,115,22,0.35); border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-      display: flex; flex-direction: column; overflow: hidden;
-      transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-      max-height: 100%;
-    }
-    #panel.has-content > div { transform: translateY(0); opacity: 1; }
-    
-    #panel-empty { display: none !important; }
-    #panel-legend { display: none !important; } /* Legend moved to left drawer */
+    #panel.open { right: 0; }
 
-    #panel-detail { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-    
-    #panel-close { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.5); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: background 0.2s; }
-    #panel-close:hover { background: rgba(249,115,22,0.8); }
-
-    /* Logo area */
-    #panel-logo { height: 64px; width: 64px; border-radius: 8px; position: absolute; left: 16px; top: 16px; overflow: hidden; cursor: pointer; z-index: 2; background: var(--bg-light); display: flex; }
-    #panel-logo-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-    #panel-logo-placeholder { width: 100%; height: 100%; display: flex; }
-    .logo-color-bar { height: 100%; flex: 1; }
-    #panel-logo-text { display: none !important; }
-
-    /* Header */
-    #panel-header { padding: 16px 16px 12px 96px; border-bottom: 1px solid var(--border); min-height: 88px; }
-    .panel-number-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .panel-num { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; font-weight: 600; color: var(--bg); background: var(--accent); padding: 2px 6px; border-radius: 3px; }
-    #panel-status { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; }
-    #panel-status.confirmed { color: var(--confirmed); }
-    #panel-status.draft { color: var(--draft); }
-    #panel-status.kolorum { color: var(--kolorum); }
-    #panel-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; line-height: 1.2; color: var(--text); }
-    #panel-fullname { font-size: 0.75rem; color: var(--muted); margin-top: 4px; line-height: 1.35; }
-    #panel-rob-logo { display: none; margin-top: 8px; }
-
-    /* Body */
-    #panel-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-    #panel-body::-webkit-scrollbar { width: 4px; }
-    #panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-    .detail-row { display: flex; flex-direction: column; gap: 4px; }
-    .detail-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-    .detail-value { font-size: 0.85rem; color: var(--text); line-height: 1.4; }
-    .detail-value.empty { color: var(--border); font-style: italic; }
-    .color-swatches { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .swatch-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); }
-    .affil-chip { display: inline-flex; padding: 3px 10px; border-radius: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: white; font-weight: 600; }
-
-    /* Panel Buttons */
-    #panel-admin-actions { padding: 12px 16px; border-top: 1px solid var(--border); display: none; gap: 8px; flex-shrink: 0; }
-    body.admin-mode #panel-admin-actions { display: flex; }
-    .btn-panel-edit { flex: 1; padding: 10px; border: 1px solid rgba(251,146,60,0.45); border-radius: 6px; background: rgba(251,146,60,0.1); color: var(--accent-l); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; text-transform: uppercase; }
-    .btn-panel-delete { flex: 1; padding: 10px; border: 1px solid rgba(231,76,60,0.3); border-radius: 6px; background: none; color: rgba(231,76,60,0.8); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; text-transform: uppercase; }
-    #panel-contribute { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
-    .btn-contribute { width: 100%; padding: 10px; border: 1px dashed var(--accent); border-radius: 6px; background: rgba(249,115,22,0.05); color: var(--accent-l); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; text-transform: uppercase; transition: 0.2s; }
-    .btn-contribute:hover { background: rgba(249,115,22,0.15); }
-
-    /* ── MAP PINS ── */
-    .toda-pin { border-radius: 50%; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s; }
-    .toda-pin:hover { transform: scale(1.4); }
-    .toda-pin.confirmed { background: var(--confirmed); box-shadow: 0 0 0 3px rgba(66,165,245,0.25), 0 2px 6px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.3); }
-    .toda-pin.draft { background: var(--draft); box-shadow: 0 0 0 3px rgba(245,200,66,0.2), 0 2px 6px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.25); }
-    .toda-pin.kolorum { background: var(--kolorum); box-shadow: 0 0 0 3px rgba(229,57,53,0.2), 0 2px 6px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.25); }
-    .toda-pin.selected { transform: scale(1.55) !important; box-shadow: 0 0 0 4px rgba(249,115,22,0.5), 0 0 0 8px rgba(249,115,22,0.2), 0 4px 14px rgba(0,0,0,0.5) !important; z-index: 1000 !important; animation: pulse-pin 1.5s infinite; }
-    @keyframes pulse-pin { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-
-    /* Leaflet overrides */
-    .leaflet-container { background: #0a0f1a !important; }
-    .leaflet-tooltip { background: #0f172a !important; border: 1px solid rgba(180,70,10,0.5) !important; color: #e2e8f0 !important; font-family: 'IBM Plex Mono', monospace !important; font-size: 0.65rem !important; }
-    .leaflet-tooltip::before { border-top-color: var(--border) !important; }
-    .leaflet-control-zoom a { background: rgba(15,23,42,0.9) !important; border-color: rgba(180,70,10,0.4) !important; color: #94a3b8 !important; }
-    .leaflet-control-attribution { background: rgba(28,18,10,0.8) !important; color: #d0a373 !important; font-size: 0.5rem !important; }
-
-    /* ── MODALS (General) ── */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 5000; align-items: center; justify-content: center; padding: 16px; }
-    .modal-overlay.open { display: flex; }
-    .modal-box { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 440px; padding: 24px; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
-    .modal-box::-webkit-scrollbar { width: 5px; }
-    .modal-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
-    .modal-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; color: var(--text); margin-bottom: 4px; }
-    .modal-sub { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; margin-bottom: 20px; }
-
-    /* Forms */
-    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-    .form-group label { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; text-transform: uppercase; color: var(--muted); }
-    .form-group input, .form-group select, .form-group textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; outline: none; transition: 0.2s; }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .btn-primary { width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 6px; color: white; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; margin-top: 10px; }
-    .form-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-    .form-error { color: #e53935; font-size: 0.75rem; margin-top: 10px; display: none; }
-
-    /* Toast */
-    #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #C2410C; color: white; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; padding: 12px 24px; border-radius: 8px; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s; text-transform: uppercase; letter-spacing: 0.05em; }
-    #toast.show { opacity: 1; }
-    #toast.success { background: #2e7d32; }
-
-    /* ══════════════════════════════════════════════
-       MOBILE RESPONSIVE (Unified)
-    ══════════════════════════════════════════════ */
+    /* --- MOBILE OVERRIDES --- */
     @media (max-width: 768px) {
-      #topbar { padding: 0 12px; }
-      .logo { font-size: 1rem; }
-      .version-badge { display: none; }
-      #btn-admin-label, #db-btn-label { display: none; }
-      
-      /* Left Drawer tweaks */
-      #left-drawer { width: 85vw; max-width: 320px; }
-      
-      /* Map adjustments for mobile search bar */
-      #map { top: calc(var(--topbar-h) + 48px); bottom: 0; }
-      .leaflet-control-zoom { margin-bottom: 20px !important; }
-
-      /* Search Bar drops down below topbar */
-      #search-bar { 
-        position: fixed !important; top: var(--topbar-h) !important; left: 0; right: 0; 
-        max-width: none !important; margin: 0 !important; padding: 6px 12px; 
-        background: rgba(28,18,10,0.98); border-bottom: 1px solid rgba(249,115,22,0.3); z-index: 1000; 
-      }
-      
-      /* PANEL: Bottom Sheet Design */
       #panel {
-        position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
-        width: 100% !important; max-height: 85vh !important;
-        z-index: 2500;
+        right: 0; bottom: -100%; top: auto; width: 100%; 
+        height: 70vh; border-left: none; border-top: 2px solid var(--accent);
+        border-radius: 20px 20px 0 0; transition: bottom 0.3s ease;
       }
-      #panel > div {
-        border-radius: 20px 20px 0 0 !important;
-        border-bottom: none !important;
-        border-left: none !important;
-        border-right: none !important;
-        height: 100%;
-        background: #1c120a;
-      }
-      
-      #panel-logo { left: 16px !important; top: -20px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-      #panel-header { padding: 20px 16px 12px 96px !important; }
-      
-      /* Fix X button on mobile so it doesn't get hidden */
-      #panel-close {
-        top: 12px !important;
-        right: 12px !important;
-        background: rgba(255,255,255,0.1) !important;
-      }
-      
-      /* Make panel body scroll properly */
-      #panel-body {
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 30px !important;
-      }
+      #panel.open { bottom: 0; }
+      #search-bar { display: none; } /* Simplified for now */
+    }
 
-      /* Full screen modals */
-      .modal-box { max-width: 100% !important; max-height: 90vh !important; border-radius: 16px 16px 0 0; align-self: flex-end; margin-bottom: 0; border-bottom: none; border-left: none; border-right: none; }
-      .modal-overlay { padding: 0; align-items: flex-end; }
+    /* PANEL CONTENT */
+    .panel-header { padding: 20px; border-bottom: 1px solid var(--border); position: relative; }
+    #panel-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+    .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .toda-name { font-family: 'Syne', sans-serif; font-size: 1.4rem; margin-bottom: 5px; }
+    .label { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; margin-top: 15px; }
+
+    /* MODALS */
+    .modal { 
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+      z-index: 2000; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-content { 
+      background: var(--bg-mid); padding: 30px; border-radius: 12px; 
+      width: 100%; max-width: 400px; border: 1px solid var(--border); 
     }
   </style>
 </head>
 <body>
 
 <div id="topbar">
-  <div class="brand">
-    <button id="menu-toggle" class="menu-toggle-btn">☰</button>
-    <a href="#" class="logo" onclick="location.reload()">🛺 Project <span>ATL</span></a>
-    <div class="version-badge">BETA 3.1</div>
-  </div>
+  <button id="menu-toggle">☰</button>
+  <a href="#" class="logo">Project ATL</a>
   <div id="search-bar">
-    <input id="search-input" type="search" placeholder="🔍 Search TODA, local area, mall..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');"/>
-    <div id="search-results"></div>
+    <input type="text" id="search-input" placeholder="Search TODA or area...">
   </div>
-  <div class="topbar-right">
-    <button id="btn-database" class="topbar-btn" onclick="openDatabase()">📋 <span id="db-btn-label">Database</span></button>
-    <button class="topbar-btn" id="btn-admin"><span>🔒</span><span id="btn-admin-label">Admin</span><span class="notif-dot" id="admin-notif-dot"></span></button>
-  </div>
+  <button id="admin-btn" style="margin-left:auto; background:none; border:1px solid rgba(255,255,255,0.3); color:white; padding:5px 10px; border-radius:5px; cursor:pointer;">Admin</button>
 </div>
-
-<div id="left-drawer">
-  <div class="ld-header">
-    <strong>Menu</strong>
-    <button id="ld-close">✕</button>
-  </div>
-  <div class="ld-body">
-    <label class="ld-toggle"><input type="checkbox" id="ld-areas"> Show Local Areas</label>
-    <div class="ld-legend">
-      <div><span class="dot" style="background:var(--confirmed)"></span> Confirmed</div>
-      <div><span class="dot" style="background:var(--draft)"></span> Unverified / Draft</div>
-      <div><span class="dot" style="background:var(--kolorum)"></span> Informal / Kolorum</div>
-    </div>
-  </div>
-  <div class="ld-footer">
-    <button onclick="openContribute()" class="ld-btn primary">✎ Suggest Terminal</button>
-    <button onclick="window.open('/about.html', '_blank')" class="ld-btn">📄 About Project</button>
-    <button onclick="openAdmin()" class="ld-btn" id="ld-admin" style="display:none">⚙ Admin Dashboard</button>
-  </div>
-</div>
-<div id="ld-backdrop"></div>
 
 <div id="map"></div>
 
 <div id="panel">
-  <div id="panel-detail" class="hidden">
-    <div id="panel-logo">
-      <img id="panel-logo-img" src="" alt="Logo" />
-      <div id="panel-logo-placeholder"></div>
-    </div>
-    <button id="panel-close" type="button">✕</button>
-    <div id="panel-header">
-      <div class="panel-number-row">
-        <span id="panel-number" class="panel-num"></span>
-        <span id="panel-status">● Confirmed</span>
-      </div>
-      <div id="panel-name">—</div>
-      <div id="panel-fullname"></div>
-      <div id="panel-rob-logo"><span class="affil-chip" style="background:#CC2200;">⬡ Robinsons</span></div>
-    </div>
-    <div id="panel-body">
-      <div class="detail-row"><div class="detail-label">ROUTES</div><div class="detail-value" id="d-routes">—</div></div>
-      <div class="detail-row"><div class="detail-label">Terminal Type</div><div class="detail-value" id="d-terminal">—</div></div>
-      <div class="detail-row"><div class="detail-label">Nearby Landmarks</div><div class="detail-value" id="d-landmarks">—</div></div>
-      <div class="detail-row"><div class="detail-label">Colors</div><div id="d-colors" class="color-swatches"></div></div>
-      <div class="detail-row" id="d-affil-row"><div class="detail-label">Affiliations</div><div id="d-affiliations" class="color-swatches"></div></div>
-      <div class="detail-row" id="d-notes-row"><div class="detail-label">Notes</div><div class="detail-value" id="d-notes">—</div></div>
-      <div class="detail-row"><div class="detail-label">Last Confirmed</div><div class="detail-value" id="d-checked">—</div></div>
-      <div class="detail-row" id="d-areas-row">
-        <div class="detail-label">Areas Serviced</div>
-        <div id="d-areas" class="color-swatches"></div>
-        <button id="btn-show-areas" onclick="toggleAreasOnMap()" style="margin-top:8px;padding:6px;background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:6px;color:var(--accent-l);font-family:'IBM Plex Mono';font-size:0.6rem;cursor:pointer;">🗺 Show on Map</button>
-      </div>
-    </div>
-    <div id="panel-admin-actions">
-      <button class="btn-panel-edit" onclick="onEditClick()">✏ Edit</button>
-      <button class="btn-panel-delete" onclick="onDeleteClick()">🗑 Delete</button>
-    </div>
-    <div id="panel-contribute">
-      <button class="btn-contribute" onclick="openContribute()">✎ Suggest Edit</button>
-    </div>
+  <div class="panel-header">
+    <button id="panel-close">✕</button>
+    <div id="panel-status-tag" style="font-size:0.7rem; text-transform:uppercase; margin-bottom:5px;"></div>
+    <h2 id="panel-name" class="toda-name">Select a Pin</h2>
+  </div>
+  <div class="panel-body">
+    <div class="label">Terminal Type</div>
+    <div id="panel-type">—</div>
+    <div class="label">Main Route</div>
+    <div id="panel-route">—</div>
+    <div class="label">Landmarks</div>
+    <div id="panel-landmarks">—</div>
   </div>
 </div>
 
-<div id="picking-hint"><span>📍 Click the map to drop pin</span><button onclick="cancelPickPin()">Cancel</button></div>
-<div id="toast"></div>
+<div id="login-modal" class="modal">
+  <div class="modal-content">
+    <h3 style="margin-bottom:15px; font-family:'Syne';">Admin Login</h3>
+    <input type="email" id="email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px; background:#111; border:1px solid #444; color:white;">
+    <input type="password" id="password" placeholder="Password" style="width:100%; padding:10px; margin-bottom:15px; background:#111; border:1px solid #444; color:white;">
+    <button id="do-login" style="width:100%; padding:10px; background:var(--accent); border:none; color:white; font-weight:bold; cursor:pointer;">Login</button>
+    <button onclick="document.getElementById('login-modal').style.display='none'" style="width:100%; background:none; border:none; color:var(--muted); margin-top:10px; cursor:pointer;">Cancel</button>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-(function(){
-  'use strict';
+  // --- CONFIG ---
+  // Replace these with your actual keys if they aren't working
+  const SB_URL = "https://your-project.supabase.co"; 
+  const SB_KEY = "your-anon-key";
+  const supabase = exports.supabase.createClient(SB_URL, SB_KEY);
 
-  // UI Toggles
-  const drawer = document.getElementById('left-drawer');
-  const backdrop = document.getElementById('ld-backdrop');
-  
-  document.getElementById('menu-toggle').addEventListener('click', () => {
-    drawer.classList.add('open');
-    backdrop.classList.add('show');
-  });
-  
-  function closeLeft() {
-    drawer.classList.remove('open');
-    backdrop.classList.remove('show');
+  // --- MAP INIT ---
+  const map = L.map('map', { zoomControl: false }).setView([14.5845, 121.1755], 14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  // --- UI LOGIC ---
+  const panel = document.getElementById('panel');
+  const pName = document.getElementById('panel-name');
+  const pType = document.getElementById('panel-type');
+  const pRoute = document.getElementById('panel-route');
+  const pClose = document.getElementById('panel-close');
+
+  function openPanel(data) {
+    pName.innerText = data.name || "Unknown TODA";
+    pType.innerText = data.terminal_type || "Standard";
+    pRoute.innerText = data.route || "Not specified";
+    panel.classList.add('open');
   }
-  
-  document.getElementById('ld-close').addEventListener('click', closeLeft);
-  backdrop.addEventListener('click', closeLeft);
 
-  // Core map integration remains unchanged
-  // (Paste the existing JS block here, ensuring `showDetail` calls `closeLeft()` as well)
-  
-})();
+  pClose.onclick = () => panel.classList.remove('open');
+
+  // --- DATA LOADING ---
+  async function loadTodas() {
+    const { data, error } = await supabase.from('todas').select('*');
+    if (error) return console.error(error);
+
+    data.forEach(toda => {
+      const marker = L.circleMarker([toda.lat, toda.lng], {
+        radius: 8,
+        fillColor: toda.status === 'confirmed' ? '#42A5F5' : '#F5C842',
+        color: '#fff',
+        weight: 2,
+        fillOpacity: 1
+      }).addTo(map);
+
+      marker.on('click', () => openPanel(toda));
+    });
+  }
+
+  // --- ADMIN LOGIC ---
+  document.getElementById('admin-btn').onclick = () => {
+    document.getElementById('login-modal').style.display = 'flex';
+  };
+
+  document.getElementById('do-login').onclick = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) alert("Login failed: " + error.message);
+    else location.reload();
+  };
+
+  loadTodas();
 </script>
 </body>
 </html>
