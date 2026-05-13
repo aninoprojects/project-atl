@@ -1,4 +1,3 @@
-@@ -1,185 +1,3182 @@
 <!--
   PROJECT ATL - MERGED BUILD (May 2026)
   Fixes applied vs Claude version:
@@ -20,10 +19,8 @@
 </script>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Project ATL — Antipolo TODA Map</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23C2410C'/%3E%3Ctext y='24' x='4' font-size='22'%3E🛺%3C/text%3E%3C/svg%3E" />
   <!-- Favicon: trike SVG as data URI -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230e2a45'/%3E%3Ctext y='24' x='4' font-size='22'%3E🛺%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -83,12 +80,6 @@
 
   <style>
     :root {
-      --accent: #F97316; --accent-d: #C2410C; --accent-l: #FB923C;
-      --bg: #1c120a; --bg-mid: #26160c; --bg-light: #3a2212;
-      --border: #6b3d1c; --text: #fff4e6; --muted: #d0a373;
-      --confirmed: #42A5F5; --draft: #F5C842; --kolorum: #e53935;
-      --topbar-h: 60px; --panel-w: 360px;
-    }
       --accent:    #F97316;
       --accent-d:  #C2410C;
       --accent-l:  #FB923C;
@@ -112,8 +103,6 @@
     /* outer body bg is map color, no white box */
     body::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:-1;}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
     /* ── TOPBAR ── */
     #topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);display:flex;align-items:center;gap:0;padding:0 16px;background:var(--accent-d);border-bottom:1px solid #9a3412;z-index:1000;}
     .brand{display:flex;align-items:baseline;gap:8px;flex-shrink:0;}
@@ -127,11 +116,6 @@
     .notif-dot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:#e53935;border:2px solid var(--accent-d);display:none;animation:pulse 1.5s infinite;}
     @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
 
-    /* --- TOPBAR --- */
-    #topbar { 
-      position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); 
-      background: var(--accent-d); display: flex; align-items: center; 
-      padding: 0 16px; z-index: 1000; gap: 12px;
     /* ── MAP ── */
     #map{position:fixed;top:50px;left:0;right:384px;bottom:0;z-index:1;}
 
@@ -147,13 +131,8 @@
       box-shadow:0 12px 40px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.05),inset 0 1px 0 rgba(255,255,255,0.06);
       z-index:900;overflow:hidden;
     }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .logo { font-family: 'Syne', sans-serif; font-weight: 800; color: white; text-decoration: none; font-size: 1.2rem; }
-    #menu-toggle { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
     #btn-open-panel{display:none;}
 
-    /* --- MAP --- */
-    #map { position: absolute; top: var(--topbar-h); bottom: 0; left: 0; right: 0; z-index: 1; }
     /* Panel empty */
     #panel-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:10px;}
     #panel-empty.hidden{display:none;}
@@ -161,25 +140,12 @@
     .empty-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;color:var(--muted);text-align:center;}
     .empty-sub{font-family:'IBM Plex Mono',monospace;font-size:0.55rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--bg-light);text-align:center;line-height:1.7;}
 
-    /* --- SEARCH --- */
-    #search-bar { flex: 1; max-width: 500px; position: relative; }
-    #search-input { 
-      width: 100%; padding: 8px 16px; border-radius: 20px; border: none; 
-      background: rgba(0,0,0,0.2); color: white; font-size: 0.9rem;
-    }
     /* Legend */
     #panel-legend{padding:10px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
     .legend-label{font-family:'IBM Plex Mono',monospace;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--bg-light);margin-bottom:2px;}
     .legend-item{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
     .legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 
-    /* --- SLIDE PANEL (DESKTOP) --- */
-    #panel {
-      position: fixed; top: var(--topbar-h); right: -400px; bottom: 0; 
-      width: var(--panel-w); background: var(--bg-mid); border-left: 1px solid var(--border);
-      z-index: 999; transition: right 0.3s ease; display: flex; flex-direction: column;
-    }
-    #panel.open { right: 0; }
     /* Panel detail */
     #panel-detail{display:flex;flex-direction:column;flex:1;overflow:hidden;}
     #panel-detail.hidden{display:none;}
@@ -235,7 +201,6 @@
     #picking-hint{display:none;position:fixed;top:calc(var(--topbar-h)+12px);left:50%;transform:translateX(-50%);z-index:2000;background:var(--yellow);color:#1c120a;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:8px 18px;border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,0.4);align-items:center;gap:10px;}
     #picking-hint button{background:rgba(0,0,0,0.15);border:none;color:#1c120a;font-size:0.7rem;cursor:pointer;padding:2px 6px;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-weight:600;}
 
-    /* --- MOBILE OVERRIDES --- */
     /* ── MODALS ── */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;padding:16px;}
     .modal-overlay.open{display:flex;}
@@ -433,9 +398,6 @@
 
       /* Panel: slim bottom sheet */
       #panel {
-        right: 0; bottom: -100%; top: auto; width: 100%; 
-        height: 70vh; border-left: none; border-top: 2px solid var(--accent);
-        border-radius: 20px 20px 0 0; transition: bottom 0.3s ease;
         position: fixed;
         top: auto;
         left: 6px; right: 6px; bottom: 6px;
@@ -508,16 +470,8 @@
       #modal-add .modal-box, #modal-contribute .modal-box {
         overflow-y: auto;
       }
-      #panel.open { bottom: 0; }
-      #search-bar { display: none; } /* Simplified for now */
     }
 
-    /* PANEL CONTENT */
-    .panel-header { padding: 20px; border-bottom: 1px solid var(--border); position: relative; }
-    #panel-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
-    .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
-    .toda-name { font-family: 'Syne', sans-serif; font-size: 1.4rem; margin-bottom: 5px; }
-    .label { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; margin-top: 15px; }
     /* Very small screens */
     @media (max-width: 400px) {
       #map { bottom: 34vh; }
@@ -525,10 +479,6 @@
       .leaflet-control-zoom { margin-bottom: calc(34vh + 16px) !important; }
     }
 
-    /* MODALS */
-    .modal { 
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
-      z-index: 2000; align-items: center; justify-content: center; padding: 20px;
     /* ── SEARCH BAR ── */
     /* Desktop: sits inside topbar row */
     #search-bar{
@@ -550,14 +500,10 @@
       outline:none;
       transition:border-color 0.2s,background 0.2s;
     }
-    .modal-content { 
-      background: var(--bg-mid); padding: 30px; border-radius: 12px; 
-      width: 100%; max-width: 400px; border: 1px solid var(--border); 
     #search-bar input:focus{
       border-color:rgba(234,88,12,0.7);
       background:rgba(255,255,255,0.08);
     }
-  </style>
     #search-results{
       display:none;
       position:absolute;
@@ -646,14 +592,11 @@
 
 <!-- ── TOPBAR ── -->
 <div id="topbar">
-  <button id="menu-toggle">☰</button>
-  <a href="#" class="logo">Project ATL</a>
   <div class="brand">
     <div class="logo">🛺 Project <span>ATL</span></div>
     <div class="version-badge">BETA 3.0</div>
   </div>
   <div id="search-bar">
-    <input type="text" id="search-input" placeholder="Search TODA or area...">
     <input id="search-input" type="search" placeholder="🔍 Search everything..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="q" role="searchbox" data-lpignore="true" data-1p-ignore="true" readonly onfocus="this.removeAttribute('readonly');"/>
     <div id="search-results"></div>
   </div>
@@ -667,7 +610,6 @@
       <span class="notif-dot" id="admin-notif-dot"></span>
     </button>
   </div>
-  <button id="admin-btn" style="margin-left:auto; background:none; border:1px solid rgba(255,255,255,0.3); color:white; padding:5px 10px; border-radius:5px; cursor:pointer;">Admin</button>
 </div>
 
 <!-- ── MAP ── -->
@@ -680,10 +622,6 @@
 
 <!-- ── PANEL ── -->
 <div id="panel">
-  <div class="panel-header">
-    <button id="panel-close">✕</button>
-    <div id="panel-status-tag" style="font-size:0.7rem; text-transform:uppercase; margin-bottom:5px;"></div>
-    <h2 id="panel-name" class="toda-name">Select a Pin</h2>
   <div id="panel-empty">
     <div class="empty-icon">🛺</div>
     <div class="empty-title">Click a pin to see details</div>
@@ -697,13 +635,6 @@
     </div>
     <button onclick="openContribute()" style="width:100%;margin-top:10px;padding:10px 14px;background:rgba(249,115,22,0.12);border:1.5px solid rgba(249,115,22,0.4);border-radius:10px;color:var(--accent-l);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;">✎ Suggest a Terminal</button>
   </div>
-  <div class="panel-body">
-    <div class="label">Terminal Type</div>
-    <div id="panel-type">—</div>
-    <div class="label">Main Route</div>
-    <div id="panel-route">—</div>
-    <div class="label">Landmarks</div>
-    <div id="panel-landmarks">—</div>
   <div id="panel-detail" class="hidden">
     <div id="panel-logo">
       <img id="panel-logo-img" src="" alt="TODA logo" />
@@ -747,13 +678,6 @@
   </div>
 </div>
 
-<div id="login-modal" class="modal">
-  <div class="modal-content">
-    <h3 style="margin-bottom:15px; font-family:'Syne';">Admin Login</h3>
-    <input type="email" id="email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px; background:#111; border:1px solid #444; color:white;">
-    <input type="password" id="password" placeholder="Password" style="width:100%; padding:10px; margin-bottom:15px; background:#111; border:1px solid #444; color:white;">
-    <button id="do-login" style="width:100%; padding:10px; background:var(--accent); border:none; color:white; font-weight:bold; cursor:pointer;">Login</button>
-    <button onclick="document.getElementById('login-modal').style.display='none'" style="width:100%; background:none; border:none; color:var(--muted); margin-top:10px; cursor:pointer;">Cancel</button>
 <div id="picking-hint">
   <span>📍 Click the map to place the terminal pin</span>
   <button type="button" onclick="cancelPickPin()">Cancel</button>
@@ -772,8 +696,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- ── ADMIN MODAL ── -->
 <div class="modal-overlay" id="modal-admin">
   <div class="modal-box">
@@ -1306,14 +1228,6 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-  // --- CONFIG ---
-  // Replace these with your actual keys if they aren't working
-  const SB_URL = "https://your-project.supabase.co"; 
-  const SB_KEY = "your-anon-key";
-  const supabase = exports.supabase.createClient(SB_URL, SB_KEY);
-
-  // --- MAP INIT ---
-  const map = L.map('map', { zoomControl: false }).setView([14.5845, 121.1755], 14);
 (function(){'use strict';
 
 // ═══════════════════════════════════════════════════
@@ -1461,7 +1375,6 @@ var map = null;
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap'
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 19,
@@ -1472,19 +1385,6 @@ var map = null;
     crossOrigin: true
   }).addTo(map);
 
-  // --- UI LOGIC ---
-  const panel = document.getElementById('panel');
-  const pName = document.getElementById('panel-name');
-  const pType = document.getElementById('panel-type');
-  const pRoute = document.getElementById('panel-route');
-  const pClose = document.getElementById('panel-close');
-
-  function openPanel(data) {
-    pName.innerText = data.name || "Unknown TODA";
-    pType.innerText = data.terminal_type || "Standard";
-    pRoute.innerText = data.route || "Not specified";
-    panel.classList.add('open');
-  }
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   map.on('moveend', function() {
@@ -1572,14 +1472,9 @@ var panelEmpty=document.getElementById('panel-empty');
 var panelLegend=document.getElementById('panel-legend');
 var panelDetail=document.getElementById('panel-detail');
 
-  pClose.onclick = () => panel.classList.remove('open');
 function showEmpty(){panelEmpty.classList.add('hidden');panelLegend.style.display='';panelDetail.classList.add('hidden');document.getElementById('panel').classList.remove('has-content');}
 function showDetail(){panelEmpty.classList.add('hidden');panelLegend.style.display='none';panelDetail.classList.remove('hidden');document.getElementById('panel').classList.add('has-content');}
 
-  // --- DATA LOADING ---
-  async function loadTodas() {
-    const { data, error } = await supabase.from('todas').select('*');
-    if (error) return console.error(error);
 function hav(la1,lo1,la2,lo2){var R=6371000,p1=la1*Math.PI/180,p2=la2*Math.PI/180,dp=(la2-la1)*Math.PI/180,dl=(lo2-lo1)*Math.PI/180,a=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function fmtD(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
 function updateDist(t){
@@ -1645,14 +1540,6 @@ function openPanel(t){
 function closePanel(){selectPin(null);showEmpty();}
 document.getElementById('panel-close').addEventListener('click',function(){closePanel();currentPanelKey=null;});
 
-    data.forEach(toda => {
-      const marker = L.circleMarker([toda.lat, toda.lng], {
-        radius: 8,
-        fillColor: toda.status === 'confirmed' ? '#42A5F5' : '#F5C842',
-        color: '#fff',
-        weight: 2,
-        fillOpacity: 1
-      }).addTo(map);
 // ═══════════════════════════════════════════════════
 // ADMIN AUTH
 // ═══════════════════════════════════════════════════
@@ -1703,7 +1590,6 @@ window.adminLogout=async function(){
   }catch(e){}
 })();
 
-      marker.on('click', () => openPanel(toda));
 // ═══════════════════════════════════════════════════
 // AFFILIATIONS
 // ═══════════════════════════════════════════════════
@@ -1947,9 +1833,6 @@ function resetAdminForm(){
   document.getElementById('add-error').style.display='none';
 }
 
-  // --- ADMIN LOGIC ---
-  document.getElementById('admin-btn').onclick = () => {
-    document.getElementById('login-modal').style.display = 'flex';
 document.getElementById('btn-add-submit').addEventListener('click',async function(){
   var st=document.getElementById('f-status').value;
   var isKol=st==='kolorum',isConf=st==='confirmed';
@@ -2004,12 +1887,6 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
   finally{btn.textContent=_editKey?'Save Changes':'Register Terminal';btn.disabled=false;}
 });
 
-  document.getElementById('do-login').onclick = async () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert("Login failed: " + error.message);
-    else location.reload();
 
 // ═══════════════════════════════════════════════════
 // SYNC SIBLING TERMINALS
@@ -3299,7 +3176,6 @@ document.getElementById('panel-logo')?.addEventListener('click',function(e){
   if(img && img.src && img.style.display!=='none'){ window.open(img.src,'_blank'); }
 });
 
-  loadTodas();
 })();
 </script>
 </body>
