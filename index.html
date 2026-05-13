@@ -12,6 +12,11 @@
 -->
 <!DOCTYPE html>
 <html lang="en">
+<script>
+  if(window.innerWidth <= 768 && !location.pathname.includes('mobile.html')){
+    location.replace('mobile.html');
+  }
+</script>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
