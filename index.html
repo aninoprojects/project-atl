@@ -3,77 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project ATL — Antipolo TODA Map</title>
+  <title>Under maintenance</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23C2410C'/%3E%3Ctext y='24' x='4' font-size='22'%3E🛺%3C/text%3E%3C/svg%3E" />
   
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500&display=swap" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" />
   
   <style>
-    :root {
-      --accent: #F97316;
-      --accent-d: #C2410C;
-      --bg: #0f0a05;
-      --text: #fff4e6;
-      --muted: #d0a373;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
+    
     body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      overflow: hidden;
-    }
-    #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 52px;
-      background: var(--accent-d);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      z-index: 1000;
-      border-bottom: 1px solid #9a3412;
-    }
-    .logo { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800; color: white; }
-    
-    #map { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; }
-    
-    .dark-tiles img {
-      filter: brightness(0.85) contrast(1.12) saturate(0.92);
+      background: black;
+      color: white;
     }
   </style>
 </head>
 <body>
 
-<div id="topbar">
-  <div class="logo">Project <span style="color:#FB923C">ATL</span></div>
-  <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
-    <select id="city-filter" style="background:#26160c; color:white; border:1px solid #6b3d1c; padding:6px 12px; border-radius:6px;">
-      <option value="Antipolo">Antipolo City</option>
-      <option value="All">All Areas</option>
-    </select>
-    <button onclick="alert('Admin panel coming in next update')" style="background:var(--accent); color:black; border:none; padding:8px 16px; border-radius:6px; font-weight:700;">Admin</button>
-  </div>
-</div>
-
-<div id="map"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
-<script>
-// Dark Map
-const map = L.map('map').setView([14.5886, 121.1753], 13);
-
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap &copy; CartoDB',
-  maxZoom: 19,
-  className: 'dark-tiles'
-}).addTo(map);
-
-// TODO: Add your real markers here from Supabase
-console.log("✅ Project ATL loaded with dark map");
-
-</script>
+<h1><center>Project ATL is under maintenance, please come back later. thank you!</center></h1>
 </body>
 </html>
