@@ -12,12 +12,12 @@
 -->
 <!DOCTYPE html>
 <html lang="en">
+<head>
 <script>
   if(window.innerWidth <= 768 && !location.pathname.includes('mobile.html')){
     location.replace('mobile.html');
   }
 </script>
-<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Project ATL — Antipolo TODA Map</title>
@@ -406,7 +406,18 @@
         border-radius: 16px;
         z-index: 900;
         transform: none !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
       }
+      #panel:not(.has-content) {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: translateY(12px) !important;
+      }
+
+      /* Left sidebar: full-height overlay on mobile */
+      #left-sidebar { width: 85vw; max-width: 300px; }
+      #btn-left-menu { top: calc(var(--topbar-h) + 8px); left: 8px; }
 
       /* Search bar: full width below topbar */
       /* Search bar: fixed row below topbar on mobile */
@@ -458,10 +469,6 @@
       #panel-header { padding: 10px 14px 8px; }
       .detail-label { font-size: 0.5rem; }
       .detail-value { font-size: 0.78rem; }
-
-      /* Legend compact */
-      #panel-legend { padding: 8px 14px; gap: 5px; }
-      .legend-item { font-size: 0.52rem; }
 
       /* Zoom controls: don't overlap panel */
       .leaflet-control-zoom { margin-bottom: calc(32vh + 16px) !important; }
@@ -566,11 +573,87 @@
 @keyframes pulse-pin{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
 
 
-/* Sidebar redesign - idle mode compact */
+/* ── LEFT SIDEBAR ── */
+#btn-left-menu{
+  position:fixed;top:calc(var(--topbar-h) + 12px);left:12px;
+  z-index:1100;
+  background:rgba(28,18,10,0.88);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(249,115,22,0.35);
+  border-radius:10px;
+  width:38px;height:38px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text);font-size:1.1rem;
+  transition:all 0.2s ease;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+}
+#btn-left-menu:hover{border-color:var(--accent-l);color:var(--accent-l);}
+
+#left-sidebar{
+  position:fixed;top:var(--topbar-h);left:0;bottom:0;
+  width:260px;
+  background:rgba(28,18,10,0.96);
+  backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border-right:1px solid rgba(249,115,22,0.25);
+  z-index:1050;
+  display:flex;flex-direction:column;
+  transform:translateX(-100%);
+  transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:4px 0 24px rgba(0,0,0,0.5);
+}
+#left-sidebar.open{transform:translateX(0);}
+
+#left-sidebar-header{
+  padding:16px 16px 12px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.left-sidebar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;color:var(--text);}
+#btn-left-close{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:4px;line-height:1;}
+#btn-left-close:hover{color:var(--text);}
+
+#left-sidebar-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:16px;}
+#left-sidebar-body::-webkit-scrollbar{width:3px;}
+#left-sidebar-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+.left-section-label{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+
+/* Legend in left sidebar */
+.left-legend{display:flex;flex-direction:column;gap:7px;}
+.left-legend-item{display:flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);}
+.left-legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* Local areas toggle */
+.left-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.left-toggle-label{font-size:0.8rem;color:var(--text);}
+.toggle-switch{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--bg-light);border-radius:20px;cursor:pointer;transition:background 0.2s;}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;}
+.toggle-switch input:checked + .toggle-slider{background:rgba(249,115,22,0.3);}
+.toggle-switch input:checked + .toggle-slider::before{transform:translateX(16px);background:var(--accent);}
+
+#left-sidebar-footer{padding:14px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+
+/* Overlay when sidebar open on mobile */
+#left-sidebar-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1040;
+}
+#left-sidebar-overlay.open{display:block;}
+
+/* Right panel: truly hidden when idle */
 #panel{transition:all 0.35s cubic-bezier(0.4,0,0.2,1);}
-#panel:not(.has-content){top:auto!important;bottom:12px;height:auto;max-height:160px;width:var(--panel-w);padding-bottom:8px;}
-#panel:not(.has-content) #panel-empty{display:none!important;}
-#panel.has-content{top:calc(var(--topbar-h) + 12px);bottom:12px;height:auto;}
+#panel:not(.has-content){
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(12px);
+}
+#panel.has-content{
+  pointer-events:auto;
+  opacity:1;
+  transform:translateY(0);
+  top:calc(var(--topbar-h) + 12px);bottom:12px;height:auto;
+}
 
 /* Remove large logo background, make small thumb */
 #panel-logo{height:64px!important;width:64px!important;border-radius:8px!important;position:absolute!important;left:16px;top:16px;overflow:hidden;cursor:pointer;z-index:2;}
@@ -578,17 +661,57 @@
 #panel-logo-text{display:none!important;}
 #panel-header{padding-left:92px!important;min-height:80px;}
 
-/* Make image clickable - add modal */
-#panel-logo{cursor:pointer;}
+/* Full name as subheading */
+#panel-fullname{font-size:0.72rem;color:var(--muted);margin-top:2px;line-height:1.35;}
 
-/* Routes category - move fullname */
-#panel-fullname{font-size:0.9rem;color:var(--text);margin-top:4px;}
-
-#panel.has-content{transform:translateY(0);opacity:1;}#panel:not(.has-content){transform:translateY(10px);}
 #panel-body .detail-row{transition:opacity 0.25s ease;}
 </style>
 </head>
 <body>
+
+<!-- ── LEFT SIDEBAR TOGGLE BUTTON ── -->
+<button id="btn-left-menu" title="Menu" aria-label="Open menu">☰</button>
+
+<!-- ── LEFT SIDEBAR OVERLAY ── -->
+<div id="left-sidebar-overlay" onclick="closeLeftSidebar()"></div>
+
+<!-- ── LEFT SIDEBAR ── -->
+<div id="left-sidebar" role="navigation" aria-label="Map menu">
+  <div id="left-sidebar-header">
+    <div class="left-sidebar-title">🛺 Project ATL</div>
+    <button id="btn-left-close" onclick="closeLeftSidebar()" aria-label="Close menu">✕</button>
+  </div>
+  <div id="left-sidebar-body">
+    <!-- Legend -->
+    <div>
+      <div class="left-section-label">Legend</div>
+      <div class="left-legend">
+        <div class="left-legend-item"><div class="left-legend-dot" style="background:var(--confirmed)"></div>Confirmed</div>
+        <div class="left-legend-item"><div class="left-legend-dot" style="background:var(--draft)"></div>Unverified</div>
+        <div class="left-legend-item"><div class="left-legend-dot" style="background:var(--kolorum)"></div>Informal</div>
+      </div>
+    </div>
+    <!-- Local Areas Toggle -->
+    <div>
+      <div class="left-section-label">Map Layers</div>
+      <div class="left-toggle-row">
+        <span class="left-toggle-label">Show Local Areas</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-local-areas" onchange="onToggleLocalAreas(this.checked)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <!-- Database -->
+    <div>
+      <div class="left-section-label">Data</div>
+      <button onclick="openDatabase();closeLeftSidebar();" style="width:100%;padding:9px 12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.3);border-radius:8px;color:var(--accent-l);font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px;">📋 ATL Database</button>
+    </div>
+  </div>
+  <div id="left-sidebar-footer">
+    <button onclick="openContribute();closeLeftSidebar();" style="width:100%;padding:10px 14px;background:rgba(249,115,22,0.12);border:1.5px solid rgba(249,115,22,0.4);border-radius:10px;color:var(--accent-l);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;">✎ Suggest a Terminal</button>
+  </div>
+</div>
 
 <!-- ── TOPBAR ── -->
 <div id="topbar">
@@ -600,9 +723,6 @@
     <input id="search-input" type="search" placeholder="🔍 Search everything..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="q" role="searchbox" data-lpignore="true" data-1p-ignore="true" readonly onfocus="this.removeAttribute('readonly');"/>
     <div id="search-results"></div>
   </div>
-  <button id="btn-database" class="topbar-btn" onclick="openDatabase()" title="ATL Database" style="flex-shrink:0;">
-    📋 <span id="db-btn-label">Database</span>
-  </button>
   <div class="topbar-right">
     <a href="/about.html" class="topbar-btn" style="text-decoration:none;">About</a>
     <button class="topbar-btn" id="btn-admin">
@@ -622,19 +742,6 @@
 
 <!-- ── PANEL ── -->
 <div id="panel">
-  <div id="panel-empty">
-    <div class="empty-icon">🛺</div>
-    <div class="empty-title">Click a pin to see details</div>
-    <div class="empty-sub">Select any terminal<br>to view TODA information</div>
-  </div>
-  <div id="panel-legend">
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-      <div class="legend-item"><div class="legend-dot" style="background:var(--confirmed)"></div>Confirmed</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--draft)"></div>Unverified</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--kolorum)"></div>Informal</div>
-    </div>
-    <button onclick="openContribute()" style="width:100%;margin-top:10px;padding:10px 14px;background:rgba(249,115,22,0.12);border:1.5px solid rgba(249,115,22,0.4);border-radius:10px;color:var(--accent-l);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;">✎ Suggest a Terminal</button>
-  </div>
   <div id="panel-detail" class="hidden">
     <div id="panel-logo">
       <img id="panel-logo-img" src="" alt="TODA logo" />
@@ -656,7 +763,6 @@
     <div id="panel-body">
       <div class="detail-row"><div class="detail-label">ROUTES</div><div class="detail-value" id="d-routes">—</div></div>
       <div class="detail-row"><div class="detail-label">Terminal Type</div><div class="detail-value" id="d-terminal">—</div></div>
-      <div class="detail-row"><div class="detail-label">Nearby Landmarks</div><div class="detail-value" id="d-landmarks">—</div></div>
       <div class="detail-row"><div class="detail-label">Colors</div><div id="d-colors" class="color-swatches"></div></div>
       <div class="detail-row" id="d-affil-row" style="display:none"><div class="detail-label">Affiliations</div><div id="d-affiliations" style="display:flex;flex-wrap:wrap;gap:5px;padding:2px 0;"></div></div>
       <div class="detail-row" id="d-notes-row" style="display:none"><div class="detail-label">Notes</div><div class="detail-value" id="d-notes">—</div></div>
@@ -971,32 +1077,16 @@
           <div><span class="changelog-version">β 2.3</span><span class="changelog-date">May 2026</span></div>
           <div class="changelog-tags"><span class="tag tag-change">Change</span></div>
           <ul class="changelog-ul">
-            <li>Database columns updated: lat/lng replaces terminal column, city moved to last, GMaps/OSM removed</li>
-            <li>Database now auto-syncs with live map — terminals added to map appear in DB instantly (highlighted blue)</li>
-            <li>Saving a terminal updates matching DB entry in memory (full name, colors, number, city)</li>
-            <li>Click any DB row to jump to its map pin or fly to coordinates if not yet mapped</li>
-            <li>SITODA (Steve Inn) added as entry without number</li>
-            <li>DB merges static spreadsheet data with live Supabase terminals</li>
-          </ul>
-        </div>
-        <div class="changelog-entry">
-          <div><span class="changelog-version">β 3.0</span><span class="changelog-date">May 2026</span></div>
-          <div class="changelog-tags"><span class="tag tag-change">Change</span></div>
-          <ul class="changelog-ul">
-            <li>Full accent color rebrand — blue → orange throughout UI</li>
-            <li>Legend redesigned as horizontal row (Confirmed · Unverified · Informal)</li>
-            <li>Version bump to Beta 3.0</li>
-          </ul>
-        </div>
-        <div class="changelog-entry">
-          <div><span class="changelog-version">β 2.3</span><span class="changelog-date">May 2026</span></div>
-          <div class="changelog-tags"><span class="tag tag-change">Change</span></div>
-          <ul class="changelog-ul">
             <li>Terminal sync — when a terminal is saved, siblings sharing the same name, number, or full name are auto-updated with shared fields (number, full name, colors, affiliations, logo, city)</li>
             <li>Bidirectional gap-fill — if saved terminal is missing a detail a sibling has, it copies it back</li>
             <li>ATL Database viewer — 124 TODAs from spreadsheet v3.1, merged with live Supabase data</li>
             <li>Database table shows lat/lng from live terminals, colors overlay, highlighted rows for mapped TODAs</li>
             <li>Click a database row to fly to and open that terminal on the map</li>
+            <li>Database columns updated: lat/lng replaces terminal column, city moved to last, GMaps/OSM removed</li>
+            <li>Database now auto-syncs with live map — terminals added to map appear in DB instantly (highlighted blue)</li>
+            <li>Saving a terminal updates matching DB entry in memory (full name, colors, number, city)</li>
+            <li>SITODA (Steve Inn) added as entry without number</li>
+            <li>DB merges static spreadsheet data with live Supabase terminals</li>
           </ul>
         </div>
         <div class="changelog-entry">
@@ -1273,6 +1363,44 @@ var _searchHighlights=[];
 function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('open');}
 function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('open');}
 window.openModal=openModal;window.closeModal=closeModal;
+
+// ═══════════════════════════════════════════════════
+// LEFT SIDEBAR
+// ═══════════════════════════════════════════════════
+function openLeftSidebar(){
+  document.getElementById('left-sidebar').classList.add('open');
+  document.getElementById('left-sidebar-overlay').classList.add('open');
+}
+function closeLeftSidebar(){
+  document.getElementById('left-sidebar').classList.remove('open');
+  document.getElementById('left-sidebar-overlay').classList.remove('open');
+}
+window.openLeftSidebar=openLeftSidebar;
+window.closeLeftSidebar=closeLeftSidebar;
+document.getElementById('btn-left-menu').addEventListener('click',openLeftSidebar);
+
+// Local areas toggle
+window.onToggleLocalAreas=function(checked){
+  if(checked){
+    // Load and show all drawn areas
+    if(!sb)return;
+    sb.from('local_areas').select('id,name,barangay,geojson').then(function(r){
+      if(r.error||!r.data)return;
+      _shownAreaLayers.forEach(function(l){try{map.removeLayer(l);}catch(e){}});
+      _shownAreaLayers=[];
+      r.data.forEach(function(a){
+        if(!a.geojson)return;
+        var layer=L.geoJSON(a.geojson,{
+          style:{color:'#FB923C',fillColor:'#FB923C',fillOpacity:0.1,weight:2,dashArray:'6 4'}
+        }).addTo(map).bindTooltip('"'+a.name+'"'+(a.barangay?' — '+a.barangay:''),{permanent:false,direction:'center'});
+        _shownAreaLayers.push(layer);
+      });
+    });
+  } else {
+    _shownAreaLayers.forEach(function(l){try{map.removeLayer(l);}catch(e){}});
+    _shownAreaLayers=[];
+  }
+};
 document.querySelectorAll('.modal-overlay').forEach(function(ov){
   ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');});
 });
@@ -1443,6 +1571,7 @@ function addTodaToMap(toda,key){
   mk.on('click',function(e){
     L.DomEvent.stopPropagation(e);
     selectPin(key);currentPanelKey=key;openPanel(toda);
+    closeLeftSidebar();
   });
 }
 (async function loadData(){
@@ -1468,12 +1597,10 @@ function addTodaToMap(toda,key){
 // PANEL
 // ═══════════════════════════════════════════════════
 var panel=document.getElementById('panel');
-var panelEmpty=document.getElementById('panel-empty');
-var panelLegend=document.getElementById('panel-legend');
 var panelDetail=document.getElementById('panel-detail');
 
-function showEmpty(){panelEmpty.classList.add('hidden');panelLegend.style.display='';panelDetail.classList.add('hidden');document.getElementById('panel').classList.remove('has-content');}
-function showDetail(){panelEmpty.classList.add('hidden');panelLegend.style.display='none';panelDetail.classList.remove('hidden');document.getElementById('panel').classList.add('has-content');}
+function showEmpty(){panelDetail.classList.add('hidden');document.getElementById('panel').classList.remove('has-content');}
+function showDetail(){panelDetail.classList.remove('hidden');document.getElementById('panel').classList.add('has-content');}
 
 function hav(la1,lo1,la2,lo2){var R=6371000,p1=la1*Math.PI/180,p2=la2*Math.PI/180,dp=(la2-la1)*Math.PI/180,dl=(lo2-lo1)*Math.PI/180,a=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function fmtD(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';}
@@ -1495,7 +1622,7 @@ function openPanel(t){
   st.textContent={confirmed:'● Confirmed',draft:'● Draft',kolorum:'● Kolorum'}[t.status]||'● Draft';
   st.className=t.status||'draft';
   document.getElementById('panel-name').textContent=t.name;
-  document.getElementById('panel-fullname').textContent='';
+  document.getElementById('panel-fullname').textContent=(t.status!=='kolorum'&&t.full)?t.full:'';
   document.getElementById('d-routes').textContent=(t.status!=='kolorum'&&t.full)?t.full:'—';
   // Robinsons badge
   var affils=Array.isArray(t.affiliations)?t.affiliations:(t.robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]);
@@ -1510,7 +1637,6 @@ function openPanel(t){
     else lp.style.background='var(--bg-light)';}
   lt.textContent=t.name;
   sv('d-terminal',t.terminal,'Unknown');
-  sv('d-landmarks',t.landmarks,'Not recorded');
   // Colors swatches
   var ce=document.getElementById('d-colors');ce.innerHTML='';
   if(cols.length&&t.status!=='kolorum'){cols.forEach(function(c){var d=document.createElement('div');d.className='swatch-dot';d.style.background=c.hex;d.title=c.label||c.hex;ce.appendChild(d);});}
