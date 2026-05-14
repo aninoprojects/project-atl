@@ -68,11 +68,12 @@
     .tag{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;}
     .tag-fix{background:rgba(76,175,80,0.15);color:#81c784;}
     .tag-change{background:rgba(255,193,7,0.15);color:#ffd54f;}
+    .tag-new{background:rgba(249,115,22,0.15);color:var(--accent-l);}
     .cl-ul{font-size:0.82rem;color:var(--muted);padding-left:16px;line-height:1.75;}
     .cl-ul li{margin-bottom:3px;}
 
     /* CONTRIBUTE SECTION */
-    .contribute-cta{background:rgba(249,115,22,0.06);border:1px solid rgba(33,150,243,0.2);border-radius:8px;padding:20px;margin-top:16px;}
+    .contribute-cta{background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.25);border-radius:8px;padding:20px;margin-top:16px;}
     .btn-cta{display:inline-block;padding:10px 20px;border:none;border-radius:5px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;text-decoration:none;margin-top:12px;transition:opacity 0.15s;}
     .btn-cta:hover{opacity:0.88;}
 
@@ -146,11 +147,12 @@
       <h2>Credits</h2>
       <ul>
         <li>PTRB Antipolo — official TODA registry (March 2025)</li>
-        <li>CartoDB Positron — map tile layer</li>
+        <li>CartoDB Dark / Light — map tile layers</li>
         <li>Leaflet.js — open-source mapping library</li>
         <li>Leaflet.draw — polygon drawing plugin</li>
         <li>Supabase — backend database &amp; authentication</li>
         <li>Google Fonts — Syne, IBM Plex Mono, DM Sans</li>
+        <li><a href="https://rail.trainsight.app" target="_blank" rel="noopener">Trainsight</a> — UI inspiration</li>
       </ul>
     </div>
   </div>
@@ -163,18 +165,111 @@
     <div class="changelog">
 
       <div class="cl-entry">
+        <div><span class="cl-ver">β 3.2</span><span class="cl-date">May 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-new">New</span></div>
+        <ul class="cl-ul">
+          <li>Menu button now hides when sidebar opens — no more overlay on sidebar title</li>
+          <li>Mobile panel is now draggable — pull up to expand, drag down to dismiss</li>
+          <li>Terminal image now opens in an in-app lightbox instead of a new browser tab</li>
+          <li>Color swatches are display-only (no longer clickable)</li>
+          <li>Contribution validation: blocks troll/test names and coordinates outside Antipolo City</li>
+          <li>Trainsight credited in About page references</li>
+          <li>CartoDB Light/Dark tile toggle added to sidebar</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 3.1</span><span class="cl-date">May 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-new">New</span><span class="tag tag-change">Change</span></div>
+        <ul class="cl-ul">
+          <li>Menu button no longer overlays sidebar title — sidebar header fully visible</li>
+          <li>Left sidebar widened to 300px for better readability</li>
+          <li>Map now covers full viewport — no blank strip on the right</li>
+          <li>All panels and sidebars use rounded rectangles (20px radius) with smooth transitions</li>
+          <li>Mobile-first layout: bottom sheet panel, no redirect to separate mobile page</li>
+          <li>Light/dark map toggle added to sidebar (CartoDB Light ↔ Dark)</li>
+          <li>Improved color contrast: brighter confirmed/draft/kolorum pins, warmer text</li>
+          <li>Version badge updated to pill shape</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 3.0</span><span class="cl-date">May 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-change">Change</span></div>
+        <ul class="cl-ul">
+          <li>Full accent color rebrand — blue → orange throughout UI</li>
+          <li>Legend redesigned as horizontal row (Confirmed · Unverified · Informal)</li>
+          <li>Version bump to Beta 3.0</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 2.3</span><span class="cl-date">May 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-change">Change</span></div>
+        <ul class="cl-ul">
+          <li>Terminal sync — siblings sharing name, number, or full name auto-update shared fields</li>
+          <li>Bidirectional gap-fill — missing details copied from sibling terminals</li>
+          <li>ATL Database viewer — 124 TODAs from spreadsheet v3.1, merged with live Supabase data</li>
+          <li>Database table shows lat/lng, color overlays, highlighted rows for mapped TODAs</li>
+          <li>Click a database row to fly to and open that terminal on the map</li>
+          <li>Database now auto-syncs with live map — new terminals appear instantly (highlighted)</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 2.2</span><span class="cl-date">May 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-fix">Fix</span></div>
+        <ul class="cl-ul">
+          <li>Fixed white tile flash on zoom — tiles now pre-load outside viewport (keepBuffer: 6)</li>
+          <li>Disabled tile update during zoom animation to prevent double street name rendering</li>
+          <li>Map container background matches dark tile color — no more white flicker</li>
+          <li>GPU compositing hints for smoother tile transitions</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 2.1</span><span class="cl-date">April 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-change">Change</span></div>
+        <ul class="cl-ul">
+          <li>Panel floats cleanly with transparent outer background</li>
+          <li>Unified search bar in topbar — searches terminals, areas, cooperatives, affiliations</li>
+          <li>All three forms (register, edit, suggest) unified and status-driven in real time</li>
+          <li>Colors: pick from palette only, no text label required</li>
+          <li>Affiliations dropdown — type to search, Enter to add, custom options supported</li>
+          <li>Panel sidebar updates live after admin saves changes</li>
+          <li>TODA name sync — shared fields auto-propagate to same-abbr terminals</li>
+          <li>Search highlights all matching pins</li>
+          <li>Delete now awaits Supabase confirmation before removing from UI</li>
+          <li>Suggest edits pre-fills current terminal data for guests</li>
+          <li>Mobile responsive layout — map top, panel bottom sheet</li>
+          <li>Local areas: Manage, View on Map, and Delete from admin panel</li>
+          <li>Areas Serviced field in all forms and sidebar</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div><span class="cl-ver">β 2.0.1</span><span class="cl-date">April 2026</span></div>
+        <div class="cl-tags"><span class="tag tag-fix">Fix</span></div>
+        <ul class="cl-ul">
+          <li>Dark mode enabled — map and UI fully dark themed</li>
+          <li>Panel now a floating island (rounded, glassmorphism)</li>
+          <li>Admin session persists across refresh and page navigation</li>
+          <li>All terminal data removed from code — Supabase only</li>
+          <li>Affiliations system replaces Robinsons checkbox</li>
+          <li>Smart form — fields adapt per status (Confirmed / Draft / Kolorum)</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
         <div><span class="cl-ver">β 2.0</span><span class="cl-date">April 2026</span></div>
         <div class="cl-tags"><span class="tag tag-change">Change</span><span class="tag tag-fix">Fix</span></div>
         <ul class="cl-ul">
           <li>All terminal data moved from code to Supabase (no more hardcoded pins)</li>
-          <li>Affiliations system — replaces Robinsons checkbox; supports multiple affiliations per terminal with auto-dedup and color coding</li>
+          <li>Affiliations system — replaces Robinsons checkbox; supports multiple affiliations with color coding</li>
           <li>Dynamic edit form — fields change based on status (Confirmed / Draft / Kolorum)</li>
-          <li>Local Areas feature — admin can draw named polygons on map, link to terminals, toggle visibility in sidebar</li>
+          <li>Local Areas feature — admin can draw named polygons, link to terminals, toggle visibility</li>
           <li>/about page is now standalone and fullscreen</li>
           <li>Fixed site_content and contributions table errors (Supabase RLS policies corrected)</li>
-          <li>Contribute button added to topbar</li>
-          <li>Changelog style updated — beta symbol (β) used, no redundant labels</li>
-          <li>Admin panel enlarged</li>
           <li>Contributions now correctly post to Supabase and trigger admin notification</li>
           <li>Map position remembered across sessions (localStorage)</li>
           <li>Selected pin now shows white ring indicator</li>
