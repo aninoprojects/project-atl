@@ -2234,6 +2234,27 @@ function resetContribForm(){
   _cSelectedAreas.length=0;renderCAreaTags();
   syncFormStatus('c');
 }
+// ── Contribution input validation ──────────────────
+function validateContribName(name){
+  if(!name||name.length<2)return'Name is too short.';
+  if(name.length>80)return'Name is too long (max 80 characters).';
+  // Block all-uppercase strings longer than 20 chars (likely spam/test input)
+  if(name.length>20&&name===name.toUpperCase()&&/^[A-Z0-9\s]+$/.test(name))
+    return'Name looks invalid. Use the proper TODA abbreviation (e.g. APFMCTODA).';
+  // Block obvious test/troll patterns
+  if(/^(test|asdf|qwerty|lorem|spam|fake|null|undefined|admin|api.?key)/i.test(name))
+    return'Please enter a real terminal name.';
+  // Must contain at least one letter
+  if(!/[a-zA-Z]/.test(name))return'Name must contain letters.';
+  return null;
+}
+function validateContribCoords(lat,lng){
+  // Antipolo City bounding box (generous)
+  if(lat<14.45||lat>14.75)return'Latitude must be within Antipolo City (~14.45–14.75).';
+  if(lng<121.05||lng>121.35)return'Longitude must be within Antipolo City (~121.05–121.35).';
+  return null;
+}
+
 document.getElementById('btn-contrib-submit').addEventListener('click',async function(){
   var isAdmin=!!adminSession;
   var st=document.getElementById('c-status').value;
@@ -2245,7 +2266,12 @@ document.getElementById('btn-contrib-submit').addEventListener('click',async fun
   var lng=parseFloat(document.getElementById('c-lng').value);
   var errEl=document.getElementById('contrib-error'),btn=this;errEl.style.display='none';
   if(!rawName||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
+  // Validate name and coordinates for non-admin submissions
   if(!isAdmin){
+    var nameErr=validateContribName(rawName);
+    if(nameErr){errEl.textContent=nameErr;errEl.style.display='block';return;}
+    var coordErr=validateContribCoords(lat,lng);
+    if(coordErr){errEl.textContent=coordErr;errEl.style.display='block';return;}
     var now=Date.now();
     if(now-_lastContribTime<60000){errEl.textContent='Please wait '+Math.ceil((60000-(now-_lastContribTime))/1000)+'s.';errEl.style.display='block';return;}
   }
