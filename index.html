@@ -178,8 +178,7 @@
     .detail-value{font-size:0.82rem;color:var(--text);line-height:1.4;}
     .detail-value.empty{color:var(--muted);font-style:italic;}
     .color-swatches{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:2px 0;}
-    .swatch-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);flex-shrink:0;cursor:default;transition:transform 0.12s;}
-    .swatch-dot:hover{transform:scale(1.3);}
+    .swatch-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);flex-shrink:0;cursor:default;}
 
     /* Admin actions in panel */
     #panel-admin-actions{display:none;padding:12px 18px;border-top:1px solid var(--border);gap:8px;flex-shrink:0;}
@@ -315,7 +314,13 @@
     #toast.success{background:#2e7d32;}
     #toast.error{background:#b71c1c;}
 
-    /* Pin styles */
+    /* Lightbox */
+    #modal-lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9000;align-items:center;justify-content:center;cursor:zoom-out;}
+    #modal-lightbox.open{display:flex;}
+    #lightbox-img{max-width:90vw;max-height:88vh;border-radius:12px;box-shadow:0 24px 64px rgba(0,0,0,0.8);object-fit:contain;animation:modalIn 0.2s ease both;}
+    #lightbox-close{position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:6px 10px;border-radius:8px;transition:background 0.15s;z-index:1;}
+    #lightbox-close:hover{background:rgba(255,255,255,0.2);}
+
     .toda-pin{border-radius:50%;cursor:pointer;transition:transform 0.15s;}
     .toda-pin:hover{transform:scale(1.4);}
     .toda-pin.confirmed{background:var(--confirmed);box-shadow:0 0 0 3px rgba(66,165,245,0.25),0 2px 6px rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.3);}
@@ -739,7 +744,7 @@
 <div id="topbar">
   <div class="brand">
     <div class="logo">🛺 Project <span>ATL</span></div>
-    <div class="version-badge">BETA 3.1</div>
+    <div class="version-badge">BETA 3.2</div>
   </div>
   <div id="search-bar">
     <input id="search-input" type="search" placeholder="🔍 Search everything..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="q" role="searchbox" data-lpignore="true" data-1p-ignore="true" readonly onfocus="this.removeAttribute('readonly');"/>
@@ -1065,7 +1070,7 @@
         <h3>Data Sources</h3>
         <ul>
           <li>Antipolo City PTRB (Public Transport Regulatory Board) — primary source</li>
-          <li>2024–2025 Antipolo City Facts & Figures</li>
+          <li>2024–2025 Antipolo City Facts &amp; Figures</li>
           <li>OpenStreetMap, Google Maps, Wikimapia</li>
           <li>Facebook, Reddit, YouTube</li>
           <li>Direct field observation (Strava, street view)</li>
@@ -1075,9 +1080,10 @@
           <li>PTRB Antipolo — official TODA registry, March 2025</li>
           <li>LTFRB — national transport authority (limited jurisdiction over tricycles)</li>
           <li>OTC (Office of Transport Cooperatives) — cooperative registry</li>
-          <li>CartoDB Positron tiles — map base layer</li>
+          <li>CartoDB Dark/Light tiles — map base layer</li>
           <li>Leaflet.js — mapping library</li>
           <li>Supabase — backend / auth</li>
+          <li>Trainsight (<a href="https://rail.trainsight.app" target="_blank" rel="noopener">rail.trainsight.app</a>) — UI inspiration</li>
         </ul>
       </div>
     </div>
@@ -1086,6 +1092,19 @@
     <div class="about-section" id="tab-changelog">
       <div class="about-prose">
         <div style="text-align:center;margin-bottom:16px;padding:8px;background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent-l);">⚠ Project ATL is in Beta — features actively developed</div>
+        <div class="changelog-entry">
+          <div><span class="changelog-version">β 3.2</span><span class="changelog-date">May 2026</span></div>
+          <div class="changelog-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-new">New</span></div>
+          <ul class="changelog-ul">
+            <li>Menu button now hides when sidebar opens — no more overlay on sidebar title</li>
+            <li>Mobile panel is now draggable — pull up to expand, drag down to dismiss</li>
+            <li>Terminal image now opens in an in-app lightbox instead of a new browser tab</li>
+            <li>Color swatches are no longer clickable (display-only as intended)</li>
+            <li>Contribution validation: blocks troll/test names and coordinates outside Antipolo City</li>
+            <li>Trainsight credited in About page references</li>
+            <li>CartoDB Light/Dark tile toggle added to sidebar</li>
+          </ul>
+        </div>
         <div class="changelog-entry">
           <div><span class="changelog-version">β 3.1</span><span class="changelog-date">May 2026</span></div>
           <div class="changelog-tags"><span class="tag tag-fix">Fix</span><span class="tag tag-new">New</span><span class="tag tag-change">Change</span></div>
@@ -1406,10 +1425,14 @@ window.openModal=openModal;window.closeModal=closeModal;
 function openLeftSidebar(){
   document.getElementById('left-sidebar').classList.add('open');
   document.getElementById('left-sidebar-overlay').classList.add('open');
+  document.getElementById('btn-left-menu').style.opacity='0';
+  document.getElementById('btn-left-menu').style.pointerEvents='none';
 }
 function closeLeftSidebar(){
   document.getElementById('left-sidebar').classList.remove('open');
   document.getElementById('left-sidebar-overlay').classList.remove('open');
+  document.getElementById('btn-left-menu').style.opacity='';
+  document.getElementById('btn-left-menu').style.pointerEvents='';
 }
 window.openLeftSidebar=openLeftSidebar;
 window.closeLeftSidebar=closeLeftSidebar;
@@ -1723,6 +1746,44 @@ function openPanel(t){
 }
 function closePanel(){selectPin(null);showEmpty();}
 document.getElementById('panel-close').addEventListener('click',function(){closePanel();currentPanelKey=null;});
+
+// ═══════════════════════════════════════════════════
+// MOBILE PANEL DRAG (touch to resize height)
+// ═══════════════════════════════════════════════════
+(function(){
+  var panel=document.getElementById('panel');
+  var startY=0,startH=0,dragging=false;
+  var MIN_H=120,MAX_H=Math.round(window.innerHeight*0.82);
+
+  function isMobile(){return window.innerWidth<=768;}
+
+  panel.addEventListener('touchstart',function(e){
+    if(!isMobile()||!panel.classList.contains('has-content'))return;
+    var rect=panel.getBoundingClientRect();
+    var touch=e.touches[0];
+    if(touch.clientY-rect.top>44)return; // only drag from handle area
+    startY=touch.clientY;
+    startH=panel.offsetHeight;
+    dragging=true;
+    panel.style.transition='none';
+    e.preventDefault();
+  },{passive:false});
+
+  window.addEventListener('touchmove',function(e){
+    if(!dragging)return;
+    var dy=startY-e.touches[0].clientY; // drag up = taller
+    var newH=Math.min(MAX_H,Math.max(MIN_H,startH+dy));
+    panel.style.height=newH+'px';
+    e.preventDefault();
+  },{passive:false});
+
+  window.addEventListener('touchend',function(){
+    if(!dragging)return;
+    dragging=false;
+    panel.style.transition='';
+    if(panel.offsetHeight<140){closePanel();currentPanelKey=null;}
+  });
+})();
 
 // ═══════════════════════════════════════════════════
 // ADMIN AUTH
@@ -3373,20 +3434,34 @@ if(sb){
 
 document.getElementById('panel-logo')?.addEventListener('click',function(){
   const img=document.getElementById('panel-logo-img');
-  if(img && img.src){ window.open(img.src,'_blank'); }
+  if(img && img.src && img.style.display!=='none'){ window.open(img.src,'_blank'); }
 });
 
 
-// Fix close button - prevent opening image
+// Fix close button
 document.getElementById('panel-close')?.addEventListener('click',function(e){ e.stopPropagation(); closePanel(); currentPanelKey=null; });
-// Fix logo click - don't trigger when clicking close
+// Logo click → open lightbox (not new tab)
 document.getElementById('panel-logo')?.addEventListener('click',function(e){
   e.stopPropagation();
-  const img=document.getElementById('panel-logo-img');
-  if(img && img.src && img.style.display!=='none'){ window.open(img.src,'_blank'); }
+  var img=document.getElementById('panel-logo-img');
+  if(img && img.src && img.style.display!=='none'){
+    document.getElementById('lightbox-img').src=img.src;
+    document.getElementById('modal-lightbox').classList.add('open');
+  }
+});
+document.getElementById('modal-lightbox')?.addEventListener('click',function(){
+  this.classList.remove('open');
+  document.getElementById('lightbox-img').src='';
 });
 
 })();
 </script>
+
+<!-- ── LIGHTBOX ── -->
+<div id="modal-lightbox">
+  <button id="lightbox-close" type="button" onclick="document.getElementById('modal-lightbox').classList.remove('open');document.getElementById('lightbox-img').src='';">✕</button>
+  <img id="lightbox-img" src="" alt="Terminal image" />
+</div>
+
 </body>
 </html>
