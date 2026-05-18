@@ -1523,6 +1523,8 @@ document.getElementById('btn-left-menu').addEventListener('click',openLeftSideba
 
 // Local areas toggle
 window.onToggleLocalAreas=function(checked){
+  _savedUISettings.showLocalAreas = !!checked;
+  saveUISettings();
   if(checked){
     // Load and show all drawn areas
     if(!sb)return;
@@ -1619,8 +1621,12 @@ window.saveContent=async function(key,editorId,displayId,saveBtnId){
 var _savedPos=null;
 try{var _sp=localStorage.getItem('atl_pos');if(_sp){var _p=JSON.parse(_sp);if(_p&&_p.lat&&_p.lng&&_p.zoom)_savedPos=_p;}}catch(e){}
 
+var _savedUISettings={mapThemeLight:false,showLocalAreas:false};
+try{var _su=localStorage.getItem('atl_settings');if(_su){var _sj=JSON.parse(_su);if(typeof _sj.mapThemeLight==='boolean')_savedUISettings.mapThemeLight=_sj.mapThemeLight;if(typeof _sj.showLocalAreas==='boolean')_savedUISettings.showLocalAreas=_sj.showLocalAreas;}}catch(e){}
+function saveUISettings(){try{localStorage.setItem('atl_settings',JSON.stringify({mapThemeLight:_mapThemeLight,showLocalAreas:_savedUISettings.showLocalAreas}));}catch(e){}}
+
 // Map theme state
-var _mapThemeLight = false;
+var _mapThemeLight = _savedUISettings.mapThemeLight;
 var _tileLayer = null;
 
 var TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -1651,7 +1657,7 @@ var map = null;
     preferCanvas: true
   });
 
-  _tileLayer = L.tileLayer(TILE_DARK, {
+  _tileLayer = L.tileLayer(_mapThemeLight ? TILE_LIGHT : TILE_DARK, {
     attribution: TILE_ATTR,
     subdomains: 'abcd',
     maxZoom: 19,
@@ -1661,6 +1667,13 @@ var map = null;
     updateWhenZooming: false,
     crossOrigin: true
   }).addTo(map);
+
+  document.body.classList.toggle('map-light', _mapThemeLight);
+  var themeToggle = document.getElementById('toggle-map-theme');
+  if(themeToggle){themeToggle.checked=_mapThemeLight;}
+  var localAreasToggle = document.getElementById('toggle-local-areas');
+  if(localAreasToggle){localAreasToggle.checked=_savedUISettings.showLocalAreas;}
+  if(_savedUISettings.showLocalAreas){onToggleLocalAreas(true);}
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -1695,6 +1708,7 @@ window.onToggleMapTheme = function(isLight) {
   }).addTo(map);
   // Toggle body class for CSS overrides
   document.body.classList.toggle('map-light', isLight);
+  saveUISettings();
 };
 
 // Handle window resize
