@@ -2268,30 +2268,30 @@ async function syncSiblingTerminals(savedId, savedPayload, savedCols){
     }
 
     // Accumulate best values across all siblings
-    var bestNum    = {val: savedNum,             source: savedNum ? 'saved' : null};
-    var bestFull   = {val: savedPayload.full_name, source: savedPayload.full_name ? 'saved' : null};
-    var bestColors = {val: savedCols,             source: savedCols&&savedCols.length ? 'saved' : null};
-    var bestAffils = {val: savedPayload.affiliations, source: savedPayload.affiliations&&savedPayload.affiliations.length ? 'saved' : null};
-    var bestLogo   = {val: savedPayload.logo_url, source: savedPayload.logo_url ? 'saved' : null};
+    var bestNum    = {val: savedNum,             source: (savedNum !== null && savedNum !== undefined) ? 'saved' : null};
+    var bestFull   = {val: savedPayload.full_name, source: (savedPayload.full_name !== null && savedPayload.full_name !== undefined && (savedPayload.full_name+'').trim()) ? 'saved' : null};
+    // Treat an explicit empty array for colors as an intentional removal by admin
+    var bestColors = {val: savedCols,             source: Array.isArray(savedCols) ? 'saved' : null};
+    // Same for affiliations: if it's an array (even empty), treat as explicit
+    var bestAffils = {val: savedPayload.affiliations, source: Array.isArray(savedPayload.affiliations) ? 'saved' : null};
     var bestCity   = {val: savedPayload.city,     source: savedPayload.city ? 'saved' : null};
 
     siblings.forEach(function(sib){
       if(!bestNum.val && sib.number)   bestNum   = {val: sib.number,     source: 'sibling'};
       if(!bestFull.val && sib.full_name) bestFull = {val: sib.full_name, source: 'sibling'};
-      if(!(bestColors.val&&bestColors.val.length) && sib.colors&&sib.colors.length)
+      if(bestColors.source!=='saved' && sib.colors && sib.colors.length)
         bestColors = {val: sib.colors, source: 'sibling'};
-      if(!(bestAffils.val&&bestAffils.val.length) && sib.affiliations&&sib.affiliations.length)
+      if(bestAffils.source!=='saved' && sib.affiliations && sib.affiliations.length)
         bestAffils = {val: sib.affiliations, source: 'sibling'};
-      if(!bestLogo.val && sib.logo_url)  bestLogo = {val: sib.logo_url,  source: 'sibling'};
       if(!bestCity.val && sib.city)      bestCity = {val: sib.city,      source: 'sibling'};
     });
 
+    // Do NOT auto-sync logo images between terminals. Colors and affiliations still sync.
     var sharedPatch = {
       number:       bestNum.val,
       full_name:    bestFull.val,
       colors:       bestColors.val||[],
       affiliations: bestAffils.val||[],
-      logo_url:     bestLogo.val||null,
       city:         bestCity.val||'Antipolo City'
     };
 
@@ -2303,11 +2303,11 @@ async function syncSiblingTerminals(savedId, savedPayload, savedCols){
       var sibKey = 'sb-'+sib.id;
       if(markerStore[sibKey]){
         var st = markerStore[sibKey].toda;
-        st.n         = sharedPatch.number       || st.n;
-        st.full      = sharedPatch.full_name     || st.full;
-        st.colors    = sharedPatch.colors.length ? sharedPatch.colors : st.colors;
-        st.affiliations = sharedPatch.affiliations.length ? sharedPatch.affiliations : st.affiliations;
-        st.logoUrl   = sharedPatch.logo_url      || st.logoUrl;
+        st.n            = (sharedPatch.number !== undefined && sharedPatch.number !== null) ? sharedPatch.number : st.n;
+        st.full         = sharedPatch.full_name || st.full;
+        // Respect explicit empty arrays for colors/affiliations
+        if(Array.isArray(sharedPatch.colors)) st.colors = sharedPatch.colors;
+        if(Array.isArray(sharedPatch.affiliations)) st.affiliations = sharedPatch.affiliations;
       }
     }
 
@@ -2315,11 +2315,10 @@ async function syncSiblingTerminals(savedId, savedPayload, savedCols){
     var backPatch = {};
     if(bestNum.source==='sibling'  && bestNum.val)    backPatch.number      = bestNum.val;
     if(bestFull.source==='sibling' && bestFull.val)   backPatch.full_name   = bestFull.val;
-    if(bestColors.source==='sibling' && bestColors.val&&bestColors.val.length)
-                                                       backPatch.colors      = bestColors.val;
-    if(bestAffils.source==='sibling' && bestAffils.val&&bestAffils.val.length)
-                                                       backPatch.affiliations= bestAffils.val;
-    if(bestLogo.source==='sibling' && bestLogo.val)   backPatch.logo_url    = bestLogo.val;
+    if(bestColors.source==='sibling' && bestColors.val)
+                               backPatch.colors      = bestColors.val;
+    if(bestAffils.source==='sibling' && bestAffils.val)
+                               backPatch.affiliations= bestAffils.val;
     if(bestCity.source==='sibling' && bestCity.val)   backPatch.city        = bestCity.val;
 
     if(Object.keys(backPatch).length){
@@ -2332,7 +2331,6 @@ async function syncSiblingTerminals(savedId, savedPayload, savedCols){
         if(backPatch.full_name)    st2.full      = backPatch.full_name;
         if(backPatch.colors)       st2.colors    = backPatch.colors;
         if(backPatch.affiliations) st2.affiliations = backPatch.affiliations;
-        if(backPatch.logo_url)     st2.logoUrl   = backPatch.logo_url;
       }
     }
 
