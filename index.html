@@ -153,7 +153,7 @@
     #panel-logo-placeholder{width:100%;height:100%;display:flex;}
     .logo-color-bar{height:100%;flex:1;}
     #panel-logo-text{position:absolute;font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;color:rgba(255,255,255,0.9);text-shadow:0 1px 6px rgba(0,0,0,0.7);}
-    #panel-close{position:absolute;top:12px;right:12px;z-index:10;background:rgba(0,0,0,0.4);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.35);border:none;color:white;font-size:0.8rem;cursor:pointer;padding:4px 7px;border-radius:3px;z-index:10;}
+    #panel-close{position:absolute;top:8px;right:8px;z-index:20;background:rgba(0,0,0,0.35);border:none;color:white;width:42px;height:42px;min-width:42px;min-height:42px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation;}
     #panel-close:hover{background:rgba(0,0,0,0.6);}
 
     /* Panel header */
@@ -227,7 +227,7 @@
     .form-error{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#ff7070;margin-top:8px;display:none;}
     .form-divider{border:none;border-top:1px solid rgba(122,69,32,0.4);margin:8px 0 16px;}
     .form-section-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-l);margin-bottom:10px;margin-top:4px;}
-    .color-inputs{display:flex;flex-direction:column;gap:6px;}
+    .color-inputs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
     .color-input-row{display:flex;gap:8px;align-items:center;}
     .color-input-row input[type="color"]{width:36px;height:36px;padding:2px;cursor:pointer;border-radius:8px;flex-shrink:0;}
     .color-input-row input[type="text"]{flex:1;}
@@ -306,6 +306,8 @@
     .btn-approve:hover{background:rgba(76,175,80,0.18);color:#a5d6a7;}
     .btn-reject{flex:1;padding:7px;border:1px solid rgba(231,76,60,0.3);border-radius:4px;background:none;color:rgba(231,76,60,0.7);font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
     .btn-reject:hover{color:#e74c3c;border-color:#e74c3c;}
+    .btn-show{flex:1;padding:7px;border:1px solid rgba(59,130,246,0.45);border-radius:4px;background:rgba(59,130,246,0.08);color:#93c5fd;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+    .btn-show:hover{background:rgba(59,130,246,0.18);color:#bfdbfe;}
     .no-contribs{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted);text-align:center;padding:24px 0;}
 
     /* Toast */
@@ -895,12 +897,7 @@
     <div class="form-group"><label>Logo / Image URL</label><input type="url" id="f-logo" placeholder="https://..."/></div>
     <div class="form-group">
       <label>Colors</label>
-      <div class="color-inputs" id="color-inputs">
-        <div class="color-input-row">
-          <input type="color" value="#f59e0b"/>
-          <button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>
-        </div>
-      </div>
+      <div class="color-inputs" id="color-inputs"></div>
       <button class="btn-add-color" type="button" onclick="addColorRow()">+ Add Color</button>
     </div></div>
     <hr class="form-divider"/>
@@ -987,12 +984,7 @@
       <div class="form-group"><label>Logo / Image URL</label><input type="url" id="c-logo" placeholder="https://..."/></div>
       <div class="form-group">
         <label>Colors (pick from palette)</label>
-        <div class="color-inputs" id="c-color-inputs">
-          <div class="color-input-row">
-            <input type="color" value="#f59e0b"/>
-            <button class="btn-remove-color" type="button" onclick="removeColorRowFrom('c-color-inputs',this)">✕</button>
-          </div>
-        </div>
+        <div class="color-inputs" id="c-color-inputs"></div>
         <button class="btn-add-color" type="button" onclick="addColorRowTo('c-color-inputs')">+ Add Color</button>
       </div>
     </div>
@@ -1397,7 +1389,7 @@ var markerStore={};
 var currentPanelKey=null;
 var selectedKey=null;
 var userLocation=null;
-var pickingPin=false,pickingForContrib=false,tempMarker=null;
+var pickingPin=false,pickingForContrib=false,tempMarker=null,_pendingPreviewMarker=null;
 var _editKey=null;
 var _lastContribTime=0;
 var _knownAffils=[
@@ -1412,11 +1404,102 @@ var siteContent={};
 var _drawnItems=null,_drawControl=null,_drawnGeoJSON=null;
 var _searchHighlights=[];
 
+function clearTempMarker(){
+  if(tempMarker && map){map.removeLayer(tempMarker);}
+  tempMarker=null;
+}
+
+function clearPreviewMarker(){
+  if(_pendingPreviewMarker && map){map.removeLayer(_pendingPreviewMarker);}
+  _pendingPreviewMarker=null;
+}
+
+function removeTodaMarkerId(id){
+  if(!id) return;
+  var key='sb-'+id;
+  if(markerStore[key]){
+    if(map) map.removeLayer(markerStore[key].marker);
+    delete markerStore[key];
+    if(currentPanelKey===key){currentPanelKey=null;closePanel();}
+    if(selectedKey===key) selectedKey=null;
+  }
+}
+function normalizeTodaRow(row){
+  if(!row||!row.id) return null;
+  return {
+    id: row.id,
+    n: row.number||null,
+    name: row.name||'',
+    full: row.full_name||'',
+    lat: parseFloat(row.lat)||0,
+    lng: parseFloat(row.lng)||0,
+    terminal: row.terminal_name||row.terminal||'',
+    landmarks: row.landmarks||'',
+    notes: row.notes||null,
+    colors: Array.isArray(row.colors)?row.colors:[],
+    affiliations: Array.isArray(row.affiliations)?row.affiliations:(row.has_robinsons?[{name:'Robinsons',color:'#CC2200'}]:[]),
+    checked: row.last_checked||'',
+    status: row.status||'draft',
+    robinsons: row.has_robinsons||false,
+    logoUrl: row.logo_url||null,
+    city: row.city||'Antipolo City'
+  };
+}
+
+function syncTodaRow(row){
+  var toda = normalizeTodaRow(row);
+  if(!toda) return;
+  var key='sb-'+toda.id;
+  if(markerStore[key]){
+    var entry = markerStore[key];
+    entry.toda = toda;
+    entry.marker.setLatLng([toda.lat,toda.lng]);
+    entry.marker.setIcon(makeIcon(toda, key===selectedKey));
+    entry.marker.unbindTooltip();
+    entry.marker.bindTooltip((toda.n?'#'+toda.n+' ':'')+(toda.name||'?'),{permanent:false,direction:'top',offset:[0,-8]});
+    if(currentPanelKey===key){ openPanel(toda); }
+    if(document.getElementById('modal-database').classList.contains('open')) renderDb();
+  } else {
+    addTodaToMap(toda,key);
+  }
+}
+
+function syncTodaRow(row){
+  var toda = normalizeTodaRow(row);
+  if(!toda) return;
+  var key='sb-'+toda.id;
+  if(markerStore[key]){
+    var entry = markerStore[key];
+    entry.toda = toda;
+    entry.marker.setLatLng([toda.lat,toda.lng]);
+    entry.marker.setIcon(makeIcon(toda, key===selectedKey));
+    entry.marker.unbindTooltip();
+    entry.marker.bindTooltip((toda.n?'#'+toda.n+' ':'')+(toda.name||'?'),{permanent:false,direction:'top',offset:[0,-8]});
+    if(currentPanelKey===key){ openPanel(toda); }
+    if(document.getElementById('modal-database').classList.contains('open')) renderDb();
+  } else {
+    addTodaToMap(toda,key);
+  }
+}
+
 // ═══════════════════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════════════════
 function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('open');}
 function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('open');}
+function showContributionLocation(lat,lng,name){
+  if(!map)return;
+  clearTempMarker();
+  clearPreviewMarker();
+  closeModal('modal-verify');
+  map.flyTo([lat,lng],16,{duration:0.8});
+  _pendingPreviewMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:rgba(59,130,246,0.95);border:2px solid white;box-shadow:0 0 0 8px rgba(59,130,246,0.28);"></div>',className:'',iconSize:[16,16],iconAnchor:[8,8]})}).addTo(map);
+  var popupContent=document.createElement('div');
+  var title=document.createElement('div');title.style.fontWeight='700';title.textContent=name||'Contribution location';
+  var coords=document.createElement('div');coords.textContent=lat.toFixed(5)+', '+lng.toFixed(5);
+  popupContent.appendChild(title);popupContent.appendChild(coords);
+  _pendingPreviewMarker.bindPopup(popupContent).openPopup();
+}
 window.openModal=openModal;window.closeModal=closeModal;
 
 // ═══════════════════════════════════════════════════
@@ -1541,7 +1624,7 @@ var _mapThemeLight = false;
 var _tileLayer = null;
 
 var TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-var TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+var TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 var TILE_ATTR  = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>';
 
 // Init map after a frame so the CSS layout has settled
@@ -1585,7 +1668,7 @@ var map = null;
     try { var c = map.getCenter(); localStorage.setItem('atl_pos', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() })); } catch(e) {}
   });
   map.on('click', function() {
-    if (!pickingPin && !pickingForContrib) { closePanel(); currentPanelKey = null; }
+    if (!pickingPin && !pickingForContrib) { closePanel(); currentPanelKey = null; clearPreviewMarker(); }
   });
 
   // Multiple invalidateSize calls to handle any layout timing issues
@@ -1759,6 +1842,8 @@ document.getElementById('panel-close').addEventListener('click',function(){close
 
   panel.addEventListener('touchstart',function(e){
     if(!isMobile()||!panel.classList.contains('has-content'))return;
+    var target=e.target;
+    if(target.closest('button, a, input, textarea, select, label, #panel-close, #panel-logo')) return;
     var rect=panel.getBoundingClientRect();
     var touch=e.touches[0];
     if(touch.clientY-rect.top>44)return; // only drag from handle area
@@ -1965,7 +2050,7 @@ window.addColorRowTo=function(cid){
   ci.appendChild(row);
 };
 window.removeColorRow=function(btn){removeColorRowFrom('color-inputs',btn);};
-window.removeColorRowFrom=function(cid,btn){var ci=document.getElementById(cid);if(ci&&ci.children.length>1)btn.parentElement.remove();};
+window.removeColorRowFrom=function(cid,btn){var ci=document.getElementById(cid);if(ci&&btn&&btn.parentElement)btn.parentElement.remove();};
 function getColorsFrom(cid){
   return Array.from(document.querySelectorAll('#'+cid+' .color-input-row')).map(function(r){
     return{hex:r.querySelector('input[type="color"]').value,label:''};
@@ -1978,9 +2063,11 @@ function getColorsFrom(cid){
 window.openAddToda=function(){closeModal('modal-admin');resetAdminForm();syncFormStatus('f');openModal('modal-add');};
 window.closeAddModal=function(){closeModal('modal-add');resetAdminForm();_editKey=null;};
 window.cancelPickPin=function(){
+  var wasContrib = pickingForContrib;
   pickingPin=false;pickingForContrib=false;
   document.getElementById('picking-hint').style.display='none';
   if(map)map.getContainer().style.cursor='';
+  clearTempMarker();
   openModal(pickingForContrib?'modal-contribute':'modal-add');
 };
 
@@ -2031,8 +2118,7 @@ window.onEditClick=function(){
   _fSelectedAreas.length=0;renderFAreaTags();
   if(t.id)loadAreasIntoForm(t.id,_fSelectedAreas,renderFAreaTags);
   var cols=normColors(t.colors),ci=document.getElementById('color-inputs');ci.innerHTML='';
-  if(cols.length)cols.forEach(function(c){var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="'+c.hex+'"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);});
-  else{var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="#f59e0b"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);}
+  cols.forEach(function(c){var row=document.createElement('div');row.className='color-input-row';row.innerHTML='<input type="color" value="'+c.hex+'"/><button class="btn-remove-color" type="button" onclick="removeColorRow(this)">✕</button>';ci.appendChild(row);});
   openModal('modal-add');
 };
 window.onDeleteClick=async function(){
@@ -2074,7 +2160,7 @@ function resetAdminForm(){
   _fSelectedAreas.length=0;renderFAreaTags();
   syncFormStatus('f');
   var aci=document.getElementById('color-inputs');
-  if(aci){aci.innerHTML='';var acr=document.createElement('div');acr.className='color-input-row';var acin=document.createElement('input');acin.type='color';acin.value='#f59e0b';var acb=document.createElement('button');acb.className='btn-remove-color';acb.type='button';acb.textContent='✕';acb.addEventListener('click',function(){removeColorRow(this);});acr.appendChild(acin);acr.appendChild(acb);aci.appendChild(acr);}
+  if(aci){aci.innerHTML='';}
   document.getElementById('add-error').style.display='none';
 }
 
@@ -2290,7 +2376,7 @@ function resetContribForm(){
   document.getElementById('c-status').value='draft';
   document.getElementById('contrib-error').style.display='none';
   var ci=document.getElementById('c-color-inputs');
-  if(ci){ci.innerHTML='';var cr=document.createElement('div');cr.className='color-input-row';var ci3=document.createElement('input');ci3.type='color';ci3.value='#f59e0b';var cb3=document.createElement('button');cb3.className='btn-remove-color';cb3.type='button';cb3.textContent='✕';cb3.addEventListener('click',function(){removeColorRowFrom('c-color-inputs',this);});cr.appendChild(ci3);cr.appendChild(cb3);ci.appendChild(cr);}
+  if(ci){ci.innerHTML='';}
   _cAffils.length=0;renderCAffilTags();
   _cSelectedAreas.length=0;renderCAreaTags();
   syncFormStatus('c');
@@ -2434,11 +2520,13 @@ window.openVerify=async function(){
       var co=document.createElement('div');co.className='contrib-card-row';co.innerHTML='Coords: <span>'+c.lat.toFixed(5)+', '+c.lng.toFixed(5)+'</span>';card.appendChild(co);
       addRow('Notes',c.notes);
       var acts=document.createElement('div');acts.className='contrib-actions';
+      var sb=document.createElement('button');sb.className='btn-show';sb.textContent='📍 Show on map';
+      sb.addEventListener('click',(function(lat,lng,name){return function(){showContributionLocation(lat,lng,name);};})(c.lat,c.lng,c.name));
       var ab=document.createElement('button');ab.className='btn-approve';ab.textContent='✓ Approve';
       ab.addEventListener('click',(function(id){return function(){approveContrib(id,card);};})(c.id));
       var rb=document.createElement('button');rb.className='btn-reject';rb.textContent='✕ Reject';
       rb.addEventListener('click',(function(id){return function(){rejectContrib(id,card);};})(c.id));
-      acts.appendChild(ab);acts.appendChild(rb);card.appendChild(acts);
+      acts.appendChild(sb);acts.appendChild(ab);acts.appendChild(rb);card.appendChild(acts);
       list.appendChild(card);
     });
   }catch(e){list.innerHTML='<div class="no-contribs">Error: '+e.message+'</div>';}
@@ -3308,39 +3396,6 @@ document.getElementById('db-filter').addEventListener('input', function() {
 
 
 // Status-smart forms
-function updateFormVisibility(prefix){
-  var status = document.getElementById(prefix+'-status').value;
-  var numGroup = document.getElementById(prefix+'-number').closest('.form-group');
-  var nameGroup = document.getElementById(prefix+'-name').closest('.form-group');
-  var fullnameGroup = document.getElementById(prefix+'-fullname').closest('.form-group');
-  var colorsGroup = document.querySelector('#'+prefix+'-colors')?.closest('.form-group');
-  var lastGroup = document.getElementById(prefix+'-last')?.closest('.form-group');
-  
-  if(status==='kolorum'){
-    if(numGroup) numGroup.style.display='none';
-    if(nameGroup) nameGroup.querySelector('label').textContent='TODA Name (optional)';
-    if(fullnameGroup) fullnameGroup.style.display='none';
-    if(colorsGroup) colorsGroup.style.display='none';
-    if(lastGroup) lastGroup.style.display='none';
-  } else if(status==='draft'){
-    if(numGroup) numGroup.style.display='none';
-    if(nameGroup) nameGroup.querySelector('label').textContent='TODA Abbreviation *';
-    if(fullnameGroup) fullnameGroup.style.display='';
-    if(colorsGroup) colorsGroup.style.display='';
-    if(lastGroup) lastGroup.style.display='none';
-  } else {
-    if(numGroup) numGroup.style.display='';
-    if(nameGroup) nameGroup.querySelector('label').textContent='TODA Abbreviation *';
-    if(fullnameGroup) fullnameGroup.style.display='';
-    if(colorsGroup) colorsGroup.style.display='';
-    if(lastGroup) lastGroup.style.display='';
-    if(lastGroup) document.getElementById(prefix+'-last').required=true;
-  }
-}
-document.getElementById('f-status')?.addEventListener('change',()=>updateFormVisibility('f'));
-document.getElementById('c-status')?.addEventListener('change',()=>updateFormVisibility('c'));
-// init
-setTimeout(()=>{updateFormVisibility('f');updateFormVisibility('c');},500);
 
 
 // Dynamic affiliations with auto-learn
@@ -3425,21 +3480,43 @@ setTimeout(loadLocalAreas,1500);
 if(sb){
   sb.channel('contribs').on('postgres_changes',{event:'INSERT',schema:'public',table:'contributions'},payload=>{
     if(adminSession){
-      document.getElementById('notif-dot').style.display='block';
+      document.getElementById('admin-notif-dot').style.display='block';
       toast('New contribution pending','');
     }
   }).subscribe();
 }
 
+if(sb){
+  sb.channel('todas_admin_updates')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'todas_admin'},function(payload){
+      if(payload.new) syncTodaRow(payload.new);
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'todas_admin'},function(payload){
+      if(payload.new) syncTodaRow(payload.new);
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'todas_admin'},function(payload){
+      if(payload.old) removeTodaMarkerId(payload.old.id);
+    })
+    .subscribe();
 
-document.getElementById('panel-logo')?.addEventListener('click',function(){
-  const img=document.getElementById('panel-logo-img');
-  if(img && img.src && img.style.display!=='none'){ window.open(img.src,'_blank'); }
-});
+  sb.channel('contrib_notifications')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'contributions'},function(){
+      if(adminSession){
+        document.getElementById('admin-notif-dot').style.display='block';
+        if(document.getElementById('modal-verify').classList.contains('open')) openVerify();
+        showToast('New contribution pending','');
+      }
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'contributions'},function(){
+      if(adminSession){
+        checkPendingContributions();
+        if(document.getElementById('modal-verify').classList.contains('open')) openVerify();
+      }
+    })
+    .subscribe();
+}
 
 
-// Fix close button
-document.getElementById('panel-close')?.addEventListener('click',function(e){ e.stopPropagation(); closePanel(); currentPanelKey=null; });
 // Logo click → open lightbox (not new tab)
 document.getElementById('panel-logo')?.addEventListener('click',function(e){
   e.stopPropagation();
