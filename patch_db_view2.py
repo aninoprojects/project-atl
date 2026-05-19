@@ -1,0 +1,21 @@
+﻿import pathlib
+path=pathlib.Path('index.html')
+text=path.read_text('utf8')
+text=text.replace('\r\n','\n')
+old_html='''      <span id="db-edit-hint" style="display:none;color:var(--accent-l);">Admin: click Edit to change a row, then Save or Cancel</span>\n      <span id="db-footer-label">Source: Project ATL Spreadsheet v3.1</span>\n      <a href="https://docs.google.com/spreadsheets/d/1ESCD31Vrq1dur2vIXDlDRg802YE3aVs6UDgJ45yQbqA/edit" target="_blank">Open in Sheets ↗</a>'''
+new_html='''      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">\n        <span id="db-edit-hint" style="display:none;color:var(--accent-l);">Admin: click Edit to change a row, then Save or Cancel</span>\n        <div id="db-admin-controls" style="display:none;align-items:center;gap:8px;">\n          <button class="db-action-btn" type="button" onclick="addDbColumn()">+ Column</button>\n          <button class="db-action-cancel" type="button" onclick="editDbColumns()">Manage Columns</button>\n          <button class="db-action-delete" type="button" onclick="restoreDeletedDbRows()">Restore deleted</button>\n        </div>\n      </div>\n      <span id="db-footer-label">Source: Project ATL Spreadsheet v3.1</span>\n      <a href="https://docs.google.com/spreadsheets/d/1ESCD31Vrq1dur2vIXDlDRg802YE3aVs6UDgJ45yQbqA/edit" target="_blank">Open in Sheets ↗</a>'''
+old_action='''      actionTd.appendChild(editBtn);\n      if (_dbEditingKey === rowKey) {\n        var cancelBtn = document.createElement('button');\n        cancelBtn.type = 'button';\n        cancelBtn.className = 'db-action-cancel';\n        cancelBtn.textContent = 'Cancel';\n        cancelBtn.addEventListener('click', function(ev) { ev.stopPropagation(); cancelDbRowEdit(); });\n        actionTd.appendChild(cancelBtn);\n      }\n      tr.appendChild(actionTd);\n    }\n'''
+new_action='''      actionTd.appendChild(editBtn);\n      var deleteBtn = document.createElement('button');\n      deleteBtn.type = 'button';\n      deleteBtn.className = 'db-action-delete';\n      deleteBtn.textContent = 'Delete';\n      deleteBtn.addEventListener('click', function(ev){ ev.stopPropagation(); deleteDbRow(rowKey,rowName); });\n      actionTd.appendChild(deleteBtn);\n      if (_dbEditingKey === rowKey) {\n        var cancelBtn = document.createElement('button');\n        cancelBtn.type = 'button';\n        cancelBtn.className = 'db-action-cancel';\n        cancelBtn.textContent = 'Cancel';\n        cancelBtn.addEventListener('click', function(ev) { ev.stopPropagation(); cancelDbRowEdit(); });\n        actionTd.appendChild(cancelBtn);\n      }\n      tr.appendChild(actionTd);\n    }\n'''
+old_css='''    .db-action-btn:hover{background:rgba(249,115,22,0.16);}\n    .db-action-cancel{color:#94a3b8;border-color:rgba(148,163,184,0.4);background:rgba(148,163,184,0.08);margin-left:6px;}\n    .db-action-cancel:hover{background:rgba(148,163,184,0.14);}\n    .db-footer{padding:8px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.55rem;color:var(--muted);}\n'''
+new_css='''    .db-action-btn:hover{background:rgba(249,115,22,0.16);}\n    .db-action-delete{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:4px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.35);color:#dc2626;background:rgba(254,202,202,0.16);margin-left:6px;}\n    .db-action-delete:hover{background:rgba(254,202,202,0.3);}\n    .db-action-cancel{color:#94a3b8;border-color:rgba(148,163,184,0.4);background:rgba(148,163,184,0.08);margin-left:6px;}\n    .db-action-cancel:hover{background:rgba(148,163,184,0.14);}\n    .db-footer{padding:8px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.55rem;color:var(--muted);}\n'''
+if old_html not in text:
+    raise SystemExit('HTML footer block not found')
+if old_action not in text:
+    raise SystemExit('Action button block not found')
+if old_css not in text:
+    raise SystemExit('CSS block not found')
+text = text.replace(old_html, new_html, 1)
+text = text.replace(old_action, new_action, 1)
+text = text.replace(old_css, new_css, 1)
+path.write_text(text.replace('\n','\r\n'), encoding='utf-8')
+print('applied patches')
