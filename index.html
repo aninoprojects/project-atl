@@ -567,6 +567,12 @@
     #db-table tbody tr.db-new-row td{background:rgba(249,115,22,0.08);border-left:2px solid var(--accent);}
     #db-table td.db-editable:hover{background:rgba(234,88,12,0.12);outline:1px dashed rgba(234,88,12,0.4);cursor:text;}
     #db-table td input.db-cell-input{background:var(--bg);border:1px solid var(--accent);border-radius:3px;color:var(--text);font-family:inherit;font-size:inherit;width:100%;padding:1px 4px;outline:none;}
+    #db-table td.db-editing{background:rgba(249,115,22,0.08);}
+    .db-action-btn,.db-action-cancel{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:4px 8px;border-radius:6px;border:1px solid rgba(249,115,22,0.4);cursor:pointer;transition:all 0.15s;margin:0;}
+    .db-action-btn{color:var(--accent-l);background:rgba(249,115,22,0.08);}
+    .db-action-btn:hover{background:rgba(249,115,22,0.16);}
+    .db-action-cancel{color:#94a3b8;border-color:rgba(148,163,184,0.4);background:rgba(148,163,184,0.08);margin-left:6px;}
+    .db-action-cancel:hover{background:rgba(148,163,184,0.14);}
     .db-footer{padding:8px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.55rem;color:var(--muted);}
     .db-footer a{color:var(--accent-l);text-decoration:none;text-transform:uppercase;letter-spacing:0.06em;}
     @media(max-width:768px){
@@ -882,7 +888,7 @@
       </div>
     </div>
     <div class="form-group"><label>TODA Abbreviation *</label><input type="text" id="f-name" placeholder="e.g. APFMCTODA"/></div>
-    <div class="form-group"><label>Full Cooperative Name</label><input type="text" id="f-fullname" placeholder="e.g. Antipolo Public Freight..."/></div>
+    <div class="form-group"><label>Routes</label><input type="text" id="f-fullname" placeholder="e.g. Beverly Hills"/></div>
     <hr class="form-divider"/>
     <div class="form-section-label">Location</div>
     <div class="form-group"><label>Terminal Type</label><select id="f-terminal"><option value="">Select type...</option><option>Main Terminal</option><option>Sub-terminal</option><option>Volume Terminal</option><option>Terminal</option></select></div>
@@ -960,7 +966,7 @@
         <div class="form-group" style="visibility:hidden;"></div>
       </div>
       <div class="form-group" id="c-name-grp"><label>TODA Abbreviation *</label><input type="text" id="c-name" placeholder="e.g. APFMCTODA"/></div>
-      <div class="form-group" id="c-fullname-grp"><label>Full Cooperative Name</label><input type="text" id="c-fullname" placeholder="Optional"/></div>
+      <div class="form-group" id="c-fullname-grp"><label>Routes</label><input type="text" id="c-fullname" placeholder="Optional"/></div>
     </div>
     <!-- Kolorum name field -->
     <div id="c-kolorum-fields" style="display:none;">
@@ -1352,7 +1358,7 @@
       </table>
     </div>
     <div class="db-footer">
-      <span id="db-edit-hint" style="display:none;color:var(--accent-l);">Admin: click any cell to edit · changes save instantly</span>
+      <span id="db-edit-hint" style="display:none;color:var(--accent-l);">Admin: click Edit to change a row, then Save or Cancel</span>
       <span id="db-footer-label">Source: Project ATL Spreadsheet v3.1</span>
       <a href="https://docs.google.com/spreadsheets/d/1ESCD31Vrq1dur2vIXDlDRg802YE3aVs6UDgJ45yQbqA/edit" target="_blank">Open in Sheets ↗</a>
     </div>
@@ -2528,7 +2534,7 @@ window.openVerify=async function(){
       function addRow(lbl,val){if(!val)return;var d=document.createElement('div');d.className='contrib-card-row';d.innerHTML=lbl+': <span>'+val+'</span>';card.appendChild(d);}
       var nm=document.createElement('div');nm.className='contrib-card-name';nm.textContent=c.name;card.appendChild(nm);
       var mt=document.createElement('div');mt.className='contrib-card-meta';mt.textContent='Submitted '+date+' · '+c.status;card.appendChild(mt);
-      addRow('Full name',c.full_name);addRow('Terminal',c.terminal_name);addRow('Landmarks',c.landmarks);
+      addRow('Routes',c.full_name);addRow('Terminal',c.terminal_name);addRow('Landmarks',c.landmarks);
       var co=document.createElement('div');co.className='contrib-card-row';co.innerHTML='Coords: <span>'+c.lat.toFixed(5)+', '+c.lng.toFixed(5)+'</span>';card.appendChild(co);
       addRow('Notes',c.notes);
       var acts=document.createElement('div');acts.className='contrib-actions';
@@ -2760,7 +2766,7 @@ _searchInput.addEventListener('input', function() {
   var areaSection = makeResultSection('Local Areas', '#A78BFA', areaItems);
   if (areaSection) { _searchResults.appendChild(areaSection); hasAny = true; }
 
-  // ── 3. COOPERATIVES / TODA NAMES (full names from all loaded terminals) ──
+  // ── 3. COOPERATIVES / TODA NAMES (routes/full names from all loaded terminals) ──
   // Deduplicated by normalized name — show as group if multiple terminals share it
   var coopMap = {};
   Object.values(markerStore).forEach(function(entry) {
@@ -3188,7 +3194,7 @@ var ATL_DB_DATA = [{"num": "1", "toda": "ACBTODA", "full": "", "city": "", "bara
 var DB_COLS = [
   {key:'num',      label:'#',           editable:true},
   {key:'toda',     label:'TODA',        editable:true},
-  {key:'full',     label:'Full Name',   editable:true},
+  {key:'full',     label:'Routes',      editable:true},
   {key:'barangay', label:'Barangay',    editable:true},
   {key:'lat',      label:'Latitude',    editable:false},
   {key:'lng',      label:'Longitude',   editable:false},
@@ -3198,6 +3204,7 @@ var DB_COLS = [
 ];
 
 var _dbSortCol = 0, _dbSortAsc = true, _dbFilter = '';
+var _dbEditingKey = null;
 // In-memory overrides for admin edits (toda_key → {col: value})
 var _dbEdits = {};
 try { var _de = localStorage.getItem('atl_db_edits'); if(_de) _dbEdits = JSON.parse(_de); } catch(e) {}
@@ -3206,36 +3213,94 @@ function saveDbEdits() {
   try { localStorage.setItem('atl_db_edits', JSON.stringify(_dbEdits)); } catch(e) {}
 }
 
+function normalizeDbKey(str){
+  return (str||'').toString().toUpperCase().replace(/[^A-Z0-9]+/g,'');
+}
+function chooseDbValue(a,b){
+  a = (a||'').toString().trim();
+  b = (b||'').toString().trim();
+  if(!a) return b;
+  if(!b) return a;
+  var bad = ['x','?','pending edit','pending','unknown','n/a'];
+  if(bad.indexOf(a.toLowerCase()) >= 0) return b;
+  if(bad.indexOf(b.toLowerCase()) >= 0) return a;
+  return a.length >= b.length ? a : b;
+}
+function mergeDbEntries(base,row){
+  return {
+    num: base.num || row.num || '',
+    toda: chooseDbValue(base.toda,row.toda),
+    full: chooseDbValue(base.full,row.full),
+    barangay: chooseDbValue(base.barangay,row.barangay),
+    lat: base.lat || row.lat || '',
+    lng: base.lng || row.lng || '',
+    units: chooseDbValue(base.units,row.units),
+    colors: chooseDbValue(base.colors,row.colors),
+    city: chooseDbValue(base.city,row.city),
+    _isNew: base._isNew || row._isNew
+  };
+}
+function startDbRowEdit(rowKey){ _dbEditingKey = rowKey; renderDb(); }
+function cancelDbRowEdit(){ _dbEditingKey = null; renderDb(); }
+function syncDbRowToMap(rowName, payload){
+  if(!sb || !adminSession) return;
+  var matches = Object.entries(markerStore).filter(function(kv){ return (kv[1].toda&&kv[1].toda.name||'').toUpperCase()===rowName; });
+  if(!matches.length) return;
+  var patch = {};
+  if(payload.full !== undefined) patch.full_name = payload.full;
+  if(payload.num !== undefined) patch.number = parseInt(payload.num) || null;
+  matches.forEach(function(kv){
+    var toda=kv[1].toda;
+    if(payload.full !== undefined) toda.full = payload.full;
+    if(payload.num !== undefined) toda.n = parseInt(payload.num) || null;
+    var sId = kv[1].supabaseId;
+    if(sId && Object.keys(patch).length){ sb.from('todas_admin').update(patch).eq('id', sId).then(function(){}); }
+  });
+}
+function saveDbRowEdits(rowKey,rowName,tr){
+  if(!tr) return;
+  var inputs = tr.querySelectorAll('input.db-cell-input');
+  if(!inputs.length){ _dbEditingKey = null; renderDb(); return; }
+  var newValues = {};
+  inputs.forEach(function(inp){ newValues[inp.dataset.key] = inp.value.trim(); });
+  if(!_dbEdits[rowKey]) _dbEdits[rowKey] = {};
+  Object.assign(_dbEdits[rowKey], newValues);
+  saveDbEdits();
+  syncDbRowToMap(rowName, newValues);
+  _dbEditingKey = null;
+  renderDb();
+}
+
 // Build merged DB rows from static data + live markers + admin edits
 function buildDbRows() {
   var merged = {};
 
-  // Start with static spreadsheet data
+  // Start with static spreadsheet data and merge duplicates by fuller values
   ATL_DB_DATA.forEach(function(r) {
-    var key = (r.toda||'').toUpperCase().replace(/\s+/g,'');
+    var key = normalizeDbKey(r.toda);
     if (!key) return;
-    merged[key] = {
+    var entry = {
       num: r.num||'', toda: r.toda||'', full: r.full||'',
       barangay: r.barangay||'', lat: '', lng: '',
       units: r.units||'', colors: r.colors||'', city: r.city||'',
       _isNew: false
     };
+    if (merged[key]) merged[key] = mergeDbEntries(merged[key], entry);
+    else merged[key] = entry;
   });
 
   // Overlay live map terminals (one-way: terminal → DB, not vice versa)
   Object.values(markerStore).forEach(function(e) {
     var t = e.toda;
-    var key = (t.name||'').toUpperCase().replace(/\s+/g,'');
+    var key = normalizeDbKey(t.name);
     if (!key) return;
     if (!merged[key]) {
-      // New terminal not in static data — add it highlighted
       merged[key] = {
         num:'', toda:t.name, full:'', barangay:'', lat:'', lng:'',
         units:'', colors:'', city:'', _isNew: true
       };
     }
     var m = merged[key];
-    // Sync fields from live terminal
     if (t.n) m.num = String(t.n);
     if (t.full) m.full = t.full;
     if (t.lat) m.lat = t.lat.toFixed(6);
@@ -3294,6 +3359,12 @@ function renderDb() {
     };
     htr.appendChild(th);
   });
+  if (adminSession) {
+    var thAction = document.createElement('th');
+    thAction.textContent = 'Action';
+    thAction.style.width = '120px';
+    htr.appendChild(thAction);
+  }
   thead.appendChild(htr);
 
   // Body
@@ -3301,7 +3372,7 @@ function renderDb() {
   tbody.innerHTML = '';
   rows.forEach(function(row) {
     var tr = document.createElement('tr');
-    var rowKey = (row.toda||'').toUpperCase().replace(/\s+/g,'');
+    var rowKey = normalizeDbKey(row.toda);
     var rowName = (row.toda||'').toUpperCase();
 
     // Highlight: blue if has map pin, green-tint if new (not in original sheet)
@@ -3314,55 +3385,50 @@ function renderDb() {
     DB_COLS.forEach(function(col) {
       var td = document.createElement('td');
       var val = row[col.key] || '';
-      td.textContent = val;
       td.title = val;
       if (col.key === 'num') td.className = 'num';
-
-      // Admin: make editable cells clickable (except lat/lng which come from map)
-      if (col.editable && adminSession) {
-        td.classList.add('db-editable');
-        td.addEventListener('click', function(ev) {
-          ev.stopPropagation();
-          if (td.querySelector('input')) return; // already editing
-          var inp = document.createElement('input');
-          inp.className = 'db-cell-input';
-          inp.value = td.textContent;
-          td.textContent = '';
-          td.appendChild(inp);
-          inp.focus();
-          inp.select();
-          function saveEdit() {
-            var newVal = inp.value.trim();
-            td.textContent = newVal;
-            // Save to in-memory edits
-            if (!_dbEdits[rowKey]) _dbEdits[rowKey] = {};
-            _dbEdits[rowKey][col.key] = newVal;
-            saveDbEdits();
-            // If editing toda name or full name, also sync to matching map terminals
-            if ((col.key === 'full' || col.key === 'num' || col.key === 'colors') && sb && adminSession) {
-              var matches = Object.entries(markerStore).filter(function(kv) {
-                return (kv[1].toda&&kv[1].toda.name||'').toUpperCase() === rowName;
-              });
-              matches.forEach(async function(kv) {
-                var sId = kv[1].supabaseId;
-                if (!sId) return;
-                var patch = {};
-                if (col.key === 'full') { patch.full_name = newVal; kv[1].toda.full = newVal; }
-                if (col.key === 'num') { patch.number = parseInt(newVal)||null; kv[1].toda.n = parseInt(newVal)||null; }
-                if (col.key === 'colors') { /* colors are complex, skip auto-sync */ }
-                if (Object.keys(patch).length) await sb.from('todas_admin').update(patch).eq('id', sId);
-              });
-            }
-          }
-          inp.addEventListener('blur', saveEdit);
-          inp.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') { inp.blur(); }
-            if (e.key === 'Escape') { td.textContent = val; }
-          });
+      if (adminSession && _dbEditingKey === rowKey && col.editable) {
+        td.classList.add('db-editing');
+        var inp = document.createElement('input');
+        inp.className = 'db-cell-input';
+        inp.dataset.key = col.key;
+        inp.type = col.key === 'num' ? 'number' : 'text';
+        inp.value = val;
+        inp.addEventListener('click', function(ev) { ev.stopPropagation(); });
+        inp.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { saveDbRowEdits(rowKey, rowName, tr); }
+          if (e.key === 'Escape') { cancelDbRowEdit(); }
         });
+        td.appendChild(inp);
+      } else {
+        td.textContent = val;
       }
       tr.appendChild(td);
     });
+
+    if (adminSession) {
+      var actionTd = document.createElement('td');
+      actionTd.style.whiteSpace = 'nowrap';
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'db-action-btn';
+      editBtn.textContent = _dbEditingKey === rowKey ? 'Save' : 'Edit';
+      editBtn.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        if (_dbEditingKey === rowKey) { saveDbRowEdits(rowKey, rowName, tr); }
+        else { startDbRowEdit(rowKey); }
+      });
+      actionTd.appendChild(editBtn);
+      if (_dbEditingKey === rowKey) {
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'db-action-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', function(ev) { ev.stopPropagation(); cancelDbRowEdit(); });
+        actionTd.appendChild(cancelBtn);
+      }
+      tr.appendChild(actionTd);
+    }
 
     // Row click — jump to map
     tr.addEventListener('click', function() {
