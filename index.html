@@ -544,7 +544,9 @@
 
     /* ── DATABASE ── */
     #btn-database{flex-shrink:0;}
-    #modal-database .modal-box{max-width:920px;width:95vw;max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:14px;}
+    #modal-database .modal-box{max-width: min(1280px, calc(100vw - 32px)); width: min(1280px, calc(100vw - 32px)); max-height: 94vh; display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:14px;}
+    #db-table-wrap{flex:1;overflow:auto;}
+    #db-table{min-width:1100px;}
     .db-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
     .db-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text);}
     .db-sub{font-family:'IBM Plex Mono',monospace;font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
