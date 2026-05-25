@@ -666,7 +666,7 @@
 
 
 
-    #panel-fullname{font-size:0.72rem;color:var(--muted);margin-top:2px;line-height:1.35;}
+    #panel-routes{font-size:0.72rem;color:var(--muted);margin-top:2px;line-height:1.35;}
 
 
 
@@ -2782,7 +2782,7 @@
 
 
 
-#panel-fullname{font-size:0.72rem;color:var(--muted);margin-top:2px;line-height:1.35;}
+#panel-routes{font-size:0.72rem;color:var(--muted);margin-top:2px;line-height:1.35;}
 
 
 
@@ -3182,7 +3182,7 @@
 
 
 
-      <div id="panel-fullname"></div>
+      <div id="panel-routes"></div>
 
 
 
@@ -3574,7 +3574,7 @@
 
 
 
-    <div class="form-group"><label>Routes</label><input type="text" id="f-fullname" placeholder="e.g. Beverly Hills"/></div>
+    <div class="form-group"><label>Routes</label><input type="text" id="f-routes" placeholder="e.g. Beverly Hills"/></div>
 
 
 
@@ -3886,7 +3886,7 @@
 
 
 
-      <div class="form-group" id="c-fullname-grp"><label>Routes</label><input type="text" id="c-fullname" placeholder="Optional"/></div>
+      <div class="form-group" id="c-routes-grp"><label>Routes</label><input type="text" id="c-routes" placeholder="Optional"/></div>
 
 
 
@@ -7260,7 +7260,7 @@ function openPanel(t){
 
 
 
-  document.getElementById('panel-fullname').textContent=(t.status!=='kolorum'&&t.full)?t.full:'';
+  document.getElementById('panel-routes').textContent=(t.status!=='kolorum'&&t.full)?t.full:'';
 
 
 
@@ -8200,7 +8200,7 @@ window.syncFormStatus=function(p){
 
 
 
-    var fn=document.getElementById('f-fullname');if(fn)fn.closest('.form-group').style.display=isKol?'none':'';
+    var fn=document.getElementById('f-routes');if(fn)fn.closest('.form-group').style.display=isKol?'none':'';
 
 
 
@@ -8536,7 +8536,7 @@ window.onEditClick=function(){
 
 
 
-  document.getElementById('f-fullname').value=t.full||'';
+  document.getElementById('f-routes').value=t.full||'';
 
 
 
@@ -8732,7 +8732,7 @@ function resetAdminForm(){
 
 
 
-  ['f-number','f-name','f-fullname','f-lat','f-lng','f-terminal','f-landmarks','f-logo','f-checked','f-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['f-number','f-name','f-routes','f-lat','f-lng','f-terminal','f-landmarks','f-logo','f-checked','f-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
 
 
 
@@ -8820,7 +8820,7 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
 
 
 
-    name:name,full_name:isKol?null:(document.getElementById('f-fullname').value.trim()||null),
+    name:name,full_name:isKol?null:(document.getElementById('f-routes').value.trim()||null),
 
 
 
@@ -9548,7 +9548,7 @@ window.openContribute=function(prefill){
 
 
 
-    se('c-fullname',t.full);
+    se('c-routes',t.full);
 
 
 
@@ -9596,7 +9596,7 @@ function resetContribForm(){
 
 
 
-  ['c-number','c-name','c-kolorum-name','c-fullname','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked','c-logo'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['c-number','c-name','c-kolorum-name','c-routes','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked','c-logo'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
 
 
 
@@ -9812,7 +9812,7 @@ document.getElementById('btn-contrib-submit').addEventListener('click',async fun
 
 
 
-    full_name:isKol?null:(document.getElementById('c-fullname').value.trim()||null),
+    full_name:isKol?null:(document.getElementById('c-routes').value.trim()||null),
 
 
 
