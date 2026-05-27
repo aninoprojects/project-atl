@@ -3170,7 +3170,7 @@
 
 
 
-        <span id="panel-status" class="confirmed">● Confirmed</span>
+        <span id="panel-status" class="confirmed" style="display:none"></span>
 
 
 
@@ -3538,23 +3538,21 @@
 
 
 
-      <div class="form-group"><label>Status</label>
 
 
 
-        <select id="f-status">
 
 
 
-          <option value="confirmed">Confirmed</option>
 
 
 
-          <option value="draft" selected>Draft</option>
 
 
 
-          <option value="kolorum">Kolorum / Informal</option>
+
+
+
 
 
 
@@ -3704,7 +3702,7 @@
 
 
 
-    <div class="form-group" id="f-checked-grp"><label>Last Confirmed As Of <span style="color:var(--accent-l);">*</span></label><input type="text" id="f-checked" placeholder="e.g. April 19, 2026"/></div>
+    <div class="form-group" id="f-checked-grp"><label>Last Confirmed As Of</label><input type="text" id="f-checked" placeholder="e.g. April 19, 2026"/></div>
 
 
 
@@ -3828,23 +3826,18 @@
 
 
 
-      <label>Status *</label>
 
 
 
-      <select id="c-status" onchange="syncFormStatus('c')">
 
 
 
-        <option value="confirmed">Confirmed</option>
 
 
 
-        <option value="draft" selected>Draft / Unverified</option>
 
 
 
-        <option value="kolorum">Kolorum / Informal</option>
 
 
 
@@ -4014,7 +4007,7 @@
 
 
 
-    <div class="form-group" id="c-checked-grp"><label>Last Confirmed As Of <span style="color:var(--accent-l);">*</span></label><input type="text" id="c-checked" placeholder="e.g. April 19, 2026"/></div>
+    <div class="form-group" id="c-checked-grp"><label>Last Confirmed As Of</label><input type="text" id="c-checked" placeholder="e.g. April 19, 2026"/></div>
 
 
 
@@ -7381,13 +7374,7 @@ function openPanel(t){
 
 
   var cr=document.getElementById('d-checked');
-
-
-
-  if(cr){var cp=cr.closest('.detail-row');if(cp)cp.style.display=t.status==='confirmed'?'':' none';}
-
-
-
+  if(cr){var cp=cr.closest('.detail-row');if(cp)cp.style.display=t.checked?'':'';}
   sv('d-checked',t.checked,'Not checked yet');
 
 
@@ -8181,78 +8168,28 @@ makeAffilUI('c-affil-input-wrap','c-affil-text','c-affil-suggestions',_cAfRef,re
 
 
 window.syncFormStatus=function(p){
-
-
-
-  var s=document.getElementById(p+'-status').value;
-
-
-
-  var isKol=s==='kolorum',isConf=s==='confirmed';
-
-
-
-  function show(id,vis){var el=document.getElementById(id);if(el)el.style.display=vis?'':' none';}
-
-
-
+  function show(id,vis){var el=document.getElementById(id);if(el)el.style.display=vis?'':'none';}
   if(p==='f'){
-
-
-
-    show('f-number',!isKol);
-
-
-
-    var fn=document.getElementById('f-routes');if(fn)fn.closest('.form-group').style.display=isKol?'none':'';
-
-
-
-    show('f-color-section',!isKol);
-
-
-
-    show('f-checked-grp',isConf);
-
-
-
+    show('f-number',true);
+    var fn=document.getElementById('f-routes');if(fn)fn.closest('.form-group').style.display='';
+    show('f-color-section',true);
+    show('f-checked-grp',true);
   } else {
-
-
-
-    show('c-normal-fields',!isKol);
-
-
-
-    show('c-kolorum-fields',isKol);
-
-
-
-    show('c-appearance-section',!isKol);
-
-
-
-    show('c-checked-grp',isConf);
-
-
-
-    show('c-affil-section',!isKol);
-
-
-
+    show('c-normal-fields',true);
+    show('c-kolorum-fields',false);
+    show('c-appearance-section',true);
+    show('c-checked-grp',true);
+    show('c-affil-section',true);
   }
-
-
-
 };
 
 
 
-var _fStatus=document.getElementById('f-status');
 
 
 
-if(_fStatus)_fStatus.addEventListener('change',function(){window.syncFormStatus('f');});
+
+
 
 
 
@@ -8524,7 +8461,7 @@ window.onEditClick=function(){
 
 
 
-  document.getElementById('f-status').value=t.status||'draft';
+
 
 
 
@@ -8740,7 +8677,7 @@ function resetAdminForm(){
 
 
 
-  document.getElementById('f-status').value='draft';
+
 
 
 
@@ -8780,11 +8717,12 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
 
 
 
-  var st=document.getElementById('f-status').value;
+  var st='draft';
+
+  if(_editKey&&markerStore[_editKey]&&markerStore[_editKey].toda) st=markerStore[_editKey].toda.status||'draft';
 
 
 
-  var isKol=st==='kolorum',isConf=st==='confirmed';
 
 
 
@@ -8804,55 +8742,27 @@ document.getElementById('btn-add-submit').addEventListener('click',async functio
 
 
 
-  if(!name||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}
+  if(!name||isNaN(lat)||isNaN(lng)){errEl.textContent='Name, latitude and longitude required.';errEl.style.display='block';return;}var cols=getColorsFrom('color-inputs');
 
 
 
-  if(isConf&&!document.getElementById('f-checked').value.trim()){errEl.textContent='Last confirmed date required for Confirmed status.';errEl.style.display='block';return;}
+  var payload={    number:parseInt(document.getElementById('f-number').value)||null,
 
+    name:name,full_name:document.getElementById('f-routes').value.trim()||null,
 
-
-  var cols=getColorsFrom('color-inputs');
-
-
-
-  var payload={
-
-
-
-    number:isKol?null:(parseInt(document.getElementById('f-number').value)||null),
-
-
-
-    name:name,full_name:isKol?null:(document.getElementById('f-routes').value.trim()||null),
-
-
-
-    lat:lat,lng:lng,
-
-
+    lat:lat,lng,
 
     terminal_name:document.getElementById('f-terminal').value.trim()||null,
 
-
-
     landmarks:document.getElementById('f-landmarks').value.trim()||null,
-
-
 
     notes:document.getElementById('f-notes').value.trim()||null,
 
+    colors:cols,affiliations:_currentAffils.slice(),
 
+    last_checked:document.getElementById('f-checked').value.trim()||null,
 
-    colors:isKol?[]:cols,affiliations:isKol?[]:_currentAffils,
-
-
-
-    last_checked:isConf?(document.getElementById('f-checked').value.trim()||null):null,
-
-
-
-    status:st,logo_url:isKol?null:(document.getElementById('f-logo').value.trim()||null),
+    status:st,logo_url:document.getElementById('f-logo').value.trim()||null,
 
 
 
@@ -9536,10 +9446,6 @@ window.openContribute=function(prefill){
 
 
 
-    document.getElementById('c-status').value=t.status||'draft';
-
-
-
     syncFormStatus('c');
 
 
@@ -9601,10 +9507,6 @@ function resetContribForm(){
 
 
   ['c-number','c-name','c-kolorum-name','c-routes','c-lat','c-lng','c-terminal','c-landmarks','c-notes','c-checked','c-logo'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-
-
-
-  document.getElementById('c-status').value='draft';
 
 
 
@@ -9728,25 +9630,14 @@ document.getElementById('btn-contrib-submit').addEventListener('click',async fun
 
 
 
-  var st=document.getElementById('c-status').value;
+  var st='draft';
 
 
 
-  var isKol=st==='kolorum',isConf=st==='confirmed';
 
 
 
-  var rawName=isKol
-
-
-
-    ?(document.getElementById('c-kolorum-name')?document.getElementById('c-kolorum-name').value.trim():'')
-
-
-
-    :document.getElementById('c-name').value.trim();
-
-
+  var rawName=document.getElementById('c-name').value.trim();
 
   var lat=parseFloat(document.getElementById('c-lat').value);
 
@@ -9804,47 +9695,25 @@ document.getElementById('btn-contrib-submit').addEventListener('click',async fun
 
 
 
-  var payload={
-
-
-
-    number:isKol?null:(parseInt(document.getElementById('c-number').value)||null),
-
-
+  var payload={    number:parseInt(document.getElementById('c-number').value)||null,
 
     name:rawName,
 
+    full_name:document.getElementById('c-routes').value.trim()||null,
 
-
-    full_name:isKol?null:(document.getElementById('c-routes').value.trim()||null),
-
-
-
-    lat:lat,lng:lng,
-
-
+    lat:lat,lng,
 
     terminal_name:document.getElementById('c-terminal').value.trim()||null,
 
-
-
     landmarks:document.getElementById('c-landmarks').value.trim()||null,
-
-
 
     notes:document.getElementById('c-notes').value.trim()||null,
 
+    colors:cols,affiliations:_cAffils.slice(),
 
+    last_checked:document.getElementById('c-checked').value.trim()||null,
 
-    colors:isKol?[]:cols,affiliations:isKol?[]:_cAffils.slice(),
-
-
-
-    last_checked:isConf?(document.getElementById('c-checked').value.trim()||null):null,
-
-
-
-    status:st,logo_url:isKol?null:(document.getElementById('c-logo')?document.getElementById('c-logo').value.trim():null)||null,
+    status:st,logo_url:(document.getElementById('c-logo')?document.getElementById('c-logo').value.trim():null)||null,
 
 
 
